@@ -1,0 +1,37 @@
+# Gradle
+.gradle/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+out/
+.run/
+
+# Editor
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Minecraft
+*.log
+logs/
+crash-reports/
+
+# Configuration
+config/starredheltix/*.json
+
+# Temporary files
+tmp/
+temp/
+
+# Build artifacts
+*.jar
+!build/libs/*-@(dev|sources).jar

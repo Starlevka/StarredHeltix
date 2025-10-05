@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Команды - StarredHeltix</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="index.html">Главная</a></li>
+            <li><a href="installation.html">Установка</a></li>
+            <li><a href="configuration.html">Конфигурация</a></li>
+            <li><a href="commands.html" class="active">Команды</a></li>
+            <li><a href="navigation.html">Вся документация</a></li>
+        </ul>
+    </nav>
+
+    <header>
+        <h1>Команды StarredHeltix</h1>
+        <p>Полный список команд мода и их использование</p>
+    </header>
+
+    <main>
+        <div class="content">
+            <div class="note">
+                <strong>Примечание:</strong> Все команды начинаются с символа <code>/</code>. Некоторые команды требуют определенных прав для использования.
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="command-section">
+                <h2>Основные команды</h2>
+                
+                <div class="command-item">
+                    <h3>
+                        /starredheltix
+                        <span class="command-permission">Все игроки</span>
+                    </h3>
+                    <div class="command-syntax">/starredheltix [help|config|reload]</div>
+                    <div class="command-description">
+                        <p>Основная команда мода. Без параметров открывает главное меню конфигурации.</p>
+                        <ul>
+                            <li><strong>help</strong> - Отображает справку по всем командам</li>
+                            <li><strong>config</strong> - Открывает меню конфигурации</li>
+                            <li><strong>reload</strong> - Перезагружает конфигурационные файлы</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>
+                        /вход
+                        <span class="command-permission">Все игроки</span>
+                    </h3>
+                    <div class="command-syntax">/вход</div>
+                    <div class="command-description">
+                        <p>Команда для автоматического входа в аккаунт. Может использоваться для быстрого подключения к серверу.</p>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>
+                        /яготовлёвал
+                        <span class="command-permission">Все игроки</span>
+                    </h3>
+                    <div class="command-syntax">/яготовлёвал</div>
+                    <div class="command-description">
+                        <p>Отправляет сообщение "Я готовлёвал!" в групповой чат. Полезно для координации с другими игроками.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="command-section">
+                <h2>Команды группы</h2>
+                <p>Эти команды могут быть выполнены через групповой чат, начиная сообщение с префикса <code>!</code>.</p>
+                
+                <div class="command-item">
+                    <h3>!promote</h3>
+                    <div class="command-syntax">!promote &lt;ник игрока&gt;</div>
+                    <div class="command-description">
+                        <p>Повышает указанного игрока в группе.</p>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>!demote</h3>
+                    <div class="command-syntax">!demote &lt;ник игрока&gt;</div>
+                    <div class="command-description">
+                        <p>Понижает указанного игрока в группе.</p>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>!kick</h3>
+                    <div class="command-syntax">!kick &lt;ник игрока&gt; [причина]</div>
+                    <div class="command-description">
+                        <p>Выгоняет указанного игрока из группы с необязательной причиной.</p>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>!invite</h3>
+                    <div class="command-syntax">!invite &lt;ник игрока&gt;</div>
+                    <div class="command-description">
+                        <p>Приглашает указанного игрока в группу.</p>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>!transfer</h3>
+                    <div class="command-syntax">!transfer &lt;ник игрока&gt;</div>
+                    <div class="command-description">
+                        <p>Передает лидерство в группе указанному игроку.</p>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>!warp</h3>
+                    <div class="command-syntax">!warp</div>
+                    <div class="command-description">
+                        <p>Телепортирует всех участников группы к лидеру.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="command-section">
+                <h2>Команды личных сообщений</h2>
+                <p>Эти команды могут быть выполнены через личные сообщения, начиная сообщение с префикса <code>!</code>.</p>
+                
+                <div class="command-item">
+                    <h3>!ah</h3>
+                    <div class="command-syntax">!ah &lt;ник игрока&gt;</div>
+                    <div class="command-description">
+                        <p>Открывает меню аукциона указанного игрока.</p>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>!skills</h3>
+                    <div class="command-syntax">!skills &lt;ник игрока&gt;</div>
+                    <div class="command-description">
+                        <p>Отображает навыки указанного игрока.</p>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>!bank</h3>
+                    <div class="command-syntax">!bank &lt;ник игрока&gt;</div>
+                    <div class="command-description">
+                        <p>Отображает банковский баланс указанного игрока.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="command-section">
+                <h2>Команды снаряжения</h2>
+                
+                <div class="command-item">
+                    <h3>
+                        /equipment
+                        <span class="command-permission">Все игроки</span>
+                    </h3>
+                    <div class="command-syntax">/equipment</div>
+                    <div class="command-description">
+                        <p>Открывает меню управления снаряжением. Также может быть вызвано кликом по слотам снаряжения в инвентаре.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="command-section">
+                <h2>Команды утилит</h2>
+                
+                <div class="command-item">
+                    <h3>
+                        /fs
+                        <span class="command-permission">Все игроки</span>
+                    </h3>
+                    <div class="command-syntax">/fs [near]</div>
+                    <div class="command-description">
+                        <p>Управление точками маршрута Фейри Соулс. Без параметров показывает все точки, с параметром <code>near</code> показывает ближайшие точки.</p>
+                    </div>
+                </div>
+                
+                <div class="command-item">
+                    <h3>
+                        /solver
+                        <span class="command-permission">Все игроки</span>
+                    </h3>
+                    <div class="command-syntax">/solver &lt;experiment|chronomatron|ultrasequencer&gt;</div>
+                    <div class="command-description">
+                        <p>Открывает решатели головоломок для различных экспериментов:</p>
+                        <ul>
+                            <li><strong>experiment</strong> - Решатель экспериментального стола</li>
+                            <li><strong>chronomatron</strong> - Решатель Хрономатрона</li>
+                            <li><strong>ultrasequencer</strong> - Решатель Ультрасеквенсора</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
