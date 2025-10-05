@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "starredheltix",
+	"version": "${version}",
+	"name": "StarredHeltix",
+	"description": "хелтикс модэ",
+	"authors": [
+		"Starlev"
+	],
+	"license": "MIT License",
+	"icon": "assets/starredheltix/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"set.starlev.starredheltix.client.StarredHeltixClient"
+		]
+	},
+	"mixins": [
+      "starredheltix.client.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.17.2",
+		"minecraft": "~1.21.4",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

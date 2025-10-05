@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarredHeltix - Мод для Heltix SkyBlock</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="index.html" class="active">Главная</a></li>
+            <li><a href="installation.html">Установка</a></li>
+            <li><a href="configuration.html">Конфигурация</a></li>
+            <li><a href="commands.html">Команды</a></li>
+            <li><a href="navigation.html">Вся документация</a></li>
+        </ul>
+    </nav>
+
+    <header>
+        <h1>StarredHeltix</h1>
+        <p>Мод для Minecraft Heltix SkyBlock, который улучшает игровой процесс различными функциями повышения качества жизни.</p>
+    </header>
+
+    <main>
+        <div class="content">
+            <section class="feature-list">
+                <h2>Возможности</h2>
+                
+                <div class="feature-category">
+                    <h3>Подсветка существ</h3>
+                    <ul>
+                        <li><strong>Подсветка Эндерменов</strong>: Подсвечивает эндерменов для более легкого отслеживания</li>
+                        <li><strong>Подсветка Волков</strong>: Подсвечивает волков для лучшей видимости</li>
+                        <li><strong>Подсветка Персонажей</strong>: Подсвечивает NPC-персонажей, которые говорят правду в квестах</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-category">
+                    <h3>Улучшения чата</h3>
+                    <ul>
+                        <li><strong>Команды группы</strong>: Выполнение различных команд через групповой чат (!promote, !kick, !invite и т.д.)</li>
+                        <li><strong>Команды личных сообщений</strong>: Выполнение команд через личные сообщения</li>
+                        <li><strong>Копирование сообщений чата</strong>: Копирование сообщений чата в буфер обмена с помощью Shift+Правая кнопка мыши</li>
+                        <li><strong>Звуковые уведомления группы</strong>: Воспроизведение звука при получении сообщений группы</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-category">
+                    <h3>Управление снаряжением</h3>
+                    <ul>
+                        <li><strong>Отображение снаряжения</strong>: Показывает надетые предметы в инвентаре</li>
+                        <li><strong>Обнаружение снаряжения</strong>: Автоматически определяет предметы снаряжения по названию/описанию</li>
+                        <li><strong>Взаимодействие со слотами снаряжения</strong>: Щелчок по слотам снаряжения для выполнения команды /equipment</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-category">
+                    <h3>Утилиты</h3>
+                    <ul>
+                        <li><strong>Автоспринт</strong>: Автоматический спринт при движении вперед</li>
+                        <li><strong>Уведомление о полном инвентаре</strong>: Предупреждает, когда инвентарь полон</li>
+                        <li><strong>Блокировка слотов</strong>: Блокирует определенные слоты инвентаря для предотвращения случайного выбрасывания предметов</li>
+                        <li><strong>Точки маршрута Фейри Соулс</strong>: Показывает точки маршрута к расположению Фейри Соулс</li>
+                        <li><strong>Решатель экспериментального стола</strong>: Помогает решать головоломки экспериментального стола</li>
+                        <li><strong>Таймер кровавой комнаты</strong>: Отслеживает время кровавой комнаты</li>
+                        <li><strong>Discord RPC</strong>: Показывает статус игры в Discord</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-category">
+                    <h3>Конфигурация</h3>
+                    <ul>
+                        <li>Полностью настраивается через внутриигровые команды</li>
+                        <li>Включение/выключение отдельных функций</li>
+                        <li>Настройка цветов подсветки и продолжительности</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <div class="content">
+            <section>
+                <h2>Установка</h2>
+                <ol>
+                    <li>Установите <a href="https://fabricmc.net/use/">Fabric Loader</a> для Minecraft 1.21.4</li>
+                    <li>Скачайте последний <a href="https://github.com/yourusername/starredheltix/releases">релиз StarredHeltix</a></li>
+                    <li>Поместите файл мода в папку <code>.minecraft/mods</code></li>
+                    <li>Запустите Minecraft с профилем Fabric</li>
+                </ol>
+                <p>Более подробное руководство по установке смотрите на странице <a href="installation.html">установки</a>.</p>
+            </section>
+        </div>
+
+        <div class="content">
+            <section>
+                <h2>Сборка из исходного кода</h2>
+                <h3>Необходимые компоненты</h3>
+                <ul>
+                    <li>JDK 21</li>
+                    <li>Gradle 8.0+</li>
+                </ul>
+                
+                <h3>Этапы сборки</h3>
+                <pre><code># Клонировать репозиторий
+git clone https://github.com/yourusername/starredheltix.git
+
+# Перейти в каталог проекта
+cd starredheltix
+
+# Собрать мод
+./gradlew build
+
+# Собранные jar-файлы будут находиться в build/libs/
+</code></pre>
+            </section>
+        </div>
+
+        <div class="content">
+            <section>
+                <h2>Команды</h2>
+                <ul>
+                    <li><code>/starredheltix</code> - Основная команда для настройки и управления функциями</li>
+                    <li><code>/вход</code> - Команда входа для автоматической аутентификации</li>
+                    <li><code>/яготовлёвал</code> - Отправляет пользовательское сообщение о готовности в групповой чат</li>
+                    <li>Различные команды для конкретных функций (см. справку в игре)</li>
+                </ul>
+                <p>Полный список команд и их описание смотрите на странице <a href="commands.html">команд</a>.</p>
+            </section>
+        </div>
+
+        <div class="content">
+            <section>
+                <h2>Конфигурация</h2>
+                <p>Мод можно настроить через:</p>
+                <ul>
+                    <li>Внутриигровые команды (<code>/starredheltix config</code>)</li>
+                    <li>Файлы конфигурации в <code>.minecraft/config/starredheltix/</code></li>
+                </ul>
+                <p>Подробное руководство по конфигурации смотрите на странице <a href="configuration.html">конфигурации</a>.</p>
+            </section>
+        </div>
+
+        <div class="content">
+            <section>
+                <h2>Вклад в развитие</h2>
+                <p>Вклад приветствуется! Не стесняйтесь:</p>
+                <ol>
+                    <li>Форкнуть репозиторий</li>
+                    <li>Создать ветку с новой функцией</li>
+                    <li>Зафиксировать изменения</li>
+                    <li>Запушить в свой форк</li>
+                    <li>Отправить pull request</li>
+                </ol>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>Этот проект лицензирован по лицензии MIT</p>
+        <p>Основан на Fabric API • Использует маппинги Minecraft из Yarn</p>
+    </footer>
+</body>
+</html>

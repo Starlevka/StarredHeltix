@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Установка - StarredHeltix</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="index.html">Главная</a></li>
+            <li><a href="installation.html" class="active">Установка</a></li>
+            <li><a href="configuration.html">Конфигурация</a></li>
+            <li><a href="commands.html">Команды</a></li>
+            <li><a href="navigation.html">Вся документация</a></li>
+        </ul>
+    </nav>
+
+    <header>
+        <h1>Установка StarredHeltix</h1>
+        <p>Пошаговое руководство по установке мода</p>
+    </header>
+
+    <main>
+        <div class="content">
+            <div class="requirements">
+                <h3>Системные требования</h3>
+                <ul>
+                    <li>Minecraft Java Edition 1.21.4</li>
+                    <li>Fabric Loader 0.17.2 или выше</li>
+                    <li>Java 21 или выше</li>
+                    <li>Не менее 4 ГБ оперативной памяти</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="step">
+                <h2><span class="step-number">1</span> Установка Fabric Loader</h2>
+                <ol>
+                    <li>Перейдите на официальный сайт <a href="https://fabricmc.net/use/" target="_blank">FabricMC</a></li>
+                    <li>Выберите версию Minecraft 1.21.4</li>
+                    <li>Скачайте установщик Fabric для вашей операционной системы:
+                        <ul>
+                            <li><strong>Windows</strong>: Скачайте <code>executable jar</code></li>
+                            <li><strong>macOS/Linux</strong>: Скачайте <code>universal jar</code></li>
+                        </ul>
+                    </li>
+                    <li>Запустите скачанный файл и следуйте инструкциям установщика</li>
+                    <li>Установщик создаст профиль Fabric в вашем лаунчере Minecraft</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="step">
+                <h2><span class="step-number">2</span> Скачивание мода StarredHeltix</h2>
+                <ol>
+                    <li>Перейдите на страницу <a href="https://github.com/yourusername/starredheltix/releases" target="_blank">релизов</a></li>
+                    <li>Найдите последнюю версию мода</li>
+                    <li>Скачайте файл <code>.jar</code> (обычно называется <code>starredheltix-x.x.x.jar</code>)</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="step">
+                <h2><span class="step-number">3</span> Установка мода</h2>
+                <ol>
+                    <li>Откройте папку с Minecraft (обычно <code>.minecraft</code>)
+                        <ul>
+                            <li><strong>Windows</strong>: Нажмите Win+R, введите <code>%appdata%\.minecraft</code> и нажмите Enter</li>
+                            <li><strong>macOS</strong>: Нажмите Cmd+Пробел, введите <code>~/Library/Application Support/minecraft</code></li>
+                            <li><strong>Linux</strong>: Папка находится в <code>~/.minecraft</code></li>
+                        </ul>
+                    </li>
+                    <li>Создайте папку <code>mods</code>, если её ещё нет</li>
+                    <li>Скопируйте скачанный файл мода в папку <code>mods</code></li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="step">
+                <h2><span class="step-number">4</span> Запуск игры</h2>
+                <ol>
+                    <li>Откройте лаунчер Minecraft</li>
+                    <li>Выберите профиль Fabric (обычно называется "fabric-loader-1.21.4")</li>
+                    <li>Нажмите "Играть"</li>
+                    <li>После загрузки проверьте, что мод работает:
+                        <ul>
+                            <li>Введите команду <code>/starredheltix</code> в чат</li>
+                            <li>Если мод установлен правильно, появится меню конфигурации</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="step">
+                <h2><span class="step-number">5</span> Устранение проблем</h2>
+                <h3>Если мод не работает:</h3>
+                <ol>
+                    <li>Проверьте, что вы используете правильную версию Minecraft (1.21.4)</li>
+                    <li>Убедитесь, что Fabric Loader установлен правильно</li>
+                    <li>Проверьте, что файл мода находится в папке <code>.minecraft/mods</code></li>
+                    <li>Убедитесь, что у файла мода правильное расширение <code>.jar</code></li>
+                    <li>Проверьте, что версия Java соответствует требованиям (Java 21+)</li>
+                </ol>
+                
+                <h3>Если игра вылетает при запуске:</h3>
+                <ol>
+                    <li>Проверьте логи игры на наличие ошибок</li>
+                    <li>Убедитесь, что все зависимости установлены</li>
+                    <li>Попробуйте удалить конфигурационные файлы мода и перезапустить игру</li>
+                    <li>Проверьте, совместимы ли другие моды с StarredHeltix</li>
+                </ol>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,50 @@
+/starredheltix fishingmixintest
+/starredheltix fishingtest
+/starredheltix fishingnotification
+/setblock -18 67 11 minecraft:end_portal
+/starredheltix help
+/kill
+/gamemode survival
+/starredheltix woodwormcooldown 1
+/give Player631 minecraft:golden_axe
+/kill
+/give Player631 minecraft:golden_axe
+/give Player787 minecraft:golden_axe
+/give Player228
+/give Player228 minecraft:golden_axe
+/starredheltix woodwormcooldown 50
+/starredheltix woodwormcooldown 0
+/starredheltix woodwormcooldown 1
+/give Player680 minecraft:golden_axe
+/starredheltix woodwormcooldown 100
+/starredheltix woodwormcooldown 99
+/starredheltix woodwormcooldown 50
+/starredheltix woodwormcooldown 0
+/starredheltix woodwormcooldown 100
+/starredheltix woodwormcooldown 50
+/starredheltix woodwormcooldown 0
+/starredheltix woodwormcooldown 100
+/starredheltix woodwormcooldown 90
+/give Player898 minecraft:golden_axe
+/give Player898 minecraft:oak_wood 100
+/starredheltix woodwormcooldown 1
+/starredheltix woodwormcooldown 0
+/starredheltix woodwormcooldown 100
+/starredheltix woodwormcooldown 50
+/starredheltix woodwormcooldown 10
+/gamemode creative
+/starredheltix bloodroom
+/starredheltix bloodroom toggle
+/starredheltix bloodroom
+/starredheltix woodwormcooldown
+/starredheltix discordrpc
+/starredheltix debug
+/starredheltix debug toggle
+/starredheltix inventorywarning
+/starredheltix help
+/starredheltix wolfhighlight
+/starredheltix hidearmor
+/starredheltix hidearmor toggle
+/gamemode survival
+/starredheltix hidearmor toggle
+/starredheltix update

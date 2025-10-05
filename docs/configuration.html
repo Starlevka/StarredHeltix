@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конфигурация - StarredHeltix</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="index.html">Главная</a></li>
+            <li><a href="installation.html">Установка</a></li>
+            <li><a href="configuration.html" class="active">Конфигурация</a></li>
+            <li><a href="commands.html">Команды</a></li>
+            <li><a href="navigation.html">Вся документация</a></li>
+        </ul>
+    </nav>
+
+    <header>
+        <h1>Конфигурация StarredHeltix</h1>
+        <p>Подробное руководство по настройке мода</p>
+    </header>
+
+    <main>
+        <div class="content">
+            <div class="note">
+                <strong>Примечание:</strong> Все настройки можно изменить как через внутриигровые команды, так и через файлы конфигурации.
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="config-section">
+                <h2>Основные команды</h2>
+                <div class="config-item">
+                    <div class="config-name">/starredheltix</div>
+                    <p>Основная команда для доступа ко всем настройкам мода. Открывает главное меню конфигурации.</p>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-name">/starredheltix help</div>
+                    <p>Отображает справку по всем доступным командам.</p>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-name">/starredheltix config &lt;category&gt;</div>
+                    <p>Открывает настройки для определенной категории функций.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="config-section">
+                <h2>Категории настроек</h2>
+                
+                <div class="config-item">
+                    <div class="config-name">Подсветка существ</div>
+                    <p>Настройки для функций подсветки эндерменов, волков и персонажей.</p>
+                    <p>Команда: <code>/starredheltix config highlighter</code></p>
+                    <ul>
+                        <li><strong>enabled</strong> - Включить/выключить все функции подсветки (<span class="default-value">true</span>)</li>
+                        <li><strong>enderman.enabled</strong> - Включить подсветку эндерменов (<span class="default-value">true</span>)</li>
+                        <li><strong>wolf.enabled</strong> - Включить подсветку волков (<span class="default-value">true</span>)</li>
+                        <li><strong>character.enabled</strong> - Включить подсветку персонажей (<span class="default-value">true</span>)</li>
+                        <li><strong>duration</strong> - Продолжительность подсветки в тиках (<span class="default-value">100</span>)</li>
+                        <li><strong>color</strong> - Цвет подсветки в формате RGB (<span class="default-value">#00FF00</span>)</li>
+                    </ul>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-name">Автоспринт</div>
+                    <p>Настройки функции автоматического спринта.</p>
+                    <p>Команда: <code>/starredheltix config autosprint</code></p>
+                    <ul>
+                        <li><strong>enabled</strong> - Включить автоспринт (<span class="default-value">true</span>)</li>
+                    </ul>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-name">Снаряжение</div>
+                    <p>Настройки отображения и обнаружения снаряжения.</p>
+                    <p>Команда: <code>/starredheltix config equipment</code></p>
+                    <ul>
+                        <li><strong>enabled</strong> - Включить отображение снаряжения (<span class="default-value">true</span>)</li>
+                        <li><strong>slotLock.enabled</strong> - Включить блокировку слотов (<span class="default-value">true</span>)</li>
+                        <li><strong>slotLock.slots</strong> - Список заблокированных слотов (<span class="default-value">[0, 1, 2, 3, 4]</span>)</li>
+                    </ul>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-name">Чат</div>
+                    <p>Настройки функций чата.</p>
+                    <p>Команда: <code>/starredheltix config chat</code></p>
+                    <ul>
+                        <li><strong>partyCommands.enabled</strong> - Включить команды через групповой чат (<span class="default-value">true</span>)</li>
+                        <li><strong>messageCopy.enabled</strong> - Включить копирование сообщений (<span class="default-value">true</span>)</li>
+                        <li><strong>partySound.enabled</strong> - Включить звуковые уведомления группы (<span class="default-value">true</span>)</li>
+                    </ul>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-name">Утилиты</div>
+                    <p>Настройки различных утилит.</p>
+                    <p>Команда: <code>/starredheltix config utils</code></p>
+                    <ul>
+                        <li><strong>fairySouls.enabled</strong> - Включить точки маршрута Фейри Соулс (<span class="default-value">true</span>)</li>
+                        <li><strong>experimentSolver.enabled</strong> - Включить решатель экспериментального стола (<span class="default-value">true</span>)</li>
+                        <li><strong>bloodRoomTimer.enabled</strong> - Включить таймер кровавой комнаты (<span class="default-value">true</span>)</li>
+                        <li><strong>fullInventoryWarning.enabled</strong> - Включить предупреждение о полном инвентаре (<span class="default-value">true</span>)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="config-section">
+                <h2>Файлы конфигурации</h2>
+                <p>Конфигурационные файлы хранятся в папке <code>.minecraft/config/starredheltix/</code>:</p>
+                <ul>
+                    <li><strong>general.json</strong> - Основные настройки мода</li>
+                    <li><strong>highlighters.json</strong> - Настройки подсветки существ</li>
+                    <li><strong>equipment.json</strong> - Настройки снаряжения</li>
+                    <li><strong>chat.json</strong> - Настройки чата</li>
+                    <li><strong>utils.json</strong> - Настройки утилит</li>
+                </ul>
+                <p>Файлы создаются автоматически при первом запуске мода и могут быть изменены вручную.</p>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

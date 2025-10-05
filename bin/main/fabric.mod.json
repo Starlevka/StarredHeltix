@@ -1,0 +1,28 @@
+{
+	"schemaVersion": 1,
+	"id": "starredheltix",
+	"version": "${version}",
+	"name": "StarredHeltix",
+	"description": "Мод для решения пазлов на сервере Heltix",
+	"authors": [
+		"StarLev"
+	],
+	"contact": {
+		"homepage": "https://github.com/StarLev/StarredHeltix",
+		"sources": "https://github.com/StarLev/StarredHeltix"
+	},
+	"license": "MIT",
+	"icon": "assets/starredheltix/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"set.starlev.starredheltix.client.StarredHeltixClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.17.2",
+		"minecraft": "~1.21.4",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

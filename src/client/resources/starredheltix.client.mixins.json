@@ -1,0 +1,29 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "set.starlev.starredheltix.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ChatMixin",
+    "ChatPlayerNameIconMixin",
+    "InventoryChangeMixin",
+    "InventoryRenderMixin",
+    "PlayerDropItemMixin",
+    "PlayerListMixin",
+    "PlayerNameIconMixin",
+    "PlayerNametagIconMixin",
+    "ScreenMixin",
+    "SlotLockMixin",
+    "ExperimentTableMixin",
+    "EndermanMixin",
+    "WoodwormBlockBreakMixin",
+    "PlayerArmorRenderMixin",
+    "ClientJoinMixin",
+    "EntityRenderMixin",
+    "InventoryClickMixin",
+    "ChatScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
