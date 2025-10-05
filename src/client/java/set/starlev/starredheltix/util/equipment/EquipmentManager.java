@@ -12,12 +12,14 @@ import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 
 import java.io.File;
@@ -28,6 +30,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Optional;
 
 import set.starlev.starredheltix.client.StarredHeltixClient;
@@ -69,7 +72,13 @@ public class EquipmentManager {
     private static int equipmentSlotX = 0;
     private static int[] equipmentSlotY = new int[4]; // For each equipment slot
     
+    // Identifier for the equipment slot icon texture
+    private static final Identifier SLOT_ICON = Identifier.of("starredheltix", "textures/gui/slot_icon.png");
+    
     public static void register() {
+        // Load equipment on startup
+        loadEquipment();
+        
         // Register tick event to check for equipment
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player != null && client.player.currentScreenHandler != null) {
@@ -113,9 +122,6 @@ public class EquipmentManager {
                 });
             }
         });
-        
-        // Load equipment on startup
-        loadEquipment();
     }
     
     /**
@@ -224,8 +230,8 @@ public class EquipmentManager {
         // Get the item for this equipment slot
         ItemStack stack = equipmentItems.get(slotType);
         if (stack == null || stack.isEmpty()) {
-            // Render empty slot with a gray background to indicate the slot position
-            context.fill(x, y, x + 16, y + 16, 0x80808080); // Semi-transparent gray
+            // Render empty slot with the slot icon texture
+            context.drawTexture(RenderLayer::getGuiTextured, SLOT_ICON, x, y, 0, 0, 16, 16, 16, 16);
             return;
         }
         
@@ -284,11 +290,19 @@ public class EquipmentManager {
             }
             
             // Convert equipment items to a serializable format
-            Map<String, String> serializedEquipment = new HashMap<>();
+            Map<String, Map<String, Object>> serializedEquipment = new HashMap<>();
             for (Map.Entry<EquipmentSlot, ItemStack> entry : equipmentItems.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
-                    // Store item identifier as a simple string representation
-                    serializedEquipment.put(entry.getKey().name(), entry.getValue().toString());
+                    // Store item NBT data for proper serialization
+                    Map<String, Object> itemData = new HashMap<>();
+                    itemData.put("count", entry.getValue().getCount());
+                    
+                    if (entry.getValue().getNbt() != null) {
+                        itemData.put("nbt", entry.getValue().getNbt().toString());
+                    }
+                    
+                    itemData.put("id", entry.getValue().getItem().toString());
+                    serializedEquipment.put(entry.getKey().name(), itemData);
                 }
             }
             
@@ -305,9 +319,44 @@ public class EquipmentManager {
      * Load equipment from file
      */
     public static void loadEquipment() {
-        // For now, we clear the equipment when loading since we can't properly deserialize ItemStacks
-        // A full implementation would need to properly handle NBT serialization/deserialization
-        equipmentItems.clear();
+        try {
+            if (!EQUIPMENT_FILE.exists()) {
+                return;
+            }
+            
+            FileReader reader = new FileReader(EQUIPMENT_FILE);
+            Type type = new TypeToken<Map<String, Map<String, Object>>>(){}.getType();
+            Map<String, Map<String, Object>> serializedEquipment = GSON.fromJson(reader, type);
+            reader.close();
+            
+            if (serializedEquipment != null) {
+                for (Map.Entry<String, Map<String, Object>> entry : serializedEquipment.entrySet()) {
+                    EquipmentSlot slot = EquipmentSlot.valueOf(entry.getKey());
+                    Map<String, Object> itemData = entry.getValue();
+                    
+                    int count = ((Double) itemData.get("count")).intValue();
+                    String id = (String) itemData.get("id");
+                    String nbtString = (String) itemData.get("nbt");
+                    
+                    // Create ItemStack from data
+                    Optional<net.minecraft.item.Item> item = net.minecraft.registry.Registries.ITEM.getOrEmpty(net.minecraft.util.Identifier.tryParse(id));
+                    if (item.isPresent()) {
+                        ItemStack stack = new ItemStack(item.get(), count);
+                        if (nbtString != null) {
+                            try {
+                                NbtCompound nbt = StringNbtReader.parse(nbtString);
+                                stack.setNbt(nbt);
+                            } catch (Exception e) {
+                                // Failed to parse NBT, continue with basic item
+                            }
+                        }
+                        equipmentItems.put(slot, stack);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     /**

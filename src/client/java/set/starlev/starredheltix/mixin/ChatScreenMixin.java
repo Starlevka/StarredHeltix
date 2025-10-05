@@ -28,9 +28,12 @@ public class ChatScreenMixin extends Screen {
             if (chatField != null) {
                 String text = chatField.getText();
                 if (!text.isEmpty()) {
-                    Clipboard clipboard = new Clipboard();
-                    assert client != null;
-                    clipboard.setClipboard(client.getWindow().getHandle(), text);
+                    try {
+                        Clipboard clipboard = new Clipboard();
+                        clipboard.setClipboard(client.getWindow().getHandle(), text);
+                    } catch (Exception e) {
+                        // Silently fail if clipboard operation fails
+                    }
                     
                     // Cancel the original mouse click to prevent context menu
                     cir.setReturnValue(true);
