@@ -297,11 +297,11 @@ public class EquipmentManager {
                     Map<String, Object> itemData = new HashMap<>();
                     itemData.put("count", entry.getValue().getCount());
                     
-                    if (entry.getValue().getNbt() != null) {
+                    if (entry.getValue().hasNbt()) {
                         itemData.put("nbt", entry.getValue().getNbt().toString());
                     }
                     
-                    itemData.put("id", entry.getValue().getItem().toString());
+                    itemData.put("id", net.minecraft.registry.Registries.ITEM.getId(entry.getValue().getItem()).toString());
                     serializedEquipment.put(entry.getKey().name(), itemData);
                 }
             }
@@ -339,18 +339,21 @@ public class EquipmentManager {
                     String nbtString = (String) itemData.get("nbt");
                     
                     // Create ItemStack from data
-                    Optional<net.minecraft.item.Item> item = net.minecraft.registry.Registries.ITEM.getOrEmpty(net.minecraft.util.Identifier.tryParse(id));
-                    if (item.isPresent()) {
-                        ItemStack stack = new ItemStack(item.get(), count);
-                        if (nbtString != null) {
-                            try {
-                                NbtCompound nbt = StringNbtReader.parse(nbtString);
-                                stack.setNbt(nbt);
-                            } catch (Exception e) {
-                                // Failed to parse NBT, continue with basic item
+                    net.minecraft.util.Identifier itemId = net.minecraft.util.Identifier.tryParse(id);
+                    if (itemId != null) {
+                        net.minecraft.item.Item item = net.minecraft.registry.Registries.ITEM.get(itemId);
+                        if (item != null) {
+                            ItemStack stack = new ItemStack(item, count);
+                            if (nbtString != null) {
+                                try {
+                                    NbtCompound nbt = StringNbtReader.parse(nbtString);
+                                    stack.setNbt(nbt);
+                                } catch (Exception e) {
+                                    // Failed to parse NBT, continue with basic item
+                                }
                             }
+                            equipmentItems.put(slot, stack);
                         }
-                        equipmentItems.put(slot, stack);
                     }
                 }
             }
