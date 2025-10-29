@@ -12,6 +12,8 @@ import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardEntry;
 import net.minecraft.scoreboard.ScoreboardDisplaySlot;
 import set.starlev.starredheltix.client.StarredHeltixClient;
+
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Collection;
@@ -19,7 +21,7 @@ import java.util.Collection;
 public class BloodRoomTimer {
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
     private static long bloodRoomEndTime = 0;
-    private static long notificationEndTime = 0;
+    private static long notificationEndTime= 0;
     private static boolean bloodRoomTimerActive = false;
     private static boolean notificationActive = false;
     
@@ -28,6 +30,10 @@ public class BloodRoomTimer {
     
     // Регулярное выражение для определения этажа из скорборда
     private static final Pattern FLOOR_PATTERN = Pattern.compile(".*# (\\d+) этаж.*");
+    
+    // Альтернативные паттерны для определения этажа
+    private static final Pattern ALT_FLOOR_PATTERN1 = Pattern.compile(".*Катакомбы \\((\\d+) этаж\\).*");
+    private static final Pattern ALT_FLOOR_PATTERN2 = Pattern.compile(".*Катакомбы (\\d+).*");
     
     public static void register() {
         // Регистрируем обработчик сообщений из чата
@@ -48,26 +54,19 @@ public class BloodRoomTimer {
         // Проверяем, является ли сообщение сообщением о победе над боссом
         Matcher matcher = BOSS_MESSAGE_PATTERN.matcher(messageString);
         if (matcher.matches()) {
-            // Определяем текущий этаж
+            //Определяем текущий этаж
             int floor = getCurrentFloor();
             
             // Устанавливаем время в зависимости от этажа
-            long delay;
-            switch (floor) {
-                case 1:
-                    delay = 35000; // 35 секунд
-                    break;
-                case 2:
-                    delay = 40000; // 40 секунд
-                    break;
-                case 3:
-                    delay = 50000; // 50 секунд
-                    break;
-                default:
-                    delay = 30000; // 30 секунд по умолчанию
-                    break;
-            }
-            
+            long delay = switch (floor) {
+                case 1 -> 35000; // 35 секунд
+                case 2 -> 40000; // 40 секунд
+                case 3 -> 50000; // 50 секунд
+                case 4 -> 60000; // 60 секунд
+                case 5 -> 70000; // 70 секунд
+                default -> 30000; // 30 секунд по умолчанию
+            };
+
             // Устанавливаем таймер
             bloodRoomEndTime = System.currentTimeMillis() + delay;
             bloodRoomTimerActive = true;
@@ -76,20 +75,41 @@ public class BloodRoomTimer {
     
     private static int getCurrentFloor() {
         if (CLIENT.world == null || CLIENT.player == null) {
-            return 0;
+return 0;
         }
         
         // Получаем скорборд
-        Scoreboard scoreboard = CLIENT.player.getScoreboard();
+        Scoreboard scoreboard = Objects.requireNonNull(CLIENT.player.getScoreboardTeam()).getScoreboard();
         ScoreboardObjective objective = scoreboard.getObjectiveForSlot(ScoreboardDisplaySlot.SIDEBAR);
         
         if (objective != null) {
-            Collection<ScoreboardEntry> entries = scoreboard.getScoreboardEntries(objective);
+            Collection<ScoreboardEntry> entries= scoreboard.getScoreboardEntries(objective);
             
             // Ищем строку с этажом
             for (ScoreboardEntry entry : entries) {
                 String entryString = entry.name().getString();
+                
+                // Проверяем основной паттерн
                 Matcher matcher = FLOOR_PATTERN.matcher(entryString);
+                if (matcher.matches()) {
+                    try {
+                        return Integer.parseInt(matcher.group(1));
+                    } catch (NumberFormatException e) {
+                        // Если не удалось распарсить, продолжаем поиск
+                    }
+                }
+                
+                // Проверяем альтернативные паттерны
+matcher = ALT_FLOOR_PATTERN1.matcher(entryString);
+                if (matcher.matches()) {
+                    try {
+                        return Integer.parseInt(matcher.group(1));
+                    } catch (NumberFormatException e) {
+                        // Если не удалось распарсить, продолжаем поиск
+                    }
+                }
+                
+                matcher = ALT_FLOOR_PATTERN2.matcher(entryString);
                 if (matcher.matches()) {
                     try {
                         return Integer.parseInt(matcher.group(1));
@@ -117,7 +137,7 @@ public class BloodRoomTimer {
             if (currentTime >= notificationEndTime) {
                 notificationActive = false;
             } else {
-                renderNotification(drawContext, "Кровавая комната заполнена!");
+                renderNotification(drawContext, "ᯓ★ Кровавая комната заполнена!");
                 return;
             }
         }
@@ -131,15 +151,26 @@ public class BloodRoomTimer {
             notificationActive = true;
             notificationEndTime = currentTime + 2000; // 2 секунды
             
-            renderNotification(drawContext, "Кровавая комната заполнена!");
-            
-            // Проигрываем звук
-            CLIENT.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F));
+            // Проверяем, включено ли уведомление в конфигурации
+            if (StarredHeltixClient.CONFIG.bloodRoom.bloodRoomTimerEnabled) {
+                // Отправляем команду в чат
+                if (CLIENT.player.networkHandler != null) {
+                    CLIENT.player.networkHandler.sendChatCommand("pc ᯓ★ Кровавая комната заполнена!");
+                }
+                
+                // Показываем title через overlay
+                CLIENT.inGameHud.setOverlayMessage(Text.literal("§c§lᯓ★ Кровавая комната заполнена!"), false);
+                
+                renderNotification(drawContext, "ᯓ★ Кровавая комната заполнена!");
+                
+                // Проигрываем звук
+                CLIENT.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F));
+            }
             
             // Отключаем таймер
             bloodRoomTimerActive = false;
         } else {
-            // Показываем оставшееся время с десятыми долями
+// Показываем оставшееся время с десятыми долями
             double timeLeft = (bloodRoomEndTime - currentTime) / 1000.0;
             renderNotification(drawContext, "Кровавая комната: " + String.format("%.1f", timeLeft) + "с");
         }
@@ -152,8 +183,7 @@ public class BloodRoomTimer {
         
         int screenWidth = CLIENT.getWindow().getScaledWidth();
         int screenHeight = CLIENT.getWindow().getScaledHeight();
-        
-        // Вычисляем позицию для центрирования текста
+// Вычисляем позицию для центрирования текста
         int messageWidth = CLIENT.textRenderer.getWidth(message);
         int x = (screenWidth - messageWidth) / 2;
         int y = screenHeight / 2 - 20; // Немного выше центра экрана

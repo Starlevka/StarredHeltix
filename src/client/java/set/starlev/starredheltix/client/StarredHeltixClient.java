@@ -2,52 +2,46 @@ package set.starlev.starredheltix.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import org.lwjgl.glfw.GLFW;
 import set.starlev.starredheltix.commands.StarredHeltixCommands;
 import set.starlev.starredheltix.commands.StarredHeltixPartyCommands;
 import set.starlev.starredheltix.config.StarredHeltixConfig;
-import set.starlev.starredheltix.network.ModIdentificationPacket;
-import set.starlev.starredheltix.rpc.DiscordRpcManager;
 import set.starlev.starredheltix.util.chat.ChatEventsManager;
-import set.starlev.starredheltix.util.entity.CharacterHighlighter;
-import set.starlev.starredheltix.util.entity.EndermenHighlighter;
-import set.starlev.starredheltix.util.entity.WolfHighlighter;
-import set.starlev.starredheltix.util.equipment.EquipmentManager;
-import set.starlev.starredheltix.util.inventory.InventoryFullNotifier;
+import set.starlev.starredheltix.util.qol.FishingNotifier;
+import set.starlev.starredheltix.util.qol.FishingTimerRenderer;
+import set.starlev.starredheltix.util.qol.InventoryFullNotifier;
 import set.starlev.starredheltix.util.player.AutoReadyNotifier;
 import set.starlev.starredheltix.util.player.AutoSprint;
-import set.starlev.starredheltix.util.slotlocking.SlotLockManager;
+import set.starlev.starredheltix.util.qol.SlotLockManager;
 import set.starlev.starredheltix.util.solver.bloodroom.BloodRoomTimer;
-import set.starlev.starredheltix.util.solver.exptable.ExperimentTableMemoryOverlay;
-import set.starlev.starredheltix.util.solver.fairysouls.FairySoulsWaypointRenderer;
-import set.starlev.starredheltix.util.solver.fairysouls.PlayerHeadWaypointRenderer;
 import set.starlev.starredheltix.util.updater.ModUpdater;
-import set.starlev.starredheltix.util.user.ModUserManager;
-import set.starlev.starredheltix.util.woodworm.WoodwormCooldownVisualizer;
+
+import set.starlev.starredheltix.util.qol.TreeCapCooldownVisualizer;
+import set.starlev.starredheltix.util.qol.AbilityCooldownVisualizer;
+import set.starlev.starredheltix.util.qol.VotingReminder;
+import set.starlev.starredheltix.util.binds.CustomBindManager;
+import set.starlev.starredheltix.util.ModVersionRegistry;
+import set.starlev.starredheltix.util.solver.dungeons.ThreeWeirdosSolver;
+import set.starlev.starredheltix.sound.ModSounds;
 
 public class StarredHeltixClient implements ClientModInitializer {
     public static StarredHeltixConfig CONFIG;
-    private static DiscordRpcManager discordRpcManager;
     
-    // Debug keybinding
-    private static KeyBinding debugKey;
-    
-    //Counter for periodic checks
+
+
+    // Counter for periodic checks
     private static int tickCounter = 0;
-    private static int discordRpcUpdateCounter = 0;
+    private static int votingReminderDelay = 0;
 
     @Override
     public void onInitializeClient() {
         // Load configuration
+        System.out.println("=== StarredHeltix Initialization ===");
         CONFIG = StarredHeltixConfig.load();
-        // Register keybindings
-        registerKeybindings();
+
+
+
         // Register client events
         registerClientEvents();
         
@@ -58,42 +52,22 @@ public class StarredHeltixClient implements ClientModInitializer {
         initializeFeatures();
     }
     
-    /**
-     * Register keybindings
-     */
-    private void registerKeybindings() {
-        // Register debug keybinding
-        debugKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-            "key.starredheltix.debug",
-            InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_F7,
-            "category.starredheltix.main"
-        ));
-    }
-    
+
+
     /**
      * Register client-side events
      */
     private void registerClientEvents() {
         // Register tick event for key handling
         ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
-        
-        // Register shutdown event for Discord RPC
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (discordRpcManager != null) {
-                discordRpcManager.shutdown();
-            }
-        }));
     }
 
     private void onClientTick(MinecraftClient minecraftClient) {
         
-        // Handle debug key press
-        while (debugKey.wasPressed()) {
-            // Debug functionality
-            System.out.println("StarredHeltix: Current mod users count: " + ModUserManager.getInstance().getModUserCount());
-        }
-        
+
+
+
+
         // Periodic check to ensure player list is updated
         tickCounter++;
         if (tickCounter >= 100) { // Check every 100 ticks (about 5 seconds)
@@ -102,15 +76,16 @@ public class StarredHeltixClient implements ClientModInitializer {
                 minecraftClient.getNetworkHandler();
             } // This is just to ensure our system is working
         }
-        
-        // Update Discord RPC every 20 ticks (1 second)
-        if (discordRpcManager != null) {
-            discordRpcUpdateCounter++;
-            if (discordRpcUpdateCounter >= 20) {
-                discordRpcUpdateCounter = 0;
-                discordRpcManager.tick();
+
+        // Show voting reminder after 5 minutes (6000 ticks) of being on server
+        if (minecraftClient.player != null && minecraftClient.getNetworkHandler() != null) {
+            votingReminderDelay++;
+            if (votingReminderDelay >= 6000) { // 5 minutes
+                votingReminderDelay = 0;
+                VotingReminder.checkAndShowReminder();
             }
         }
+
     }
 
     /**
@@ -120,12 +95,18 @@ public class StarredHeltixClient implements ClientModInitializer {
         // Register connection events
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             // Connection event handling
-            // Send mod identification packet to mark ourselves as a mod user
-            ModIdentificationPacket.sendIdentificationPacket();
+
             
-            // Also mark ourselves locally
-            ModUserManager.getInstance().markCurrentPlayerAsModUser();
+
+
+            // Reset voting reminder delay when joining server
+            votingReminderDelay = 0;
+
+
         });
+
+        // Register custom bind commands
+
     }
     
     /**
@@ -133,9 +114,6 @@ public class StarredHeltixClient implements ClientModInitializer {
      */
     private void initializeFeatures() {
         try {
-            // Register packet types
-            PayloadTypeRegistry.playC2S().register(ModIdentificationPacket.PACKET_TYPE, ModIdentificationPacket.CODEC);
-            PayloadTypeRegistry.playS2C().register(ModIdentificationPacket.PACKET_TYPE, ModIdentificationPacket.CODEC);
             
             // Check for updates on startup
             ModUpdater.checkForUpdates();
@@ -143,21 +121,6 @@ public class StarredHeltixClient implements ClientModInitializer {
             // Register commands
             StarredHeltixCommands.registerCommands();
             StarredHeltixPartyCommands.registerCommands();
-            
-            // Register Fairy Souls renderer
-            FairySoulsWaypointRenderer.register();
-            
-            // Register Player Head waypoint renderer
-            PlayerHeadWaypointRenderer.register();
-            
-            // Register Endermen highlighter
-            EndermenHighlighter.register();
-            
-            // Register Wolf highlighter
-            WolfHighlighter.register();
-            
-            // Register Character highlighter
-            CharacterHighlighter.register();
             
             // Register Auto-sprint
             AutoSprint.register();
@@ -169,38 +132,40 @@ public class StarredHeltixClient implements ClientModInitializer {
             SlotLockManager.register();
             
             // Register auto ready notifier
-            // Register auto ready notifier
             AutoReadyNotifier.register();
-            
-            // Register mod identification packet receiver
-            ModIdentificationPacket.registerClientReceiver();
-            
-            // Register Discord RPC manager
-            discordRpcManager = new DiscordRpcManager();
-            try {
-                discordRpcManager.init(CONFIG);
-                System.out.println("Discord RPC initialized successfully");
-            } catch (Exception e) {
-                System.err.println("Failed to initialize Discord RPC: " + e.getMessage());
-                e.printStackTrace();
-            }
-            
+
             // Register chat event manager
             ChatEventsManager chatEventsManager = new ChatEventsManager(MinecraftClient.getInstance());
             chatEventsManager.register();
-            
-            // Register experiment table memory overlay
-            ExperimentTableMemoryOverlay.register();
-            
+
             // Register blood room timer
             BloodRoomTimer.register();
             
             // Register woodworm cooldown visualizer
-            WoodwormCooldownVisualizer.register();
+            TreeCapCooldownVisualizer.register();
+
+            // Register ability cooldown visualizer
+            AbilityCooldownVisualizer.register();
+
+            // Register fishing notifier
+            FishingNotifier.register();
+            FishingTimerRenderer.register();
             
-            // Register equipment manager
-            EquipmentManager.register();
+            // Initialize custom bind manager
+            CustomBindManager.initialize();
             
+            // Register mod version registry
+            ModVersionRegistry.register();
+            
+            // Register Three Weirdos solver
+            ThreeWeirdosSolver.register();
+            
+            // Register custom sounds
+            ModSounds.registerSounds();
+            
+            // Register welcome message
+            set.starlev.starredheltix.util.qol.WelcomeMessage.register();
+
         } catch (Exception ignored) {
         }
     }
@@ -211,18 +176,7 @@ public class StarredHeltixClient implements ClientModInitializer {
     public static void reloadConfig() {
         try {
             StarredHeltixConfig.load();
-            // Update Discord RPC with new config
-            if (discordRpcManager != null) {
-                discordRpcManager.update(CONFIG);
-            }
         } catch (Exception ignored) {
         }
-    }
-    
-    /**
-     * Get the mod user count
-     */
-    public static int getModUserCount() {
-        return ModUserManager.getInstance().getModUserCount();
     }
 }

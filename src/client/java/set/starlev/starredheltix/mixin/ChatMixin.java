@@ -8,8 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import set.starlev.starredheltix.client.StarredHeltixClient;
-import set.starlev.starredheltix.util.message.MessageFilterManager;
+import set.starlev.starredheltix.util.chat.MessageFilterManager;
 
 @Mixin(ChatHud.class)
 public class ChatMixin {

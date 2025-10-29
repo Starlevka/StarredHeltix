@@ -16,14 +16,8 @@ public class StarredHeltixConfig {
     // General settings
     public GeneralSettings general = new GeneralSettings();
     
-    // Discord RPC settings
-    public DiscordRpcSettings discordRpc = new DiscordRpcSettings();
-    
     // Party commands settings
     public PartyCommandsSettings partyCommands = new PartyCommandsSettings();
-    
-    // Fairy souls settings
-    public FairySoulsSettings fairySouls = new FairySoulsSettings();
     
     // Slot locking feature
     public SlotLockingSettings slotLocking = new SlotLockingSettings();
@@ -34,42 +28,32 @@ public class StarredHeltixConfig {
     // Blood room settings
     public BloodRoomSettings bloodRoom = new BloodRoomSettings();
     
-    // Endermen highlight settings
-    public EndermenHighlightSettings endermenHighlight = new EndermenHighlightSettings();
+    // Treecap axe cooldown settings
+    public TreecapCooldownSettings treecapCooldown = new TreecapCooldownSettings();
+
+    // Fishing notification settings
+    public FishingNotificationSettings fishingNotification = new FishingNotificationSettings();
     
-    // Wolf highlight settings
-    public WolfHighlightSettings wolfHighlight = new WolfHighlightSettings();
-    
-    // Woodworm axe cooldown settings
-    public WoodwormCooldownSettings woodwormCooldown = new WoodwormCooldownSettings();
-    
-    // Armor hiding settings
-    public ArmorHidingSettings armorHiding = new ArmorHidingSettings();
-    
-    // Equipment display settings
-    public EquipmentSettings equipment = new EquipmentSettings();
-    
-    // Character highlight settings
-    public CharacterHighlightSettings characterHighlight = new CharacterHighlightSettings();
-    
+
     // Auto-sprint settings
     public AutoSprintSettings autoSprint = new AutoSprintSettings();
+    // Ability cooldown settings
+    public AbilityCooldownSettings abilityCooldown = new AbilityCooldownSettings();
 
-    // Custom commands with keybindings
-    public Map<String, String> customCommands = new HashMap<>();
-    public Map<String, String> customCommandKeybindings = new HashMap<>();
+    // Three weirdos solver settings
+    public threeWeirdosSettings threeWeirdos = new threeWeirdosSettings();
     
-    // Section positions in the configuration menu
-    public int qolSectionX = -1;
-    public int qolSectionY = -1;
-    public int utilitiesSectionX = -1;
-    public int utilitiesSectionY = -1;
-    public int generalSectionX = -1;
-    public int generalSectionY = -1;
-    public int partyCommandsSectionX = -1;
-    public int partyCommandsSectionY = -1;
-    public int endermenHighlightSectionX = -1;
-    public int endermenHighlightSectionY = -1;
+    // Custom binds settings
+    public CustomBindsSettings customBinds = new CustomBindsSettings();
+    
+    /**
+     * Settings for fishing notification feature
+     */
+    public static class FishingNotificationSettings {
+        public boolean enabled = true; // Is fishing notification feature enabled
+    }
+    
+
 
     // For storing uptime information
     public String lastUptimeMessage = "";
@@ -77,27 +61,19 @@ public class StarredHeltixConfig {
 
     // Login password for /вход command
     public String loginPassword = "";
+    
+    // Voting reminder data
+    public String lastVotingDate = "";
+    public boolean hasVotedToday = false;
+    public boolean hasShownVotingReminderToday = false;
 
     // General settings section
     public static class GeneralSettings {
         public boolean enabled = true;
         public boolean chattingEnabled = true;
         public boolean debugMode = false; // Is debug mode enabled
-        public int debugUpdateInterval = 3000; // in milliseconds
         public boolean inventoryFullWarningEnabled = true; // Is inventory full warning enabled
-    }
-    
-    // Discord RPC settings section
-    public static class DiscordRpcSettings {
-        public boolean rpcEnabled = true;
-        public String rpcApplicationId = "1415296884267941969"; // replace with your App ID
-        public String rpcDetails = "Играет на Heltix SkyBlock";
-        public String rpcState = "Enjoying the game";
-        public String rpcLargeImageKey = "starredheltix";
-        public String rpcLargeImageText = "StarredHeltix Client";
-        public String rpcSmallImageKey = "starpyps";
-        public String rpcSmallImageText = "starlev.heltix.net";
-        public int rpcUpdateMs = 5000; // Update interval in milliseconds
+        public boolean firstTimeUser = true; // Is this the first time using the mod
     }
     
     // Party commands settings section
@@ -111,18 +87,12 @@ public class StarredHeltixConfig {
         public boolean partyDtEnabled = true; // Is the !dt command enabled
         public boolean partyFpsEnabled = true; // Is the !fps command enabled
         public boolean partyTimeEnabled = true; // Is the !time command enabled
-        public boolean partyCoinEnabled = true; // Is the !coin command enabled
-        public boolean partyDiceEnabled = true; // Is the !dice command enabled
         public boolean partyCoordsEnabled = true; // Is the !coords command enabled
-        public boolean partyBoykisserEnabled = true; // Is the !boykisser command enabled
+        public boolean partyBoykisserEnabled = false; // Is the !boykisser command enabled
+        public boolean partyRngEnabled = true; // Is the !rng command enabled
         public boolean partyPrivateMessageCommandsEnabled = true; // Are private message commands enabled
-        public String customReadyPhrase = "Я готов к спуску в подземелья! :P"; // Custom phrase for the /яготовлёвал command
-    }
-    
-    // Fairy souls settings section
-    public static class FairySoulsSettings {
-        public boolean fairySoulsEnabled = true; // Is the fairy souls feature enabled
-        public boolean debugMode = false; // Is the fairy souls debug mode enabled
+
+        public String customReadyPhrase = "✮ Я готов к подземельям! /=> starreднелtix ✮"; // Custom phrase for the /яготовлёвал command
     }
     
     // Slot locking feature settings
@@ -142,52 +112,18 @@ public class StarredHeltixConfig {
     }
     
     /**
-     * Settings for highlighting endermen in the End biome
+     * Settings for Treecap axe cooldown visualization
      */
-    public static class EndermenHighlightSettings {
-        public boolean endermenHighlightEnabled = true; // Is endermen highlighting enabled
-        public boolean endermenHighlightOnlyInEnd = false; // Highlight only in End dimension
-        public int highlightColor = 0x00FF0A; // Default color is green
-    }
-    
-    /**
-     * Settings for highlighting wolves
-     */
-    public static class WolfHighlightSettings {
-        public boolean wolfHighlightEnabled = true; // Is wolf highlighting enabled
-        public int highlightColor = 0xFF9A00; // Default color is orange
-    }
-    
-    /**
-     * Settings for Woodworm axe cooldown visualization
-     */
-    public static class WoodwormCooldownSettings {
+    public static class TreecapCooldownSettings {
         public boolean enabled = true; // Is the woodworm cooldown visualization enabled
-        public int baseCooldownMs = 2000; // Base cooldown in milliseconds (2 seconds)
         public int cooldownPercentage = 100; // Cooldown percentage modifier (1-50%)
     }
     
     /**
-     * Settings for armor hiding
+     * Settings for three weirdos solver feature
      */
-    public static class ArmorHidingSettings {
-        public boolean enabled = false; // Is armor hiding enabled
-    }
-    
-    /**
-     * Settings for equipment display
-     */
-    public static class EquipmentSettings {
-        public boolean enabled = true; // Is equipment display enabled
-    }
-    
-    /**
-     * Settings for character highlight feature
-     */
-    public static class CharacterHighlightSettings {
-        public boolean enabled = true; // Is character highlight feature enabled
-        public int highlightColor = 0x00FF00; // Default color is green
-        public int highlightDurationMs = 10000; // Highlight duration in milliseconds (10 seconds)
+    public static class threeWeirdosSettings {
+        public boolean enabled = true; // Is three weirdos solver feature enabled
     }
     
     /**
@@ -195,31 +131,46 @@ public class StarredHeltixConfig {
      */
     public static class AutoSprintSettings {
         public boolean enabled = true; // Is auto-sprint feature enabled
-        public boolean onlyInSkyBlock = true; // Only auto-sprint in SkyBlock
     }
 
+    /**
+     * Settings for ability cooldown visualizer
+     */
+    public static class AbilityCooldownSettings {
+        public boolean enabled = true; // Is ability cooldown visualizer enabled
+        public boolean kirkobulusEnabled = true; // Is Kirkobulus ability detection enabled
+        public boolean miningSpeedBoostEnabled = true; // Is Mining Speed Boost ability detection enabled
+        public double kirkobulusCooldown = 60.0; // Kirkobulus cooldown in seconds
+        public double miningSpeedBoostCooldown = 120.0; // Mining Speed Boost cooldown in seconds
+    }
+    
+    /**
+     * Settings for custom binds
+     */
+    public static class CustomBindsSettings {
+        public Map<String, String> binds = new HashMap<>(); // name -> command
+        public Map<String, Integer> keys = new HashMap<>(); // name -> keyCode
+    }
+    
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_DIR = new File("config/starredheltix");
     private static final File FILE = new File(CONFIG_DIR, "starredheltix.json");
 
     public StarredHeltixConfig() {
-        customCommands = new HashMap<>();
-        customCommandKeybindings = new HashMap<>();
         general = new GeneralSettings();
-        discordRpc = new DiscordRpcSettings();
         partyCommands = new PartyCommandsSettings();
-        fairySouls = new FairySoulsSettings();
         slotLocking = new SlotLockingSettings();
         messageFilters = new MessageFilterSettings();
         bloodRoom = new BloodRoomSettings();
-        endermenHighlight = new EndermenHighlightSettings();
-        wolfHighlight = new WolfHighlightSettings();
-        woodwormCooldown = new WoodwormCooldownSettings();
-        armorHiding = new ArmorHidingSettings();
-        equipment = new EquipmentSettings();
-        characterHighlight = new CharacterHighlightSettings();
+        threeWeirdos = new threeWeirdosSettings();
         autoSprint = new AutoSprintSettings();
+        abilityCooldown = new AbilityCooldownSettings();
+        treecapCooldown = new TreecapCooldownSettings();
+        customBinds = new CustomBindsSettings();
+        fishingNotification = new FishingNotificationSettings();
         messageFilters.filters = new HashMap<>();
+        customBinds.binds = new HashMap<>();
+        customBinds.keys = new HashMap<>();
     }
 
     public void save() {
@@ -238,30 +189,25 @@ public class StarredHeltixConfig {
     
     public static StarredHeltixConfig load() {
         try {
+            System.out.println("Loading StarredHeltix config from: " + FILE.getAbsolutePath());
             if (!CONFIG_DIR.exists()) {
                 CONFIG_DIR.mkdirs();
+                System.out.println("Created config directory: " + CONFIG_DIR.getAbsolutePath());
             }
 
             if (FILE.exists()) {
                 FileReader reader = new FileReader(FILE);
                 StarredHeltixConfig config = GSON.fromJson(reader, StarredHeltixConfig.class);
                 reader.close();
-                
+                System.out.println("Config loaded successfully");
                 // Initialize nested objects if they're null (for configs created before this restructuring)
                 if (config.general == null) {
                     config.general = new GeneralSettings();
                 }
-                
-                if (config.discordRpc == null) {
-                    config.discordRpc = new DiscordRpcSettings();
-                }
+
                 
                 if (config.partyCommands == null) {
                     config.partyCommands = new PartyCommandsSettings();
-                }
-                
-                if (config.fairySouls == null) {
-                    config.fairySouls = new FairySoulsSettings();
                 }
                 
                 if (config.slotLocking == null) {
@@ -276,32 +222,35 @@ public class StarredHeltixConfig {
                     config.bloodRoom = new BloodRoomSettings();
                 }
                 
-                if (config.endermenHighlight == null) {
-                    config.endermenHighlight = new EndermenHighlightSettings();
-                }
-                
-                if (config.wolfHighlight == null) {
-                    config.wolfHighlight = new WolfHighlightSettings();
-                }
-                
-                if (config.woodwormCooldown == null) {
-                    config.woodwormCooldown = new WoodwormCooldownSettings();
-                }
-                
-                if (config.armorHiding == null) {
-                    config.armorHiding = new ArmorHidingSettings();
-                }
-                
-                if (config.equipment == null) {
-                    config.equipment = new EquipmentSettings();
-                }
-                
-                if (config.characterHighlight == null) {
-                    config.characterHighlight = new CharacterHighlightSettings();
+                if (config.treecapCooldown == null) {
+                    config.treecapCooldown = new TreecapCooldownSettings();
                 }
                 
                 if (config.autoSprint == null) {
                     config.autoSprint = new AutoSprintSettings();
+                }
+                
+                if (config.threeWeirdos == null) {
+                    config.threeWeirdos = new threeWeirdosSettings();
+                }
+                
+                if (config.customBinds == null) {
+                    config.customBinds = new CustomBindsSettings();
+                }
+                if (config.customBinds.binds == null) {
+                    config.customBinds.binds = new HashMap<>();
+                }
+                if (config.customBinds.keys == null) {
+                    config.customBinds.keys = new HashMap<>();
+                }
+                
+                if (config.abilityCooldown == null) {
+                    config.abilityCooldown = new AbilityCooldownSettings();
+                }
+                
+                // Add fishing notification settings initialization
+                if (config.fishingNotification == null) {
+                    config.fishingNotification = new FishingNotificationSettings();
                 }
                 
                 // Initialize nested collections

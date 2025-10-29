@@ -3,7 +3,7 @@
 	"id": "starredheltix",
 	"version": "${version}",
 	"name": "StarredHeltix",
-	"description": "хелтикс модэ",
+	"description": "крутые фишки для комфортной игры на хелтиксе",
 	"authors": [
 		"Starlev"
 	],
@@ -19,8 +19,8 @@
       "starredheltix.client.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.17.2",
-		"minecraft": "~1.21.4",
+		"fabricloader": ">=0.17.3",
+		"minecraft": "~1.21.10",
 		"java": ">=21",
 		"fabric-api": "*"
 	}

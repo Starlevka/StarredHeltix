@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import set.starlev.starredheltix.client.StarredHeltixClient;
-import set.starlev.starredheltix.util.slotlocking.SlotLockManager;
+import set.starlev.starredheltix.util.qol.SlotLockManager;
 
 @Mixin(ClientPlayerEntity.class)
 public class PlayerDropItemMixin {

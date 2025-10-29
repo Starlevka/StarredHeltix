@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import set.starlev.starredheltix.client.StarredHeltixClient;
-import set.starlev.starredheltix.util.inventory.InventoryFullNotifier;
+import set.starlev.starredheltix.util.qol.InventoryFullNotifier;
 
 @Mixin(MinecraftClient.class)
 public class InventoryChangeMixin {

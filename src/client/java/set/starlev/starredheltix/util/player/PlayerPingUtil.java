@@ -47,8 +47,8 @@ public class PlayerPingUtil {
             StarredHeltixClient.CONFIG.general.enabled) {
             
             client.getNetworkHandler().getPlayerList().forEach(entry -> {
-                if (entry.getProfile() != null && entry.getProfile().getName() != null) {
-                    updatePlayerPing(entry.getProfile().getName(), entry.getLatency());
+                if (entry.getProfile() != null && entry.getProfile().name() != null) {
+                    updatePlayerPing(entry.getProfile().name(), entry.getLatency());
                 }
             });
         }

@@ -12,9 +12,11 @@ public class ScreenMixin {
     /**
      * Skip rendering the dark background for our custom screens
      */
-    @Inject(method = "renderBackground(Lnet/minecraft/client/gui/DrawContext;IIF)V", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "renderBackground(Lnet/minecraft/client/gui/DrawContext;IIF)V", at = @At("HEAD"))
     private void onRenderBackground(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         // Background rendering is now handled normally for all screens
         // Removed special handling for CustomConfigScreen since it's been deleted
     }
+    
+
 }

@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import set.starlev.starredheltix.client.StarredHeltixClient;
+import set.starlev.starredheltix.util.chat.ChatEventsManager;
 
 public class StarredHeltixPartyCommands {
     public static void registerCommands() {
@@ -18,6 +19,9 @@ public class StarredHeltixPartyCommands {
             
             dispatcher.register(builder);
         });
+        
+        // Remove the standalone uptime command registration to avoid conflicts
+        // The uptime command will be handled through party chat messages (!uptime)
     }
     
     private static void registerPartyCommands(LiteralArgumentBuilder<FabricClientCommandSource> builder) {

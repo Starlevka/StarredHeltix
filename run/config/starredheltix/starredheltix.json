@@ -1,0 +1,62 @@
+{
+  "general": {
+    "enabled": true,
+    "chattingEnabled": true,
+    "debugMode": false,
+    "inventoryFullWarningEnabled": true,
+    "firstTimeUser": false
+  },
+  "partyCommands": {
+    "partyChatCommandsEnabled": true,
+    "partyPromoteEnabled": true,
+    "partyKickEnabled": true,
+    "partyInviteEnabled": true,
+    "partyPingEnabled": true,
+    "partyUptimeEnabled": true,
+    "partyDtEnabled": true,
+    "partyFpsEnabled": true,
+    "partyTimeEnabled": true,
+    "partyCoordsEnabled": true,
+    "partyBoykisserEnabled": false,
+    "partyRngEnabled": true,
+    "partyPrivateMessageCommandsEnabled": true,
+    "customReadyPhrase": "Я готов к спуску в подземелья! :P"
+  },
+  "slotLocking": {
+    "slotLockingEnabled": true,
+    "lockedSlots": []
+  },
+  "messageFilters": {
+    "filters": {}
+  },
+  "bloodRoom": {
+    "bloodRoomTimerEnabled": true
+  },
+  "treecapCooldown": {
+    "enabled": true,
+    "cooldownPercentage": 100
+  },
+  "fishingNotification": {
+    "enabled": true
+  },
+  "autoSprint": {
+    "enabled": true
+  },
+  "abilityCooldown": {
+    "enabled": true,
+    "kirkobulusEnabled": true,
+    "speedDiggingEnabled": true,
+    "kirkobulusCooldown": 60.0,
+    "speedDiggingCooldown": 120.0
+  },
+  "threeWeirdos": {
+    "enabled": true
+  },
+  "customBinds": {
+    "binds": {},
+    "keys": {}
+  },
+  "lastUptimeMessage": "",
+  "currentUptime": 0,
+  "loginPassword": ""
+}

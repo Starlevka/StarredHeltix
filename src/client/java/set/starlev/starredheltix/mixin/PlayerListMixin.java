@@ -16,8 +16,8 @@ public class PlayerListMixin {
         if (StarredHeltixClient.CONFIG != null && StarredHeltixClient.CONFIG.partyCommands.partyPingEnabled) {
             // Update our ping map with the latest information when player list changes
             for (PlayerListS2CPacket.Entry entry : packet.getEntries()) {
-                if (entry.profile() != null && entry.profile().getName() != null) {
-                    PlayerPingUtil.updatePlayerPing(entry.profile().getName(), entry.latency());
+                if (entry.profile() != null && entry.profile().name() != null) {
+                    PlayerPingUtil.updatePlayerPing(entry.profile().name(), entry.latency());
                 }
             }
         }

@@ -4,24 +4,20 @@
   "package": "set.starlev.starredheltix.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "ChatHudMixin",
     "ChatMixin",
-    "ChatPlayerNameIconMixin",
+    "ChatMuteMixin",
+    "ClientJoinMixin",
+    "FishingHookMixin",
     "InventoryChangeMixin",
     "InventoryRenderMixin",
     "PlayerDropItemMixin",
     "PlayerListMixin",
-    "PlayerNameIconMixin",
-    "PlayerNametagIconMixin",
     "ScreenMixin",
     "SlotLockMixin",
-    "ExperimentTableMixin",
-    "EndermanMixin",
-    "WoodwormBlockBreakMixin",
-    "PlayerArmorRenderMixin",
-    "ClientJoinMixin",
-    "EntityRenderMixin",
-    "InventoryClickMixin",
-    "ChatScreenMixin"
+    "dungeons.ThreeWeirdosMixin",
+    "player.TreeCapBlockBreakMixin",
+    "ui.ScreenCloseMixin"
   ],
   "injectors": {
     "defaultRequire": 1
