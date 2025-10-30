@@ -65,17 +65,7 @@ public class ThreeWeirdosSolver {
                 statement.startsWith("По крайней мере один из них лжёт, и награды нет в сундуке") ||
                 statement.equals("Награды нет ни в одном из сундуков.") ||
                 statement.equals("Награда не в моём сундуке!")) {
-                
-                if (statement.startsWith("Они оба говорят правду. Также") || statement.startsWith("По крайней мере один из них лжёт, и награды нет в сундуке")) {
-                    // Извлекаем последнее слово (имя)
-                    String[] words = statement.split(" ");
-                    if (words.length > 0) {
-                        correctStranger = words[words.length - 1];
-                    }
-                } else {
-                    // Для остальных случаев - ответ этот персонаж
-                    correctStranger = name;
-                }
+                correctStranger = name;
                 break;
             }
         }

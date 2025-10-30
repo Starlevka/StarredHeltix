@@ -11,7 +11,7 @@ import set.starlev.starredheltix.util.chat.ChatEventsManager;
 import set.starlev.starredheltix.util.qol.FishingNotifier;
 import set.starlev.starredheltix.util.qol.FishingTimerRenderer;
 import set.starlev.starredheltix.util.qol.InventoryFullNotifier;
-import set.starlev.starredheltix.util.player.AutoReadyNotifier;
+import set.starlev.starredheltix.util.chat.AutoReadyNotifier;
 import set.starlev.starredheltix.util.player.AutoSprint;
 import set.starlev.starredheltix.util.qol.SlotLockManager;
 import set.starlev.starredheltix.util.solver.bloodroom.BloodRoomTimer;
@@ -94,15 +94,8 @@ public class StarredHeltixClient implements ClientModInitializer {
     private void registerNetworkEvents() {
         // Register connection events
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            // Connection event handling
-
-            
-
-
             // Reset voting reminder delay when joining server
             votingReminderDelay = 0;
-
-
         });
 
         // Register custom bind commands
@@ -165,6 +158,15 @@ public class StarredHeltixClient implements ClientModInitializer {
             
             // Register welcome message
             set.starlev.starredheltix.util.qol.WelcomeMessage.register();
+            
+            // Register enderman highlighter
+            set.starlev.starredheltix.util.render.EndermanHighlighter.register();
+            
+            // Register wolf highlighter
+            set.starlev.starredheltix.util.render.WolfHighlighter.register();
+            
+            // Register waypoint manager
+            set.starlev.starredheltix.util.waypoints.WaypointManager.register();
 
         } catch (Exception ignored) {
         }
@@ -175,8 +177,16 @@ public class StarredHeltixClient implements ClientModInitializer {
      */
     public static void reloadConfig() {
         try {
-            StarredHeltixConfig.load();
-        } catch (Exception ignored) {
+            CONFIG = StarredHeltixConfig.load();
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client.player != null) {
+                client.player.sendMessage(net.minecraft.text.Text.literal("§aКонфигурация успешно перезагружена"), false);
+            }
+        } catch (Exception e) {
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client.player != null) {
+                client.player.sendMessage(net.minecraft.text.Text.literal("§cОшибка при перезагрузке конфигурации: " + e.getMessage()), false);
+            }
         }
     }
 }

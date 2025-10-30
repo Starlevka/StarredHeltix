@@ -33,7 +33,7 @@ public class FishingHookMixin {
     @Inject(method = "onPlaySound", at = @At("HEAD"))
     private void onPlaySound(PlaySoundS2CPacket packet, CallbackInfo ci) {
         String soundName = packet.getSound().value().id().toString();
-        if (soundName.equals("minecraft:entity.fishing_bobber.retrieve")) {
+        if (soundName.equals("minecraft:entity.fishing_bobber.splash")) {
             FishingNotifier.onFishingBite();
         }
     }

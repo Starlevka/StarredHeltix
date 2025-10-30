@@ -4,6 +4,7 @@
   "package": "set.starlev.starredheltix.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "ChatAutoPartyMixin",
     "ChatHudMixin",
     "ChatMixin",
     "ChatMuteMixin",
@@ -15,6 +16,8 @@
     "PlayerListMixin",
     "ScreenMixin",
     "SlotLockMixin",
+    "TitleMixin",
+    "WorldRenderMixin",
     "dungeons.ThreeWeirdosMixin",
     "player.TreeCapBlockBreakMixin",
     "ui.ScreenCloseMixin"

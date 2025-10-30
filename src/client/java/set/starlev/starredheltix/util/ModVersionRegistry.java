@@ -22,13 +22,22 @@ public class ModVersionRegistry {
     }
     
     public static String getPlayerVersion(String playerName) {
-        // For now, assume all players have current version if they're in registry
-        // This is a simplified implementation until proper networking is added
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player != null && client.player.getName().getString().equalsIgnoreCase(playerName)) {
             return CURRENT_VERSION;
         }
         return playerVersions.get(playerName);
+    }
+    
+    public static void registerPlayerWithMod(String playerName) {
+        if (!playerVersions.containsKey(playerName)) {
+            playerVersions.put(playerName, CURRENT_VERSION);
+            System.out.println("[ModVersionRegistry] Registered player with mod: " + playerName + " (v" + CURRENT_VERSION + ")");
+        }
+    }
+    
+    public static Map<String, String> getAllRegisteredPlayers() {
+        return new java.util.HashMap<>(playerVersions);
     }
     
     public static boolean hasModVersion(String playerName, String minVersion) {
@@ -60,16 +69,35 @@ public class ModVersionRegistry {
     
     private static String getModVersion() {
         try {
+            // Try to get version from fabric.mod.json
+            java.io.InputStream stream = ModVersionRegistry.class.getResourceAsStream("/fabric.mod.json");
+            if (stream != null) {
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(stream));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("\"version\"")) {
+                        String version = line.split(":")[1].trim().replace("\"", "").replace(",", "");
+                        reader.close();
+                        return version;
+                    }
+                }
+                reader.close();
+            }
+        } catch (Exception e) {
+            // Fallback to version.txt
+        }
+        
+        try {
             java.io.InputStream stream = ModVersionRegistry.class.getResourceAsStream("/version.txt");
             if (stream != null) {
                 java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(stream));
                 String version = reader.readLine();
                 reader.close();
-                return version != null ? version.trim() : "0.0.5";
+                return version != null ? version.trim() : "0.0.7";
             }
         } catch (Exception e) {
-            // Fallback
+            // Final fallback
         }
-        return "0.0.5";
+        return "0.0.6";
     }
 }

@@ -14,7 +14,6 @@ public class PlayerListMixin {
     @Inject(method = "onPlayerList", at = @At("HEAD"))
     private void onPlayerList(PlayerListS2CPacket packet, CallbackInfo ci) {
         if (StarredHeltixClient.CONFIG != null && StarredHeltixClient.CONFIG.partyCommands.partyPingEnabled) {
-            // Update our ping map with the latest information when player list changes
             for (PlayerListS2CPacket.Entry entry : packet.getEntries()) {
                 if (entry.profile() != null && entry.profile().name() != null) {
                     PlayerPingUtil.updatePlayerPing(entry.profile().name(), entry.latency());

@@ -34,6 +34,18 @@ public class StarredHeltixConfig {
     // Fishing notification settings
     public FishingNotificationSettings fishingNotification = new FishingNotificationSettings();
     
+    // Title blocking settings
+    public TitleBlockingSettings titleBlocking = new TitleBlockingSettings();
+    
+    // Enderman highlighter settings
+    public EndermanHighlighterSettings endermanHighlighter = new EndermanHighlighterSettings();
+    
+    // Wolf highlighter settings
+    public WolfHighlighterSettings wolfHighlighter = new WolfHighlighterSettings();
+    
+    // Waypoint settings
+    public WaypointSettings waypoints = new WaypointSettings();
+    
 
     // Auto-sprint settings
     public AutoSprintSettings autoSprint = new AutoSprintSettings();
@@ -51,6 +63,34 @@ public class StarredHeltixConfig {
      */
     public static class FishingNotificationSettings {
         public boolean enabled = true; // Is fishing notification feature enabled
+    }
+    
+    /**
+     * Settings for title blocking feature
+     */
+    public static class TitleBlockingSettings {
+        public boolean enabled = true; // Is title blocking for super rare messages enabled
+    }
+    
+    /**
+     * Settings for enderman highlighter feature
+     */
+    public static class EndermanHighlighterSettings {
+        public boolean enabled = true; // Is enderman highlighting enabled
+    }
+    
+    /**
+     * Settings for wolf highlighter feature
+     */
+    public static class WolfHighlighterSettings {
+        public boolean enabled = true; // Is wolf highlighting enabled
+    }
+    
+    /**
+     * Settings for waypoint feature
+     */
+    public static class WaypointSettings {
+        public boolean enabled = true; // Are waypoints enabled
     }
     
 
@@ -79,6 +119,7 @@ public class StarredHeltixConfig {
     // Party commands settings section
     public static class PartyCommandsSettings {
         public boolean partyChatCommandsEnabled = true; // Are party chat commands enabled
+        public boolean autoPartyChat = false; // Auto redirect ! commands to party chat
         public boolean partyPromoteEnabled = true; // Is the !promote command enabled
         public boolean partyKickEnabled = true;   // Is the !kick command enabled
         public boolean partyInviteEnabled = true; // Is the !invite command enabled
@@ -116,7 +157,7 @@ public class StarredHeltixConfig {
      */
     public static class TreecapCooldownSettings {
         public boolean enabled = true; // Is the woodworm cooldown visualization enabled
-        public int cooldownPercentage = 100; // Cooldown percentage modifier (1-50%)
+        public int cooldownPercentage = 0;
     }
     
     /**
@@ -168,6 +209,10 @@ public class StarredHeltixConfig {
         treecapCooldown = new TreecapCooldownSettings();
         customBinds = new CustomBindsSettings();
         fishingNotification = new FishingNotificationSettings();
+        titleBlocking = new TitleBlockingSettings();
+        endermanHighlighter = new EndermanHighlighterSettings();
+        wolfHighlighter = new WolfHighlighterSettings();
+        waypoints = new WaypointSettings();
         messageFilters.filters = new HashMap<>();
         customBinds.binds = new HashMap<>();
         customBinds.keys = new HashMap<>();
@@ -251,6 +296,26 @@ public class StarredHeltixConfig {
                 // Add fishing notification settings initialization
                 if (config.fishingNotification == null) {
                     config.fishingNotification = new FishingNotificationSettings();
+                }
+                
+                // Add title blocking settings initialization
+                if (config.titleBlocking == null) {
+                    config.titleBlocking = new TitleBlockingSettings();
+                }
+                
+                // Add enderman highlighter settings initialization
+                if (config.endermanHighlighter == null) {
+                    config.endermanHighlighter = new EndermanHighlighterSettings();
+                }
+                
+                // Add wolf highlighter settings initialization
+                if (config.wolfHighlighter == null) {
+                    config.wolfHighlighter = new WolfHighlighterSettings();
+                }
+                
+                // Add waypoint settings initialization
+                if (config.waypoints == null) {
+                    config.waypoints = new WaypointSettings();
                 }
                 
                 // Initialize nested collections

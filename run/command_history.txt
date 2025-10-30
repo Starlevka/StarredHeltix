@@ -1,14 +1,3 @@
-/gamemode survival
-/gamemode creative
-/starredheltix discordrpc
-/starredheltix debug
-/starredheltix debug toggle
-/starredheltix discordrpc
-/starredheltix voting dayreset
-/gamemode survival
-/starredheltix binds create aboba "/hub"
-/starredheltix binds list
-/starredheltix binds create aboba "/hub"
 /starredheltix binds
 /starredheltix binds create
 /starredheltix binds create 2
@@ -48,3 +37,14 @@
 /enchant Player936 minecraft:lure 5
 /enchant Player936 minecraft:lure 3
 /starredheltix slotlock
+/starredheltix toggle
+/starredheltix treecap percentage 0
+/starredheltix reloadconfig
+/starredheltix voting dayreset
+/starredheltix update
+/waypoint
+/waypoint list
+/sh_check Player949
+/gamemode creative
+/starredheltix endermanhighlighter
+/openlink

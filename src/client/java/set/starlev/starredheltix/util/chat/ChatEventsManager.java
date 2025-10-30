@@ -5,6 +5,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import set.starlev.starredheltix.client.StarredHeltixClient;
+import set.starlev.starredheltix.util.ModVersionRegistry;
+import set.starlev.starredheltix.util.qol.TitleBlocker;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -26,7 +28,7 @@ public record ChatEventsManager(MinecraftClient client) {
     private static final Pattern PRIVATE_COMMAND_PATTERN = Pattern.compile("!\\S+");
 
     // Pattern to detect uptime messages to save them
-    private static final Pattern UPTIME_PATTERN = Pattern.compile("^\\[.*?] Последняя перезагрузка.*");
+    private static final Pattern UPTIME_PATTERN = Pattern.compile(".*[Пп]оследняя перезагрузка.*|.*[Uu]ptime.*|.*[Вв]ремя работы.*");
 
     // Pattern to detect party messages that start with "Пати >"
     private static final Pattern PARTY_NOTIFICATION_PATTERN = Pattern.compile("^Пати >.*");
@@ -34,11 +36,17 @@ public record ChatEventsManager(MinecraftClient client) {
     // Pattern for party messages with symbols
     private static final Pattern PARTY_WITH_SYMBOLS_PATTERN = Pattern.compile("^Пати\\s*>\\s*[^\\s]*\\s*(\\S+):\\s*(.+)");
     
+    // Pattern to detect mod marker in messages
+    private static final Pattern MOD_MARKER_PATTERN = Pattern.compile("\\u200B");
+    
     // Authorized moderators
     private static final String[] AUTHORIZED_MODERATORS = {"Starlev", "ZurGames", "MegaChromeX", "nik36c"};
     
     // Pattern for moderation commands
     private static final Pattern MODERATION_COMMAND_PATTERN = Pattern.compile("!sh_(mute|kick)\\s+(.+)");
+    
+    // Pattern for super rare messages
+    private static final Pattern SUPER_RARE_PATTERN = Pattern.compile("^СУПЕР-РЕДКИЙ.*");
 
     // Flag to indicate if we're waiting for an uptime response to send to /pc
     private static boolean awaitingUptimeResponse = false;
@@ -75,6 +83,11 @@ public record ChatEventsManager(MinecraftClient client) {
             }
         }
 
+        // Check for super rare messages and block titles
+        if (StarredHeltixClient.CONFIG.titleBlocking.enabled && SUPER_RARE_PATTERN.matcher(messageText).find()) {
+            TitleBlocker.blockTitlesFor(5000); // Block for 5 seconds
+        }
+        
         // Check if this is an uptime message to save it
         Matcher uptimeMatcher = UPTIME_PATTERN.matcher(messageText);
         if (uptimeMatcher.find()) {
@@ -86,11 +99,16 @@ public record ChatEventsManager(MinecraftClient client) {
             if (awaitingUptimeResponse) {
                 awaitingUptimeResponse = false;
                 assert MinecraftClient.getInstance().player != null;
-                MinecraftClient.getInstance().player.networkHandler.sendChatCommand("pc " + messageText);
+                MinecraftClient.getInstance().player.networkHandler.sendChatCommand("pc ᵓ★ " + messageText + " \u200B");
             }
             return;
         }
 
+        // Check for coordinate messages and add waypoints
+        if (messageText.contains("x:") && messageText.contains("y:") && messageText.contains("z:")) {
+            set.starlev.starredheltix.util.waypoints.WaypointManager.handleChatMessage(messageText);
+        }
+        
         // Check if this is a party command message (sent via /pc)
         if (PARTY_MESSAGE_PATTERN.matcher(messageText).find()) {
             if (StarredHeltixClient.CONFIG.general.debugMode) {
@@ -99,14 +117,25 @@ public record ChatEventsManager(MinecraftClient client) {
 
             String requestingPlayer = extractPlayerNameFromPartyMessage(messageText);
             
+            // Check if message contains mod marker and register player
+            if (MOD_MARKER_PATTERN.matcher(messageText).find()) {
+                ModVersionRegistry.registerPlayerWithMod(requestingPlayer);
+            }
+            
             // Check for moderation commands first (always enabled for authorized moderators)
             if (isModerator(requestingPlayer)) {
                 handleModerationCommand(requestingPlayer, messageText);
             }
 
+            // Check if player uses party commands and register them
+            Matcher commandMatcher = COMMAND_PATTERN.matcher(messageText);
+            if (commandMatcher.find()) {
+                ModVersionRegistry.registerPlayerWithMod(requestingPlayer);
+            }
+
             // Only process regular party commands if they're enabled
             if (StarredHeltixClient.CONFIG.partyCommands.partyChatCommandsEnabled) {
-                Matcher commandMatcher = COMMAND_PATTERN.matcher(messageText);
+                commandMatcher = COMMAND_PATTERN.matcher(messageText);
                 String commandType = "";
                 String commandArgs = "";
 
@@ -149,9 +178,20 @@ public record ChatEventsManager(MinecraftClient client) {
 
             String requestingPlayer = extractPlayerNameFromPrivateMessage(messageText);
             
+            // Check if message contains mod marker and register player
+            if (MOD_MARKER_PATTERN.matcher(messageText).find()) {
+                ModVersionRegistry.registerPlayerWithMod(requestingPlayer);
+            }
+            
             // Check for moderation commands first (always enabled for authorized moderators)
             if (isModerator(requestingPlayer)) {
                 handleModerationCommand(requestingPlayer, messageText);
+            }
+
+            // Check if player uses private commands and register them
+            Matcher privateCommandMatcher = PRIVATE_COMMAND_PATTERN.matcher(messageText);
+            if (privateCommandMatcher.find()) {
+                ModVersionRegistry.registerPlayerWithMod(requestingPlayer);
             }
 
             // Only process regular private message commands if they're enabled
@@ -408,9 +448,9 @@ public record ChatEventsManager(MinecraftClient client) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
-        // Send the player's ping to party chat
+        // Send the player's ping to party chat with mod marker
         int ping = Objects.requireNonNull(Objects.requireNonNull(client.getNetworkHandler()).getPlayerListEntry(client.player.getUuid())).getLatency();
-        client.player.networkHandler.sendChatCommand("pc ᯓ★ Мой пинг: " + ping + " мс");
+        client.player.networkHandler.sendChatCommand("pc ᯓ★ Мой пинг: " + ping + " мс \u200B");
     }
 
     private void handleUptimeCommand(String requestingPlayer) {
@@ -481,33 +521,33 @@ public record ChatEventsManager(MinecraftClient client) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
-        // Send FPS information to party chat
+        // Send FPS information to party chat with mod marker
         int fps = client.getCurrentFps();
-        client.player.networkHandler.sendChatCommand("pc ᯓ★ Мой FPS: " + fps);
+        client.player.networkHandler.sendChatCommand("pc ᯓ★ Мой FPS: " + fps + " \u200B");
     }
 
     private void handleTimeCommand(String requestingPlayer) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || client.world == null) return;
 
-        // Send world time information to party chat
+        // Send world time information to party chat with mod marker
         long time = client.world.getTimeOfDay();
         String formattedTime = formatWorldTime(time);
-        client.player.networkHandler.sendChatCommand("pc ᯓ★ У меня время в IRL: " + formattedTime);
+        client.player.networkHandler.sendChatCommand("pc ᯓ★ У меня время в IRL: " + formattedTime + " \u200B");
     }
 
     private void handleCoordsCommand(String requestingPlayer) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
-        // Send player coordinates to party chat
+        // Send player coordinates to party chat with mod marker
         int x = (int) Math.floor(client.player.getX());
         int y = (int) Math.floor(client.player.getY());
         int z = (int) Math.floor(client.player.getZ());
-        client.player.networkHandler.sendChatCommand("pc ᯓ★ Мои координаты в игре: " + x + ", " + y + ", " + z);
+        client.player.networkHandler.sendChatCommand("pc ᯓ★ Мои координаты в игре: " + x + ", " + y + ", " + z + " \u200B");
 
-        // Add temporary waypoint for 30 seconds
-        TemporaryWaypointManager.addWaypoint(x, y, z, client.player.getName().getString());
+        // Add waypoint through WaypointManager
+        set.starlev.starredheltix.util.waypoints.WaypointManager.handleChatMessage("pc ᯓ★ Мои координаты в игре: " + x + ", " + y + ", " + z + " \u200B");
     }
 
     private void handleRngCommand(String requestingPlayer) {
@@ -524,7 +564,7 @@ public record ChatEventsManager(MinecraftClient client) {
             result = String.format("%.1f", randomValue);
         }
         
-        client.player.networkHandler.sendChatCommand("pc ᯓ★ Мой РНГ: " + result + " %");
+        client.player.networkHandler.sendChatCommand("pc ᯓ★ Мой РНГ: " + result + " % \u200B");
     }
 
     /**
@@ -595,21 +635,17 @@ public record ChatEventsManager(MinecraftClient client) {
                 
                 MinecraftClient client = MinecraftClient.getInstance();
                 if (client.player != null) {
-                    // Check if target player has the mod (they would be in our muted players list or we can detect them)
-                    // Since we can only detect players with the mod, we'll check if they're online and have the mod
-                    boolean hasModDetected = false;
-                    
-                    // If the target player is the current player, they definitely have the mod
+                    String status;
                     if (client.player.getName().getString().equalsIgnoreCase(targetPlayer)) {
-                        hasModDetected = true;
+                        status = "§aИМЕЕТ МОД (v0.0.6 - ВЫ)";
+                    } else {
+                        String playerVersion = ModVersionRegistry.getPlayerVersion(targetPlayer);
+                        if (playerVersion != null) {
+                            status = "§aИМЕЕТ МОД (" + playerVersion + ")";
+                        } else {
+                            status = "§cНЕ ОБНАРУЖЕН";
+                        }
                     }
-                    
-                    // Check if player is in our muted list (indicates they have the mod)
-                    if (ModerationManager.getMuteInfo(targetPlayer) != null || ModerationManager.isPlayerMuted(targetPlayer)) {
-                        hasModDetected = true;
-                    }
-                    
-                    String status = hasModDetected ? "§aИМЕЕТ МОД" : "§cНЕ ОБНАРУЖЕН";
                     client.player.sendMessage(Text.literal("§e[ПРОВЕРКА] §fИгрок §e" + targetPlayer + "§f: " + status), false);
                 }
             }

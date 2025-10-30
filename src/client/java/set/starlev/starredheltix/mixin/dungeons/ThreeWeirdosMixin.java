@@ -25,11 +25,6 @@ public class ThreeWeirdosMixin {
                 // This is likely a Three Weirdos puzzle
                 // ThreeWeirdosSolver.setInThreeWeirdosPuzzle();
             }
-            
-            // Also check for pattern that indicates leaving the puzzle
-            if (text.matches(".*(?:won|проиграли|game over|победил|выиграл|вы проиграли|вы победили|поздравляем|congratulations|defeat|victory|chest|сундук|награда|reward|получите награду|reward chest).*$")) {
-                // ThreeWeirdosSolver.setNotInThreeWeirdosPuzzle();
-            }
         }
     }
 }

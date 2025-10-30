@@ -1,16 +1,14 @@
-package set.starlev.starredheltix.util.player;
+package set.starlev.starredheltix.util.chat;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 
-import net.minecraft.entity.EntityPose;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import set.starlev.starredheltix.client.StarredHeltixClient;
 
 public class AutoReadyNotifier {
-    // 定义检测区域
     private static final Box READY_ZONE = new Box(-72, 122, -2, -70, 135, 2);
     
     private static boolean wasInZone = false;
@@ -33,29 +31,25 @@ public class AutoReadyNotifier {
             return;
         }
 
-        // 获取玩家位置
-        EntityPose playerPos = player.getPose();
+        // Получить позицию игрока
+        Vec3d playerPos = new Vec3d(player.getX(), player.getY(), player.getZ());
         
-        // 检查玩家是否在区域内
-        boolean isInZone = Boolean.parseBoolean(READY_ZONE.toString());
+        // Проверить находится ли игрок в зоне
+        boolean isInZone = READY_ZONE.contains(playerPos);
         
         // 如果玩家进入了区域且之前不在区域中
         if (isInZone && !wasInZone) {
             // 检查冷却时间
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastMessageTime > MESSAGE_COOLDOWN) {
-                // 发送准备消息到队伍聊天
+                // Отправить сообщение о готовности
                 String readyMessage = StarredHeltixClient.CONFIG.partyCommands.customReadyPhrase;
-                if (readyMessage == null || readyMessage.isEmpty()) {
-                    readyMessage = "✮ Я готов к подземельям! /=> starreднелtix ✮";
-                }
                 
                 player.networkHandler.sendChatCommand("pc " + readyMessage);
                 lastMessageTime = currentTime;
             }
         }
-        
-        // 更新状态
+
         wasInZone = isInZone;
     }
 }

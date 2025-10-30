@@ -13,7 +13,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -114,18 +113,7 @@ public class ModUpdater {
             }
         });
     }
-    
-    public static void openReleasesPage() {
-        try {
-            Desktop.getDesktop().browse(URI.create("https://github.com/Starlevka/StarredHeltix/releases"));
-        } catch (Exception e) {
-            MinecraftClient client = MinecraftClient.getInstance();
-            if (client != null && client.player != null) {
-                client.player.sendMessage(Text.literal("§c[StarredHeltix] Не удалось открыть браузер"), false);
-            }
-        }
-    }
-    
+
     public static void openProjectPage() {
         try {
             Desktop.getDesktop().browse(URI.create("https://github.com/Starlevka/StarredHeltix"));

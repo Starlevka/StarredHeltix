@@ -4,6 +4,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
 import net.minecraft.text.Text;
+
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,9 +26,15 @@ public class ChatHudMixin {
 
         // Check if Left Shift is pressed
         if (GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS) {
-            // Copy latest message
-            if (!messages.isEmpty()) {
-                ChatHudLine line = messages.get(0);
+            ChatHud chatHud = (ChatHud)(Object)this;
+            
+            // Calculate message index from mouse position
+            int lineHeight = 9; // Default chat line height
+            int chatHeight = client.getWindow().getScaledHeight() - 40;
+            int messageIndex = (int) ((chatHeight - mouseY) / lineHeight);
+            
+            if (messageIndex >= 0 && messageIndex < messages.size()) {
+                ChatHudLine line = messages.get(messageIndex);
                 String messageText = line.content().getString();
 
                 // Copy to clipboard

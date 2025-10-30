@@ -110,24 +110,12 @@ public class StarredHeltixCommands {
                             return 0;
                         }
                         
-                        // Check if target player has the mod
-                        boolean hasModDetected = false;
-                        
-                        // If the target player is the current player, they definitely have the mod
-                        if (client.player.getName().getString().equalsIgnoreCase(targetPlayer)) {
-                            hasModDetected = true;
-                        } else {
-                            // Check if player has mod version 0.0.5+ from version registry
-                            String playerVersion = ModVersionRegistry.getPlayerVersion(targetPlayer);
-                            hasModDetected = playerVersion != null && isVersionAtLeast(playerVersion, "0.0.5");
-                        }
-                        
                         String status;
                         if (client.player.getName().getString().equalsIgnoreCase(targetPlayer)) {
-                            status = "§aИМЕЕТ МОД (v0.0.5)";
+                            status = "§aИМЕЕТ МОД (v0.0.6 - ВЫ)";
                         } else {
                             String playerVersion = ModVersionRegistry.getPlayerVersion(targetPlayer);
-                            if (playerVersion != null && isVersionAtLeast(playerVersion, "0.0.5")) {
+                            if (playerVersion != null) {
                                 status = "§aИМЕЕТ МОД (" + playerVersion + ")";
                             } else {
                                 status = "§cНЕ ОБНАРУЖЕН";
@@ -173,7 +161,25 @@ public class StarredHeltixCommands {
             dispatcher.register(readyBuilder);
         });
         
-        System.out.println("StarredHeltix: Registered commands");
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            // /d command - sends /dh
+            LiteralArgumentBuilder<FabricClientCommandSource> dBuilder = ClientCommandManager.literal("d");
+            dBuilder.executes(context -> {
+                MinecraftClient.getInstance().player.networkHandler.sendChatCommand("dh");
+                return 1;
+            });
+            dispatcher.register(dBuilder);
+        });
+        
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            // /в command - sends /dh
+            LiteralArgumentBuilder<FabricClientCommandSource> vBuilder = ClientCommandManager.literal("в");
+            vBuilder.executes(context -> {
+                MinecraftClient.getInstance().player.networkHandler.sendChatCommand("dh");
+                return 1;
+            });
+            dispatcher.register(vBuilder);
+        });
     }
 
     private static void registerQolCommands(LiteralArgumentBuilder<FabricClientCommandSource> builder) {
@@ -287,9 +293,13 @@ public class StarredHeltixCommands {
         //Reload config command
        builder.then(ClientCommandManager.literal("reloadconfig")
             .executes(context -> {
-                StarredHeltixClient.reloadConfig();
-                context.getSource().sendFeedback(Text.literal("§aКонфигурация перезагружена"));
-                return 1;
+                try {
+                    StarredHeltixClient.reloadConfig();
+                    return 1;
+                } catch (Exception e) {
+                    context.getSource().sendError(Text.literal("§cОшибка при перезагрузке конфигурации: " + e.getMessage()));
+                    return 0;
+                }
             })
         );
     }
@@ -317,6 +327,13 @@ public class StarredHeltixCommands {
                     context.getSource().sendFeedback(Text.literal("§eМир: §f" + (client.world != null ? client.world.getRegistryKey().getValue() : "null")));
                     context.getSource().sendFeedback(Text.literal("§eСущности: §f(Эндермены: " + endermanCount + ", Волки:" + wolfCount + ")"));
                     context.getSource().sendFeedback(Text.literal("§eFPS: §f" + client.getCurrentFps()));
+                    
+                    // Show registered players with mod
+                    Map<String, String> registeredPlayers = ModVersionRegistry.getAllRegisteredPlayers();
+                    context.getSource().sendFeedback(Text.literal("§eИгроки с модом: §f" + registeredPlayers.size()));
+                    registeredPlayers.forEach((name, version) -> 
+                        context.getSource().sendFeedback(Text.literal("§f- " + name + " (v" + version + ")"))
+                    );
 
                 }
                 return 1;
@@ -520,6 +537,11 @@ public class StarredHeltixCommands {
         registerFeatureCommand(builder, "fishingnotification", "Toggles fishing notification", "starredheltix.command.help.fishingnotification");
         registerFeatureCommand(builder, "threeweirdos", "Toggles three weirdos solver","starredheltix.command.help.threeweirdos");
         registerFeatureCommand(builder, "autosprint", "Toggles auto-sprint feature", "starredheltix.command.help.autosprint");
+        registerFeatureCommand(builder, "titleblocking", "Toggles title blocking for super rare messages", "starredheltix.command.help.titleblocking");
+        registerFeatureCommand(builder, "autopartychat", "Toggles auto party chat for ! commands", "starredheltix.command.help.autopartychat");
+        registerFeatureCommand(builder, "endermanhighlighter", "Toggles enderman highlighting", "starredheltix.command.help.endermanhighlighter");
+        registerFeatureCommand(builder, "wolfhighlighter", "Toggles wolf highlighting", "starredheltix.command.help.wolfhighlighter");
+        registerFeatureCommand(builder, "waypoints", "Toggles waypoints from party coords", "starredheltix.command.help.waypoints");
    }
 
     private static void registerFeatureCommand(LiteralArgumentBuilder<FabricClientCommandSource> builder, String featureName, String description, String toggleCommandKey) {
@@ -573,8 +595,7 @@ public class StarredHeltixCommands {
                         "§c§l✗ ВЫКЛЮЧЕН";
                     context.getSource().sendFeedback(Text.literal("§6§l[Уведомления рыбалки] §f" + status));
                     return 1;
-                    
-                //Removed characterhighlight case as we now use threeweirdos
+
                 case "autosprint":
                     StarredHeltixClient.CONFIG.autoSprint.enabled = !StarredHeltixClient.CONFIG.autoSprint.enabled;
                     StarredHeltixClient.CONFIG.save();
@@ -593,7 +614,50 @@ public class StarredHeltixCommands {
                     context.getSource().sendFeedback(Text.literal("§6§l[Три незнакомца] §f" + status));
                     return 1;
 
+                case "titleblocking":
+                    StarredHeltixClient.CONFIG.titleBlocking.enabled = !StarredHeltixClient.CONFIG.titleBlocking.enabled;
+                    StarredHeltixClient.CONFIG.save();
+                    status = StarredHeltixClient.CONFIG.titleBlocking.enabled ?
+                        "§a§l✓ ВКЛЮЧЕН" :
+                        "§c§l✗ ВЫКЛЮЧЕН";
+                    context.getSource().sendFeedback(Text.literal("§6§l[Блокировка Title] §f" + status));
+                    return 1;
 
+                case "autopartychat":
+                    StarredHeltixClient.CONFIG.partyCommands.autoPartyChat = !StarredHeltixClient.CONFIG.partyCommands.autoPartyChat;
+                    StarredHeltixClient.CONFIG.save();
+                    status = StarredHeltixClient.CONFIG.partyCommands.autoPartyChat ?
+                        "§a§l✓ ВКЛЮЧЕН" :
+                        "§c§l✗ ВЫКЛЮЧЕН";
+                    context.getSource().sendFeedback(Text.literal("§6§l[Авто пати чат] §f" + status));
+                    return 1;
+
+                case "endermanhighlighter":
+                    StarredHeltixClient.CONFIG.endermanHighlighter.enabled = !StarredHeltixClient.CONFIG.endermanHighlighter.enabled;
+                    StarredHeltixClient.CONFIG.save();
+                    status = StarredHeltixClient.CONFIG.endermanHighlighter.enabled ?
+                        "§a§l✓ ВКЛЮЧЕН" :
+                        "§c§l✗ ВЫКЛЮЧЕН";
+                    context.getSource().sendFeedback(Text.literal("§6§l[Подсветка эндерменов] §f" + status));
+                    return 1;
+
+                case "wolfhighlighter":
+                    StarredHeltixClient.CONFIG.wolfHighlighter.enabled = !StarredHeltixClient.CONFIG.wolfHighlighter.enabled;
+                    StarredHeltixClient.CONFIG.save();
+                    status = StarredHeltixClient.CONFIG.wolfHighlighter.enabled ?
+                        "§a§l✓ ВКЛЮЧЕН" :
+                        "§c§l✗ ВЫКЛЮЧЕН";
+                    context.getSource().sendFeedback(Text.literal("§6§l[Подсветка волков] §f" + status));
+                    return 1;
+
+                case "waypoints":
+                    StarredHeltixClient.CONFIG.waypoints.enabled = !StarredHeltixClient.CONFIG.waypoints.enabled;
+                    StarredHeltixClient.CONFIG.save();
+                    status = StarredHeltixClient.CONFIG.waypoints.enabled ?
+                        "§a§l✓ ВКЛЮЧЕНЫ" :
+                        "§c§l✗ ВЫКЛЮЧЕНЫ";
+                    context.getSource().sendFeedback(Text.literal("§6§l[Вейпоинты] §f" + status));
+                    return 1;
 
                default:
                     context.getSource().sendError(Text.literal("Неизвестная функция: " + featureName));
@@ -632,7 +696,13 @@ public class StarredHeltixCommands {
                 return StarredHeltixClient.CONFIG.threeWeirdos.enabled ?
                     "включено" : "выключено";
 
+            case "titleblocking":
+                return StarredHeltixClient.CONFIG.titleBlocking.enabled ?
+                    "включено" : "выключено";
 
+            case "autopartychat":
+                return StarredHeltixClient.CONFIG.partyCommands.autoPartyChat ?
+                    "включено" : "выключено";
 
             default:
                return null;
