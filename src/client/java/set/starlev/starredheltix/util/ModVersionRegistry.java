@@ -17,6 +17,8 @@ public class ModVersionRegistry {
             if (client.player != null) {
                 // Register current player version
                 playerVersions.put(client.player.getName().getString(), CURRENT_VERSION);
+                // Register player with the network server
+                ModNetworkManager.registerPlayer();
             }
         });
     }

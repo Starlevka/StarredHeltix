@@ -17,6 +17,7 @@ import set.starlev.starredheltix.util.qol.VotingReminder;
 import set.starlev.starredheltix.util.binds.CustomBindManager;
 import set.starlev.starredheltix.util.updater.ModUpdater;
 import set.starlev.starredheltix.util.ModVersionRegistry;
+import set.starlev.starredheltix.util.ModNetworkManager;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import java.util.Map;
@@ -127,6 +128,60 @@ public class StarredHeltixCommands {
                     return 1;
                 })
             );
+            
+            // Add a subcommand to find players with the mod
+            checkBuilder.then(ClientCommandManager.literal("find")
+                .executes(context -> {
+                    MinecraftClient client = MinecraftClient.getInstance();
+                    
+                    if (client.player != null) {
+                        String playerName = client.player.getName().getString();
+                        
+                        // Check if current player is a moderator
+                        String[] moderators = {"Starlev", "ZurGames", "MegaChromeX"};
+                        boolean isModerator = false;
+                        for (String moderator : moderators) {
+                            if (moderator.equalsIgnoreCase(playerName)) {
+                                isModerator = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!isModerator) {
+                            context.getSource().sendError(Text.literal("§cУ вас нет прав на использование этой команды"));
+                            return 0;
+                        }
+                        
+                        context.getSource().sendFeedback(Text.literal("§e[ПРОВЕРКА] §fПоиск игроков с модом..."));
+                        
+                        ModNetworkManager.discoverPlayers(new ModNetworkManager.PlayerDiscoveryCallback() {
+                            @Override
+                            public void onPlayersDiscovered(Map<String, String> players) {
+                                client.execute(() -> {
+                                    if (players.isEmpty()) {
+                                        context.getSource().sendFeedback(Text.literal("§e[ПРОВЕРКА] §fИгроки с модом не найдены"));
+                                    } else {
+                                        context.getSource().sendFeedback(Text.literal("§e[ПРОВЕРКА] §fНайдено игроков с модом: §a" + players.size()));
+                                        players.forEach((name, version) -> {
+                                            context.getSource().sendFeedback(Text.literal("§f- " + name + " (v" + version + ")"));
+                                        });
+                                    }
+                                });
+                            }
+                            
+                            @Override
+                            public void onError(String error) {
+                                client.execute(() -> {
+                                    context.getSource().sendError(Text.literal("§c[ПРОВЕРКА] §fОшибка при поиске игроков: " + error));
+                                });
+                            }
+                        });
+                    }
+                    
+                    return 1;
+                })
+            );
+            
             dispatcher.register(checkBuilder);
         });
         

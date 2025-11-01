@@ -22,6 +22,7 @@ import set.starlev.starredheltix.util.qol.AbilityCooldownVisualizer;
 import set.starlev.starredheltix.util.qol.VotingReminder;
 import set.starlev.starredheltix.util.binds.CustomBindManager;
 import set.starlev.starredheltix.util.ModVersionRegistry;
+import set.starlev.starredheltix.util.ModNetworkManager;
 import set.starlev.starredheltix.util.solver.dungeons.ThreeWeirdosSolver;
 import set.starlev.starredheltix.sound.ModSounds;
 
@@ -149,6 +150,9 @@ public class StarredHeltixClient implements ClientModInitializer {
             
             // Register mod version registry
             ModVersionRegistry.register();
+            
+            // Register mod network manager
+            // Note: No explicit initialization needed as it's used statically
             
             // Register Three Weirdos solver
             ThreeWeirdosSolver.register();
