@@ -1,0 +1,117 @@
+{
+  "misc": {
+    "autoSprint": {
+      "enabled": true
+    },
+    "votingReminder": {
+      "enabled": false,
+      "hasVotedToday": false,
+      "lastCheckTime": 1765307036855
+    },
+    "loginCommand": {
+      "password": ""
+    },
+    "customBinds": {
+      "enabled": true,
+      "binds": {},
+      "keys": {}
+    },
+    "welcomeMessage": "1"
+  },
+  "display": {},
+  "visuals": {
+    "swingAnimation": {
+      "enabled": false,
+      "swingX": 1.0,
+      "swingY": 1.0,
+      "swingZ": 1.0,
+      "swingSpeedEnabled": false,
+      "swingSpeed": 1.0
+    }
+  },
+  "chat": {
+    "chatCopy": {
+      "enabled": true,
+      "highlightColor": "0:255:255:255:255",
+      "info": "Наведите на сообщение с Shift"
+    },
+    "partyCommands": {
+      "enabled": true,
+      "convertCommands": true,
+      "promote": true,
+      "kick": true,
+      "invite": true,
+      "ping": true,
+      "fps": true,
+      "time": true,
+      "coords": true,
+      "rng": true,
+      "dt": true,
+      "boykisser": true
+    },
+    "autoReady": {
+      "enabled": false,
+      "readyMessage": "Готов!"
+    },
+    "messageFilter": {
+      "enabled": false,
+      "filters": []
+    }
+  },
+  "optimization": {
+    "hideDeathAnimation": false,
+    "hideFireOverlay": false,
+    "hideStatusEffects": false,
+    "fullBright": {
+      "enabled": false,
+      "mode": "Gamma"
+    }
+  },
+  "combat": {
+    "enderman": {
+      "enabled": false,
+      "color": "0:255:255:0:255",
+      "transparency": 0.5
+    },
+    "creeper": {
+      "enabled": false,
+      "color": "0:255:0:255:255",
+      "transparency": 0.5
+    },
+    "wolf": {
+      "enabled": false,
+      "color": "0:255:0:255:0",
+      "transparency": 0.5
+    }
+  },
+  "dungeons": {
+    "bloodRoom": {
+      "enabled": true,
+      "message": "Кровавая комната готова!"
+    },
+    "threeWeirdos": {
+      "enabled": true
+    }
+  },
+  "fishing": {
+    "fishingNotifier": {
+      "enabled": false
+    }
+  },
+  "foraging": {
+    "treeCapCooldown": {
+      "enabled": false
+    }
+  },
+  "mining": {
+    "abilityCooldown": {
+      "pickaxeBoostEnabled": true,
+      "speedBoostEnabled": true,
+      "pickaxeBoostCooldown": "60",
+      "speedBoostCooldown": "120"
+    }
+  },
+  "about": {
+    "showInfo": {}
+  }
+}

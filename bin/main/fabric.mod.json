@@ -1,0 +1,44 @@
+{
+	"schemaVersion": 1,
+	"id": "starredheltix",
+	"version": "${version}",
+	"name": "StarredHeltix",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Starlev"
+	],
+	"license": "MIT",
+	"icon": "assets/starredheltix/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			{
+				"value": "set.starlev.StarredHeltix",
+				"adapter": "kotlin"
+			}
+		],
+		"client": [
+			{
+				"value": "set.starlev.StarredHeltixClient",
+				"adapter": "kotlin"
+			}
+		]
+	},
+	"mixins": [
+		"starredheltix.mixins.json",
+		{
+			"config": "starredheltix.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.18.1",
+		"minecraft": "~1.21.10",
+		"java": ">=21",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}

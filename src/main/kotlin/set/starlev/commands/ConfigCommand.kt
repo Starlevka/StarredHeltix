@@ -1,0 +1,291 @@
+package set.starlev.commands
+
+import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.DoubleArgumentType
+import com.mojang.brigadier.arguments.IntegerArgumentType
+import com.mojang.brigadier.arguments.StringArgumentType
+import com.mojang.brigadier.context.CommandContext
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import set.starlev.StarredHeltix
+import set.starlev.config.ConfigGuiManager
+import set.starlev.config.Features
+import set.starlev.features.chat.MessageFilterManager
+import set.starlev.features.misc.CustomBindManager
+import set.starlev.features.misc.VotingReminder
+import set.starlev.utils.ConfigUtils
+
+object ConfigCommand {
+    fun register() {
+        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
+            registerCommands(dispatcher)
+        }
+    }
+
+    private fun registerCommands(dispatcher: CommandDispatcher<FabricClientCommandSource>) {
+        // Регистрировать обе команды (алиасы) с одинаковой функциональностью
+        val commandBuilder = buildMainCommand()
+        dispatcher.register(commandBuilder)
+        
+        // Также регистрировать как /starredheltix
+        dispatcher.register(buildMainCommand("starredheltix"))
+
+        // Простые команды
+        registerSimpleCommands(dispatcher)
+    }
+    
+    private fun buildMainCommand(name: String = "sh") = literal(name)
+        .executes { ConfigGuiManager.openConfigGui(); 1 }
+        .then(literal("reset")
+            .then(literal("voting").executes(::resetVoting))
+            .then(literal("config").executes(::resetConfig))
+        )
+        .then(literal("filter")
+            .then(literal("add")
+                .then(argument("message", StringArgumentType.greedyString())
+                    .executes(::addFilter)
+                )
+            )
+            .then(literal("remove")
+                .then(argument("id", IntegerArgumentType.integer(0, 999))
+                    .suggests { _, builder ->
+                        StarredHeltix.feature.chat.messageFilter.filters.forEachIndexed { index, filter ->
+                            builder.suggest(index, Component.literal(filter))
+                        }
+                        builder.buildFuture()
+                    }
+                    .executes(::removeFilter)
+                )
+            )
+        )
+        // Утилиты
+        .then(literal("rotation")
+            .executes { ctx ->
+                val client = Minecraft.getInstance()
+                if (client.player != null) {
+                    val yaw = client.player!!.yRot
+                    val pitch = client.player!!.xRot
+                    ctx.source.sendFeedback(Component.literal("§6§l[Ротация игрока] §fТекущая: Yaw=§e${String.format("%.1f", yaw)}°§f, Pitch=§e${String.format("%.1f", pitch)}°"))
+                    ctx.source.sendFeedback(Component.literal("§7Использование: /starredheltix rotation <yaw> <pitch>"))
+                } else {
+                    ctx.source.sendError(Component.literal("§cОшибка: игрок не найден"))
+                    return@executes 0
+                }
+                1
+            }
+            .then(argument("yaw", DoubleArgumentType.doubleArg(-1080.0, 1080.0))
+                .then(argument("pitch", DoubleArgumentType.doubleArg(-90.0, 90.0))
+                    .executes(::setRotation)
+                )
+            )
+        )
+        // HUD редактор
+        .then(literal("hud")
+            .then(literal("editor").executes { ctx ->
+                ConfigUtils.openHudEditor()
+                ctx.source.sendFeedback(Component.literal("§aОкрыт редактор HUD элементов"))
+                1
+            })
+        )
+        .then(literal("binds")
+            .then(literal("create")
+                .then(argument("name", StringArgumentType.word())
+                    .then(argument("command", StringArgumentType.greedyString())
+                        .executes { ctx ->
+                            val name = StringArgumentType.getString(ctx, "name")
+                            val command = StringArgumentType.getString(ctx, "command")
+                            if (CustomBindManager.create(name, command)) 1 else 0
+                        }
+                    )
+                )
+            )
+            .then(literal("delete")
+                .then(argument("name", StringArgumentType.word())
+                    .executes { ctx ->
+                        val name = StringArgumentType.getString(ctx, "name")
+                        if (CustomBindManager.delete(name)) 1 else 0
+                    }
+                )
+            )
+            .then(literal("setkey")
+                .then(argument("name", StringArgumentType.word())
+                    .then(argument("key", StringArgumentType.word())
+                        .executes { ctx ->
+                            val name = StringArgumentType.getString(ctx, "name")
+                            val key = StringArgumentType.getString(ctx, "key")
+                            if (CustomBindManager.setKey(name, key)) 1 else 0
+                        }
+                    )
+                )
+            )
+            .then(literal("list").executes { ctx ->
+                CustomBindManager.list()
+                1
+            })
+        )
+        // Конфигурация
+        .then(literal("config")
+            .then(literal("password")
+                .then(argument("password", StringArgumentType.word())
+                    .executes(::setPassword)
+                )
+            )
+            .then(literal("readyphrase")
+                .then(argument("phrase", StringArgumentType.greedyString())
+                    .executes(::setReadyPhrase)
+                )
+            )
+        )
+        .then(literal("update")
+            .executes { ctx ->
+                set.starlev.utils.ModUpdater.checkUpdate()
+                1
+            }
+            .then(literal("install").executes { ctx ->
+                set.starlev.utils.ModUpdater.installUpdate()
+                1
+            })
+        )
+        .then(literal("coords").executes(::showCoords))
+
+    private fun registerSimpleCommands(dispatcher: CommandDispatcher<FabricClientCommandSource>) {
+        // /вход - быстрый вход
+        dispatcher.register(
+            literal("вход")
+                .executes { ctx ->
+                    val password = StarredHeltix.feature.misc.loginCommand.password
+                    if (password.isNotEmpty()) {
+                        Minecraft.getInstance().player?.connection?.sendCommand("login $password")
+                        ctx.source.sendFeedback(Component.literal("§aУспешный вход в систему"))
+                    } else {
+                        ctx.source.sendError(Component.literal("§cПароль не установлен. Используйте /starredheltix config password <пароль>"))
+                    }
+                    1
+                }
+        )
+
+        // /яготовлёвал - фраза готовности
+        dispatcher.register(
+            literal("яготовлёвал")
+                .executes { ctx ->
+                    val config = StarredHeltix.feature.chat.autoReady
+                    if (config.enabled) {
+                        Minecraft.getInstance().player?.connection?.sendCommand("pc ${config.readyMessage}")
+                        ctx.source.sendFeedback(Component.literal("§aСообщение о готовности отправлено"))
+                    } else {
+                        ctx.source.sendError(Component.literal("§cАвто-готовность отключена в настройках"))
+                    }
+                    1
+                }
+        )
+
+        // /d и /в - быстрый /dh
+        dispatcher.register(literal("d").executes { Minecraft.getInstance().player?.connection?.sendCommand("dh"); 1 })
+        dispatcher.register(literal("в").executes { Minecraft.getInstance().player?.connection?.sendCommand("dh"); 1 })
+    }
+
+    private fun resetVoting(ctx: CommandContext<FabricClientCommandSource>): Int {
+        StarredHeltix.feature.misc.votingReminder.hasShownReminderToday = false
+        StarredHeltix.configManager.saveConfig("reset-voting-reminder")
+        ctx.source.sendFeedback(Component.literal("§aНапоминание о голосовании сброшено"))
+        return 1
+    }
+
+    private fun resetConfig(ctx: CommandContext<FabricClientCommandSource>): Int {
+        StarredHeltix.configManager.features = Features()
+        StarredHeltix.configManager.saveConfig("reset-config")
+        ctx.source.sendFeedback(Component.literal("§aКонфиг сброшен. Перезапустите игру для полного применения."))
+        return 1
+    }
+
+    private fun addFilter(ctx: CommandContext<FabricClientCommandSource>): Int {
+        val message = StringArgumentType.getString(ctx, "message")
+        MessageFilterManager.addFilter(message)
+        val id = StarredHeltix.feature.chat.messageFilter.filters.indexOf(message)
+        ctx.source.sendFeedback(Component.literal("§aФильтр добавлен: [$id] $message"))
+        return 1
+    }
+
+    private fun removeFilter(ctx: CommandContext<FabricClientCommandSource>): Int {
+        val id = IntegerArgumentType.getInteger(ctx, "id")
+        val filters = StarredHeltix.feature.chat.messageFilter.filters
+        if (id >= 0 && id < filters.size) {
+            val removed = filters.removeAt(id)
+            StarredHeltix.configManager.saveConfig("filter-remove")
+            ctx.source.sendFeedback(Component.literal("§aФильтр удалён: $removed"))
+        } else {
+            ctx.source.sendError(Component.literal("§cФильтр с ID $id не найден"))
+        }
+        return 1
+    }
+
+    private fun setRotation(ctx: CommandContext<FabricClientCommandSource>): Int {
+        val yaw = DoubleArgumentType.getDouble(ctx, "yaw")
+        val pitch = DoubleArgumentType.getDouble(ctx, "pitch")
+        val client = Minecraft.getInstance()
+
+        if (client.player != null) {
+            val normalizedYaw = normalizeYaw(yaw)
+            client.player!!.yRot = normalizedYaw.toFloat()
+            client.player!!.xRot = pitch.toFloat()
+
+            val normalizationMessage = if (Math.abs(yaw - normalizedYaw) > 0.01) {
+                " §7(округлено с ${String.format("%.1f", yaw)}°)"
+            } else {
+                ""
+            }
+
+            ctx.source.sendFeedback(Component.literal("§aРотация изменена: Yaw=§e${String.format("%.1f", normalizedYaw)}°§a, Pitch=§e${String.format("%.1f", pitch)}°§a$normalizationMessage"))
+        } else {
+            ctx.source.sendError(Component.literal("§cОшибка: игрок не найден"))
+            return 0
+        }
+        return 1
+    }
+
+    private fun setPassword(ctx: CommandContext<FabricClientCommandSource>): Int {
+        val password = StringArgumentType.getString(ctx, "password")
+        StarredHeltix.feature.misc.loginCommand.password = password
+        StarredHeltix.configManager.saveConfig("config-password")
+        ctx.source.sendFeedback(Component.literal("§aПароль установлен"))
+        return 1
+    }
+
+    private fun setReadyPhrase(ctx: CommandContext<FabricClientCommandSource>): Int {
+        val phrase = StringArgumentType.getString(ctx, "phrase")
+        StarredHeltix.feature.chat.autoReady.readyMessage = phrase
+        StarredHeltix.configManager.saveConfig("config-readyphrase")
+        ctx.source.sendFeedback(Component.literal("§aФраза готовности установлена"))
+        return 1
+    }
+
+    private fun normalizeYaw(yaw: Double): Double {
+        var normalized = yaw % 360.0
+        if (normalized > 180.0) normalized -= 360.0
+        else if (normalized < -180.0) normalized += 360.0
+        return normalized
+    }
+
+    private fun showCoords(ctx: CommandContext<FabricClientCommandSource>): Int {
+        val client = Minecraft.getInstance()
+        if (client.player != null) {
+            val player = client.player!!
+            val x = String.format("%.1f", player.x)
+            val y = String.format("%.1f", player.y)
+            val z = String.format("%.1f", player.z)
+
+            val coordsMessage = "starreдheltix ✪ X: $x Y: $y Z: $z"
+            client.keyboardHandler.setClipboard(coordsMessage)
+
+            ctx.source.sendFeedback(Component.literal("§aКоординаты скопированы в буфер обмена: §e$coordsMessage"))
+        } else {
+            ctx.source.sendError(Component.literal("§cОшибка: игрок не найден"))
+            return 0
+        }
+        return 1
+    }
+}

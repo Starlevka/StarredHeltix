@@ -1,0 +1,50 @@
+/sh binds setkey Aboba D
+/starredheltix binds list
+/starredheltix binds delete Aboba
+/starredheltix binds create LLL /dh
+/sh binds setkey LLL L
+/sh reset voting
+/sh update
+/sh binds list
+/sh binds delete LLL
+/sh binds create krytoi
+/sh binds create krytoi "/dh"
+/starredheltix binds setkey krytoi K
+/gamemode survival
+/gamemode creative
+/effect give Player573 minecraft:haste infinite 255
+/effect clear
+/title Player362 title "&zПривет"
+/me &z
+/me &z hhhh
+/вход
+/tellraw Player483 "&zLLLLLLLLL"
+/tellraw Player483 "&zя элочка"
+/tellraw @a "&zялллллллл"
+/tellraw @a "&z ялллллллл"
+/tellra@a "&z ялллллллл"
+/tellraw @a "&z ялллллллл"
+/gamemode survival
+/starredheltix reset voting
+/sh binds create aboba ya l
+/sh binds setkey aboba l
+/starredheltix binds list
+/starredheltix binds create aboba llll
+/starredheltix binds setkey aboba L
+/starredheltix binds list
+/starredheltix binds create aboba help
+/starredheltix binds setkey aboba l
+/time set night
+/вход
+/tellraw Player564 "&6Првет"
+/give Player564 minecraft:command_block
+/gamemode creative
+/ddkg
+/gamemode survival
+/starredheltix reset voting
+/setblock 42 -61 93 minecraft:nether_portal
+/gamemode creative
+/starredheltix reset voting
+/sh binds create aboba "fff"
+/sh binds setkey aboba L
+/sh coords
