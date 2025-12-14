@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarredHeltix - Профессиональный Minecraft мод</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animating stars background */
+        .stars-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* Floating stars */
+        .floating-star {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        /* Glassmorphism card */
+        .card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            letter-spacing: -1px;
+        }
+
+        .title-star {
+            font-size: 3rem;
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .description {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 50px;
+            line-height: 1.6;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(0, 212, 255, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(0, 212, 255, 0.5);
+            box-shadow: 0 4px 15px rgba(123, 47, 247, 0.2);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(0, 212, 255, 0.8);
+            box-shadow: 0 6px 25px rgba(123, 47, 247, 0.4);
+        }
+
+        .btn-icon {
+            font-size: 1.3rem;
+        }
+
+        .version {
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .feature {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #00d4ff;
+        }
+
+        .feature-icon {
+            margin-right: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .title {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .card {
+                padding: 40px 30px;
+                border-radius: 15px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glow effect */
+        .glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .glow-1 {
+            width: 300px;
+            height: 300px;
+            background: #00d4ff;
+            top: -100px;
+            left: -100px;
+        }
+
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: #7b2ff7;
+            bottom: -100px;
+            right: -100px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated stars background -->
+    <div class="stars-bg" id="starsBg"></div>
+
+    <!-- Glow effects -->
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
+    <!-- Floating decorative stars -->
+    <div class="floating-star" style="top: 10%; left: 5%;">★</div>
+    <div class="floating-star" style="top: 20%; right: 8%; animation-delay: 1s;">✨</div>
+    <div class="floating-star" style="bottom: 20%; left: 10%; animation-delay: 2s;">★</div>
+    <div class="floating-star" style="bottom: 10%; right: 5%; animation-delay: 1.5s;">✨</div>
+    <div class="floating-star" style="top: 50%; right: 2%; animation-delay: 0.5s;">★</div>
+
+    <!-- Main content -->
+    <div class="container">
+        <div class="card">
+            <div class="title">
+                <span class="title-star">★</span>
+                StarredHeltix
+            </div>
+
+            <p class="subtitle">Профессиональный Fabric мод для Minecraft</p>
+
+            <p class="description">
+                Комфортная игра с полезными QOL фишками, автоматизацией и визуальными улучшениями для Heltix SkyBlock
+            </p>
+
+            <div class="features">
+                <div class="feature">
+                    <span class="feature-icon">⚡</span>
+                    <span>Команды в пати</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🎮</span>
+                    <span>QOL улучшения</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🛡️</span>
+                    <span>Боевые системы</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🎨</span>
+                    <span>Визуальные эффекты</span>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <a href="https://github.com/Starlevka/StarredHeltix" class="btn btn-secondary" target="_blank">
+                    <span class="btn-icon">🔗</span>
+                    GitHub
+                </a>
+                <a href="https://github.com/Starlevka/StarredHeltix/releases/latest" class="btn btn-primary" target="_blank">
+                    <span class="btn-icon">⬇️</span>
+                    Скачать
+                </a>
+            </div>
+
+            <div class="version">
+                <p>Версия 0.0.10 • Minecraft 1.21.10 • Java 21+</p>
+                <p style="margin-top: 10px; font-size: 0.85rem;">Made with ★ by Starlevka</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate random stars
+        function generateStars() {
+            const starsBg = document.getElementById('starsBg');
+            const starsCount = window.innerWidth > 768 ? 100 : 50;
+
+            for (let i = 0; i < starsCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.animationDuration = (3 + Math.random() * 2) + 's';
+                starsBg.appendChild(star);
+            }
+        }
+
+        generateStars();
+
+        // Add parallax effect on mouse move
+        document.addEventListener('mousemove', (e) => {
+            const glows = document.querySelectorAll('.glow');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+
+            glows.forEach((glow, index) => {
+                if (index === 0) {
+                    glow.style.transform = `translate(${x * 50}px, ${y * 50}px)`;
+                } else {
+                    glow.style.transform = `translate(${-x * 50}px, ${-y * 50}px)`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
