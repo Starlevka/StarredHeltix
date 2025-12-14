@@ -1,6 +1,6 @@
-# StarredHeltix
+# ⭐ StarredHeltix ⭐
 
-Профессиональный Fabric мод для Minecraft с поддержкой 1.21.4 и 1.21.10 (Heltix SkyBlock)
+лЛлЛ Fabric мод для Minecraft с поддержкой 1.21.4 (старый мод) и 1.21.10 (Heltix SkyBlock)
 
 > Мод для комфортной игры с полезными QOL фишками, автоматизацией и визуальными улучшениями
 
