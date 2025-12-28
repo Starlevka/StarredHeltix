@@ -6,15 +6,21 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class FishingConfig {
-    @Accordion
     @Expose
-    @ConfigOption(name = "Уведомление о поклёвке", desc = "Звук и сообщение на экране при поклёвке")
-    var fishingNotifier = FishingNotifierConfig()
+    @ConfigOption(name = "Уведомления", desc = "Настройки оповещений о различных событиях при рыбалке.")
+    @Accordion
+    var notifications = FishingNotificationsConfig()
 
-    class FishingNotifierConfig {
+    class FishingNotificationsConfig {
         @Expose
-        @ConfigOption(name = "Включить", desc = "Включить уведомление о поклёвке")
+        @ConfigOption(name = "Рыба на крючке", desc = "Показывает уведомление и проигрывает звук, когда рыба клюет.")
         @ConfigEditorBoolean
-        var enabled = true
+        var fishingNotifier = true
+
+        @Expose
+        @ConfigOption(name = "Легендарный улов", desc = "Особое уведомление при поимке легендарных морских существ.")
+        @ConfigEditorBoolean
+        var legendaryFishingNotifier = true
     }
 }
+

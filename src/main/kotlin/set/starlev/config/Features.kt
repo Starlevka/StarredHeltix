@@ -9,62 +9,80 @@ import set.starlev.config.categories.ChatConfig
 import set.starlev.config.categories.CombatConfig
 import set.starlev.config.categories.DisplayConfig
 import set.starlev.config.categories.DungeonsConfig
+import set.starlev.config.categories.FarmingConfig
 import set.starlev.config.categories.FishingConfig
 import set.starlev.config.categories.ForagingConfig
 import set.starlev.config.categories.MiningConfig
 import set.starlev.config.categories.MiscConfig
+import set.starlev.config.categories.SlayerConfig
 import set.starlev.config.categories.OptimizationConfig
 import set.starlev.config.categories.VisualsConfig
 import set.starlev.utils.ConfigUtils.asStructuredText
+import java.awt.Color
 
 class Features : Config() {
     override fun saveNow() {
         StarredHeltix.configManager.saveConfig("close-gui")
     }
 
-    override fun getTitle() = "§6§lStarredHeltix §r§6v0.0.10".asStructuredText()
+    override fun getTitle(): io.github.notenoughupdates.moulconfig.common.text.StructuredText {
+        return buildChromaTitle().asStructuredText()
+    }
+
+    private fun buildChromaTitle(): String {
+        return "§6§lStarredHeltix §e§lv0.0.11"
+    }
 
     @Expose
-    @Category(name = "Разное", desc = "· Разные настройки")
+    @Category(name = "§lОсновные", desc = "· Общие настройки мода.")
     var misc = MiscConfig()
 
     @Expose
-    @Category(name = "Дисплей", desc = "· Настройки HUD'а")
+    @Category(name = "Дисплей", desc = "· Настройки HUD.")
     var display = DisplayConfig()
 
     @Expose
-    @Category(name = "Визуал", desc = "· Визуальные настройки")
+    @Category(name = "Визуал", desc = "· Визуальные эффекты и анимации.")
     var visuals = VisualsConfig()
 
     @Expose
-    @Category(name = "Чат", desc = "· Настройки чата")
+    @Category(name = "Чат", desc = "· Система чата.")
     var chat = ChatConfig()
 
     @Expose
-    @Category(name = "Оптимизация", desc = "· Настройки оптимизации")
+    @Category(name = "Оптимизация", desc = "· Настройки геймплея.")
     var optimization = OptimizationConfig()
 
     @Expose
-    @Category(name = "✦ Бой", desc = "· Настройки боя")
+    @Category(name = "✦ Бой", desc = "· Функции для навыка боя.")
     var combat = CombatConfig()
 
     @Expose
-    @Category(name = "✧ Подземелья", desc = "· Настройки для подземелий")
+    @Category(name = "✧ Слеерство", desc = "· Функции для слеерства.")
+    var slayer = SlayerConfig()
+
+    @Expose
+    @Category(name = "✧ Подземелья", desc = "· Функции для подземелий.")
     var dungeons = DungeonsConfig()
 
     @Expose
-    @Category(name = "✦ Рыболовство", desc = "· Настройки рыболовства")
+    @Category(name = "✦ Фермерство", desc = "· Функции для навыка фермерства.")
+    var farming = FarmingConfig()
+
+    @Expose
+    @Category(name = "✦ Рыболовство", desc = "· Функции для навыка рыболовства.")
     var fishing = FishingConfig()
 
     @Expose
-    @Category(name = "✦ Лесорубство", desc = "· Настройки лесорубства")
+    @Category(name = "✦ Лесорубство", desc = "· Функции для навыка лесорубства.")
     var foraging = ForagingConfig()
 
     @Expose
-    @Category(name = "✦ Шахтёрство", desc = "· Настройки шахтёрства")
+    @Category(name = "✦ Шахтёрство", desc = "· Функции для навыка шахтёрства.")
     var mining = MiningConfig()
 
     @Expose
-    @Category(name = "О моде =D", desc = "· Информация о моде")
+    @Category(name = "О моде", desc = "· Информация о моде и его обновления.")
     var about = AboutModConfig()
 }
+

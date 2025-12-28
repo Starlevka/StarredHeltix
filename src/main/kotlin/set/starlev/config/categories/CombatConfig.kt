@@ -10,68 +10,77 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 class CombatConfig {
 
     @Expose
-    @ConfigOption(name = "Эндермены", desc = "Настройки подсветки эндерменов")
+    @ConfigOption(name = "Подсветка мобов", desc = "Настройки визуального выделения существ для удобства обнаружения.")
     @Accordion
-    var enderman = EndermanConfig()
+    var highlight = EntityHighlightConfig()
 
-    @Expose
-    @ConfigOption(name = "Криперы", desc = "Настройки подсветки заряженных криперов")
-    @Accordion
-    var creeper = CreeperConfig()
+    class EntityHighlightConfig {
 
-    @Expose
-    @ConfigOption(name = "Волки", desc = "Настройки подсветки волков")
-    @Accordion
-    var wolf = WolfConfig()
+        @Expose
+        @ConfigOption(name = "Эндермены", desc = "Настройки подсветки эндерменов.")
+        @Accordion
+        var enderman = EndermanConfig()
+
+        @Expose
+        @ConfigOption(name = "Криперы", desc = "Настройки подсветки криперов.")
+        @Accordion
+        var creeper = CreeperConfig()
+
+        @Expose
+        @ConfigOption(name = "Волки", desc = "Настройки подсветки волков.")
+        @Accordion
+        var wolf = WolfConfig()
+    }
 
     class EndermanConfig {
         @Expose
-        @ConfigOption(name = "Включить подсветку", desc = "Подсвечивает эндерменов")
+        @ConfigOption(name = "Включить подсветку", desc = "Активирует обводку для эндерменов.")
         @ConfigEditorBoolean
         var enabled = false
 
         @Expose
-        @ConfigOption(name = "Цвет", desc = "Цвет подсветки")
+        @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
         @ConfigEditorColour
         var color = "0:255:255:0:255"
 
         @Expose
-        @ConfigOption(name = "Прозрачность", desc = "Прозрачность хитбокса (0.0 - 1.0)")
+        @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
         @ConfigEditorSlider(minValue = 0.0f, maxValue = 1.0f, minStep = 0.05f)
         var transparency = 0.5f
     }
 
     class CreeperConfig {
         @Expose
-        @ConfigOption(name = "Включить подсветку", desc = "Подсвечивает заряженных криперов")
+        @ConfigOption(name = "Включить подсветку", desc = "Активирует обводку для криперов.")
         @ConfigEditorBoolean
         var enabled = false
 
         @Expose
-        @ConfigOption(name = "Цвет", desc = "Цвет подсветки")
+        @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
         @ConfigEditorColour
         var color = "0:255:0:255:255"
 
         @Expose
-        @ConfigOption(name = "Прозрачность", desc = "Прозрачность хитбокса (0.0 - 1.0)")
+        @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
         @ConfigEditorSlider(minValue = 0.0f, maxValue = 1.0f, minStep = 0.05f)
         var transparency = 0.5f
     }
 
     class WolfConfig {
         @Expose
-        @ConfigOption(name = "Включить подсветку", desc = "Подсвечивает волков")
+        @ConfigOption(name = "Включить подсветку", desc = "Активирует обводку для волков.")
         @ConfigEditorBoolean
         var enabled = false
 
         @Expose
-        @ConfigOption(name = "Цвет", desc = "Цвет подсветки")
+        @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
         @ConfigEditorColour
         var color = "0:255:0:255:0"
 
         @Expose
-        @ConfigOption(name = "Прозрачность", desc = "Прозрачность хитбокса (0.0 - 1.0)")
+        @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
         @ConfigEditorSlider(minValue = 0.0f, maxValue = 1.0f, minStep = 0.05f)
         var transparency = 0.5f
     }
 }
+

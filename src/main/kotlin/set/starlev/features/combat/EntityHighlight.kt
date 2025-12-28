@@ -9,6 +9,7 @@ import set.starlev.StarredHeltix
 import set.starlev.render.RenderEvents
 import set.starlev.render.RenderContext
 import java.awt.Color
+import kotlin.math.sin
 
 /**
  * Система подсветки мобов в мире.
@@ -24,7 +25,7 @@ object EntityHighlight {
     fun init() {
         RenderEvents.register { context ->
             val level = mc.level ?: return@register
-            val config = StarredHeltix.feature.combat
+            val config = StarredHeltix.feature.combat.highlight
 
             // Получаем все сущности для рендеринга
             val entities = level.entitiesForRendering()
@@ -95,7 +96,7 @@ object EntityHighlight {
             } else {
                 (a shl 24) or (r shl 16) or (g shl 8) or b
             }
-        } catch (e: NumberFormatException) {
+        } catch (e: Exception) {
             0xFFFFFFFF.toInt()
         }
     }

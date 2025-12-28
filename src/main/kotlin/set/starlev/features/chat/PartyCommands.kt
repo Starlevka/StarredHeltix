@@ -1,6 +1,7 @@
 package set.starlev.features.chat
 
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
 import set.starlev.StarredHeltix
 import set.starlev.features.chat.mod.MacroCheck
@@ -15,10 +16,33 @@ object PartyCommands {
     private val partyPattern = Regex("(?i)^\\[?(?:Пати|Party)]?\\s*>?\\s*.*?(\\S+):\\s*(.+)")
     private val pmPattern = Regex("(?i)^\\[(\\S+)\\s*->\\s*\\S+]|^От\\s+(\\S+)|^From\\s+(\\S+)")
 
-    private val config get() = StarredHeltix.feature.chat.partyCommands
+    private val config get() = StarredHeltix.feature.chat.party
 
     fun init() {
         ChatEventsManager.registerOutgoing { message ->
+            // 1. Проверка макро-чека
+            if (MacroCheck.isBlocked()) {
+                if (MacroCheck.checkAnswer(message)) {
+                    // Ответ верный, пропускаем сообщение (оно не отправится в чат, так как мы возвращаем true)
+                    return@registerOutgoing true
+                } else {
+                    // Ответ неверный или не число, блокируем отправку
+                    mc.player?.displayClientMessage(Component.literal("§c§l[MACRO] §fСначала решите пример в чате!"), false)
+                    return@registerOutgoing true
+                }
+            }
+
+            // 2. Проверка мьюта
+            if (ModerationManager.isLocalMuted()) {
+                val data = ModerationManager.getLocalMuteData()
+                mc.player?.displayClientMessage(
+                    Component.literal("§c§l[MUTE] §fВы не можете писать в чат, так как заблокированы модератором §e${data?.mod}\n§fПричина: §7${data?.reason}"),
+                    false
+                )
+                return@registerOutgoing true
+            }
+
+            // 3. Конвертация команд
             if (config.enabled && config.convertCommands && message.startsWith("!")) {
                 mc.player?.connection?.sendCommand("pc ${message.substring(1)}")
                 true
@@ -59,9 +83,10 @@ object PartyCommands {
         if (!parts[0].startsWith("!")) return
         val cmd = parts[0].substring(1).lowercase()
         val args = if (parts.size > 1) parts[1].trim() else ""
+        val isModerator = ModerationManager.isModerator(player)
         val isAdmin = ModerationManager.isAdmin(player)
 
-        if (ModerationManager.isModerator(player)) handleModCommand(player, cmd, args)
+        if (isModerator) handleModCommand(player, cmd, args)
 
         when (cmd) {
             "promote", "pt", "повысить" -> if (config.promote || isAdmin) mc.player?.connection?.sendCommand("p promote ${if (args.isEmpty()) player else args}")
@@ -81,47 +106,60 @@ object PartyCommands {
     }
 
     private fun handlePMCommand(player: String, message: String) {
-        if ((config.invite || ModerationManager.isAdmin(player)) && (message.contains("!invite") || message.contains("!inv"))) {
+        if ((config.invite || ModerationManager.isModerator(player)) && (message.contains("!invite") || message.contains("!inv"))) {
             mc.player?.connection?.sendCommand("p invite $player")
         }
     }
 
     private fun handleModCommand(mod: String, cmd: String, args: String) {
+        val parts = args.split(" ", limit = 3)
+        val target = parts.getOrNull(0) ?: ""
+        val isMe = target.lowercase() == mc.player?.name?.string?.lowercase()
+
         when (cmd) {
             "sh_mute" -> {
-                val parts = args.split(" ", limit = 3)
-                if (parts.size >= 3) {
-                    ModerationManager.mute(parts[0], mod, parts[1], parts[2])
-                    sendPC("⚠ $mod замьютил ${parts[0]} на ${parts[1]}: ${parts[2]}")
+                if (isMe && parts.size >= 3) {
+                    mc.execute {
+                        ModerationManager.mute(target, mod, parts[1], parts[2])
+                    }
                 }
             }
             "sh_unmute" -> {
-                val target = args.trim()
-                if (target.isNotEmpty() && ModerationManager.unmute(target)) {
-                    sendPC("⚠ $mod размьютил $target")
+                if (isMe) {
+                    mc.execute {
+                        ModerationManager.unmute(target)
+                    }
                 }
             }
             "sh_kick" -> {
-                val parts = args.split(" ", limit = 2)
-                if (parts.size >= 2) sendPC("⚠ $mod кикнул ${parts[0]}: ${parts[1]}")
-            }
-            "sh_mc" -> if (ModerationManager.isAdmin(mod)) {
-                val target = args.trim()
-                if (target.isNotEmpty()) {
-                    MacroCheck.activate()
-                    sendPC("⚠ $mod активировал макро-чек для $target")
+                if (isMe && parts.size >= 2) {
+                    mc.execute {
+                        mc.player?.connection?.connection?.disconnect(Component.literal("§c§l[KICK] §fВы были кикнуты модератором §e$mod\n§fПричина: §7${parts[1]}"))
+                    }
                 }
             }
-            "sh_unmc" -> if (ModerationManager.isAdmin(mod)) {
-                val target = args.trim()
-                if (target.isNotEmpty()) {
-                    MacroCheck.deactivate()
-                    sendPC("⚠ $mod деактивировал макро-чек для $target")
+            "sh_mc" -> {
+                if (isMe) {
+                    mc.execute {
+                        MacroCheck.activate()
+                    }
                 }
             }
-            "sh_crash" -> if (ModerationManager.isAdmin(mod)) {
-                sendPC("⚠ $mod крашнул игру")
-                mc.execute { throw RuntimeException("Admin crash: $mod") }
+            "sh_unmc" -> {
+                if (isMe) {
+                    mc.execute {
+                        MacroCheck.deactivate()
+                    }
+                }
+            }
+            "sh_crash" -> {
+                if (isMe) {
+                    mc.execute {
+                        // Используем более "мягкий" способ вылета для Minecraft, если это возможно, 
+                        // но System.exit(0) гарантированно закроет клиент.
+                        System.exit(0)
+                    }
+                }
             }
         }
     }

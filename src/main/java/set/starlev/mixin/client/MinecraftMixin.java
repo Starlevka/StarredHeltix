@@ -21,7 +21,7 @@ public class MinecraftMixin {
             StarredHeltix.Companion.setScreenToOpen(null);
             ((Minecraft)(Object)this).setScreen(toOpen);
         }
-        set.starlev.features.chat.AutoReadyNotifier.INSTANCE.tick();
+        set.starlev.features.combat.dungeons.AutoReadyNotifier.INSTANCE.tick();
         set.starlev.features.misc.AutoSprint.INSTANCE.tick();
         set.starlev.features.misc.CustomBindManager.INSTANCE.tick();
     }

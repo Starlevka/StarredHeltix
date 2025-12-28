@@ -9,8 +9,8 @@ import set.starlev.utils.ConfigUtils
 
 class DisplayConfig {
 
-    @Expose(serialize = false)
-    @ConfigOption(name = "Открыть редактор HUD", desc = "Нажмите для открытия редактора HUD элементов")
-    @ConfigEditorButton(buttonText = "Открыть")
+    @ConfigOption(name = "Редактор HUD", desc = "Открывает настройку HUD. Используйте колёсико мыши для изменения размера!")
+    @ConfigEditorButton(buttonText = "Открыть редактор")
     var openHudEditor: Runnable = Runnable { ConfigUtils.openHudEditor() }
 }
+

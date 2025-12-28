@@ -9,6 +9,7 @@ import org.lwjgl.glfw.GLFW
 import set.starlev.StarredHeltix
 import set.starlev.config.ConfigGuiManager
 import set.starlev.features.misc.CustomBindManager
+import set.starlev.features.visual.GhostNPCHandler
 
 object KeyBindHandler {
     private val configKey = KeyBindingHelper.registerKeyBinding(
@@ -31,6 +32,13 @@ object KeyBindHandler {
             while (configKey.consumeClick()) {
                 if (client.screen == null) {
                     ConfigGuiManager.openConfigGui()
+                }
+            }
+
+            // Проверка ЛКМ для GhostNPC
+            if (client.options.keyAttack.isDown) { // Пробуем isDown вместо consumeClick
+                if (GhostNPCHandler.handleAttack()) {
+                    // Обработано
                 }
             }
 

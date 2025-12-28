@@ -1,5 +1,8 @@
 package set.starlev.hud
 
+import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.client.gui.GuiGraphics
+
 abstract class HudElement(
     val id: String
 ) {
@@ -25,7 +28,7 @@ abstract class HudElement(
         }
     }
 
-    fun renderWithGraphics(graphics: net.minecraft.client.gui.GuiGraphics) {
+    fun renderWithGraphics(graphics: GuiGraphics) {
         ensureInitialized()
         cachedGraphics = graphics
         

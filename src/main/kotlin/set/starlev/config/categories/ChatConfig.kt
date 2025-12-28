@@ -10,58 +10,56 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 import set.starlev.StarredHeltix
 
 class ChatConfig {
-    @Accordion
-    @Expose
-    @ConfigOption(name = "Копирование чата", desc = "Копирование сообщений из чата")
-    var chatCopy = ChatCopyConfig()
 
-    @Accordion
     @Expose
-    @ConfigOption(name = "Пати и ЛС команды", desc = "Настройки команд в пати и личных сообщениях")
-    var partyCommands = PartyCommandsConfig()
+    @ConfigOption(name = "Функции чата", desc = "Общие настройки для взаимодействия с чатом.")
+    @Accordion
+    var general = GeneralChatConfig()
 
-    @Accordion
     @Expose
-    @ConfigOption(name = "Авто-готовность", desc = "Автоматическое уведомление о готовности")
-    var autoReady = AutoReadyConfig()
+    @ConfigOption(name = "Команды пати", desc = "Настройки автоматизации команд для группы (Party).")
+    @Accordion
+    var party = PartyCommandsConfig()
 
-    @Accordion
-    @Expose
-    @ConfigOption(name = "Фильтр сообщений", desc = "(Используйте /sh filter ...)")
-    var messageFilter = MessageFilterConfig()
+    class GeneralChatConfig {
+        @Accordion
+        @Expose
+        @ConfigOption(name = "Копирование чата", desc = "Позволяет копировать сообщения из чата при нажатии Shift.")
+        var chatCopy = ChatCopyConfig()
+
+        @Accordion
+        @Expose
+        @ConfigOption(name = "Фильтр сообщений", desc = "Скрывает сообщения, содержащие определенные слова.")
+        var messageFilter = MessageFilterConfig()
+    }
+
+    class PartyConfig {
+        @Accordion
+        @Expose
+        @ConfigOption(name = "Команды в пати и ЛС", desc = "Позволяет другим игрокам управлять вашей группой через команды.")
+        var partyCommands = PartyCommandsConfig()
+    }
 
     class ChatCopyConfig {
         @Expose
-        @ConfigOption(name = "Включить", desc = "Включает функцию копирования сообщений")
-        @ConfigEditorBoolean
-        var enabled = true
-
-        @Expose
-        @ConfigOption(name = "Цвет обводки (Не робит)", desc = "Цвет рамки при наведении (Shift)")
-        @ConfigEditorColour
-        var highlightColor = "0:255:255:255:255"
-
-        @Expose
-        @ConfigOption(name = "лЛл", desc = "Shift + ЛКМ: Скопировать последнее сообщение")
-        @ConfigEditorText
-        var info = "Наведите на сообщение с Shift"
-    }
-
-    class AutoReadyConfig {
-        @Expose
-        @ConfigOption(name = "Включить", desc = "Включить авто-готовность")
+        @ConfigOption(name = "Включить", desc = "Включает функционал копирования.")
         @ConfigEditorBoolean
         var enabled = false
 
         @Expose
-        @ConfigOption(name = "Сообщение", desc = "Сообщение о готовности")
+        @ConfigOption(name = "Цвет выделения", desc = "Цвет, которым подсвечивается копируемое сообщение.")
+        @ConfigEditorColour
+        var highlightColor = "0:255:255:255:255"
+
+        @Expose
+        @ConfigOption(name = "Инфо", desc = "Наведите на сообщение с Shift")
         @ConfigEditorText
-        var readyMessage = "starreдheltix ✪ Я готов к подземельям!"
+        var info = "Наведите на сообщение с Shift"
     }
 
     class MessageFilterConfig {
         @Expose
-        @ConfigOption(name = "Включить", desc = "Включить фильтрацию")
+        @ConfigOption(name = "Включить", desc = "Включает фильтрацию сообщений. /sh filter")
         @ConfigEditorBoolean
         var enabled = false
 
@@ -71,63 +69,64 @@ class ChatConfig {
 
     class PartyCommandsConfig {
         @Expose
-        @ConfigOption(name = "Включить команды", desc = "Включить обработку команд в пати и ЛС")
+        @ConfigOption(name = "Включить команды", desc = "Разрешает выполнение команд из чата.")
         @ConfigEditorBoolean
         var enabled = true
 
         @Expose
-        @ConfigOption(name = "Конвертировать ! команды", desc = "Конвертировать сообщения начинающиеся с ! в партийные команды")
+        @ConfigOption(name = "Конвертировать ! команды", desc = "Заменяет '!' на '/' для команд (например, !p -> /p).")
         @ConfigEditorBoolean
         var convertCommands = false
 
         @Expose
-        @ConfigOption(name = "!promote", desc = "Повысить игрока в пати")
+        @ConfigOption(name = "!promote", desc = "Разрешает команду повышения игрока.")
         @ConfigEditorBoolean
         var promote = true
 
         @Expose
-        @ConfigOption(name = "!kick", desc = "Кикнуть игрока из пати")
+        @ConfigOption(name = "!kick", desc = "Разрешает команду исключения игрока.")
         @ConfigEditorBoolean
         var kick = true
 
         @Expose
-        @ConfigOption(name = "!invite", desc = "Пригласить игрока в пати (через ЛС и Пати чаты)")
+        @ConfigOption(name = "!invite", desc = "Разрешает команду приглашения игрока.")
         @ConfigEditorBoolean
         var invite = true
 
         @Expose
-        @ConfigOption(name = "!ping", desc = "Показать пинг")
+        @ConfigOption(name = "!ping", desc = "Разрешает команду проверки пинга.")
         @ConfigEditorBoolean
         var ping = true
 
         @Expose
-        @ConfigOption(name = "!fps", desc = "Показать FPS")
+        @ConfigOption(name = "!fps", desc = "Разрешает команду проверки FPS.")
         @ConfigEditorBoolean
         var fps = true
 
         @Expose
-        @ConfigOption(name = "!time", desc = "Показать время")
+        @ConfigOption(name = "!time", desc = "Разрешает команду проверки времени.")
         @ConfigEditorBoolean
         var time = true
 
         @Expose
-        @ConfigOption(name = "!coords", desc = "Показать координаты")
+        @ConfigOption(name = "!coords", desc = "Разрешает команду отправки координат.")
         @ConfigEditorBoolean
         var coords = true
 
         @Expose
-        @ConfigOption(name = "!rng", desc = "Случайное число")
+        @ConfigOption(name = "!rng", desc = "Разрешает команду генерации случайного числа.")
         @ConfigEditorBoolean
         var rng = true
 
         @Expose
-        @ConfigOption(name = "!dt", desc = "Сообщение о перерыве")
+        @ConfigOption(name = "!dt", desc = "Разрешает команду напоминания о перерыве.")
         @ConfigEditorBoolean
         var dt = true
 
         @Expose
-        @ConfigOption(name = "!boykisser", desc = "бойкиссер артик :P")
+        @ConfigOption(name = "!boykisser", desc = "Разрешает команду boykisser :3")
         @ConfigEditorBoolean
         var boykisser = true
     }
 }
+

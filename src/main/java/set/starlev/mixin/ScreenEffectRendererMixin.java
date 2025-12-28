@@ -14,7 +14,7 @@ import set.starlev.StarredHeltix;
 public class ScreenEffectRendererMixin {
     @Inject(method = "renderFire", at = @At("HEAD"), cancellable = true)
     private static void onRenderFire(PoseStack poseStack, MultiBufferSource bufferSource, TextureAtlasSprite sprite, CallbackInfo ci) {
-        if (StarredHeltix.Companion.getFeature().getOptimization().getHideFireOverlay()) {
+        if (StarredHeltix.Companion.getFeature().getOptimization().getVisualOptimizations().getHideFireOverlay()) {
             ci.cancel();
         }
     }

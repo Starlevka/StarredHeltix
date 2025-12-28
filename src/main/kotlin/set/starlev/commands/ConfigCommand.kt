@@ -16,7 +16,7 @@ import set.starlev.config.ConfigGuiManager
 import set.starlev.config.Features
 import set.starlev.features.chat.MessageFilterManager
 import set.starlev.features.misc.CustomBindManager
-import set.starlev.features.misc.VotingReminder
+import set.starlev.features.misc.MouseLock
 import set.starlev.utils.ConfigUtils
 
 object ConfigCommand {
@@ -33,6 +33,17 @@ object ConfigCommand {
         
         // Также регистрировать как /starredheltix
         dispatcher.register(buildMainCommand("starredheltix"))
+
+        // Вспомогательная команда для диалогов (скрытая)
+        dispatcher.register(literal("sh_dialogue")
+            .then(argument("type", StringArgumentType.word())
+                .executes { ctx ->
+                    val type = StringArgumentType.getString(ctx, "type")
+                    set.starlev.features.visual.GhostNPCHandler.handleDialogueChoice(type)
+                    1
+                }
+            )
+        )
 
         // Простые команды
         registerSimpleCommands(dispatcher)
@@ -53,7 +64,7 @@ object ConfigCommand {
             .then(literal("remove")
                 .then(argument("id", IntegerArgumentType.integer(0, 999))
                     .suggests { _, builder ->
-                        StarredHeltix.feature.chat.messageFilter.filters.forEachIndexed { index, filter ->
+                        StarredHeltix.feature.chat.general.messageFilter.filters.forEachIndexed { index, filter ->
                             builder.suggest(index, Component.literal(filter))
                         }
                         builder.buildFuture()
@@ -88,6 +99,27 @@ object ConfigCommand {
             .then(literal("editor").executes { ctx ->
                 ConfigUtils.openHudEditor()
                 ctx.source.sendFeedback(Component.literal("§aОкрыт редактор HUD элементов"))
+                1
+            })
+        )
+        // NPC Commands
+        .then(literal("npc")
+            .then(literal("pos").executes { ctx ->
+                val client = Minecraft.getInstance()
+                val player = client.player
+                if (player != null) {
+                    val pos = player.blockPosition()
+                    set.starlev.features.visual.GhostNPCHandler.setPos(pos)
+                    ctx.source.sendFeedback(Component.literal("§6§l[NPC] §fПозиция установлена на: §e${pos.x}, ${pos.y}, ${pos.z}"))
+                } else {
+                    ctx.source.sendError(Component.literal("§cОшибка: игрок не найден"))
+                    return@executes 0
+                }
+                1
+            })
+            .then(literal("reset").executes { ctx ->
+                set.starlev.features.visual.GhostNPCHandler.resetDialogue()
+                ctx.source.sendFeedback(Component.literal("§6§l[NPC] §fДиалог сброшен"))
                 1
             })
         )
@@ -151,13 +183,19 @@ object ConfigCommand {
             })
         )
         .then(literal("coords").executes(::showCoords))
+        .then(literal("mouselock")
+            .executes { ctx ->
+                MouseLock.toggle()
+                1
+            }
+        )
 
     private fun registerSimpleCommands(dispatcher: CommandDispatcher<FabricClientCommandSource>) {
         // /вход - быстрый вход
         dispatcher.register(
             literal("вход")
                 .executes { ctx ->
-                    val password = StarredHeltix.feature.misc.loginCommand.password
+                    val password = StarredHeltix.feature.misc.autoLogin.password
                     if (password.isNotEmpty()) {
                         Minecraft.getInstance().player?.connection?.sendCommand("login $password")
                         ctx.source.sendFeedback(Component.literal("§aУспешный вход в систему"))
@@ -172,7 +210,7 @@ object ConfigCommand {
         dispatcher.register(
             literal("яготовлёвал")
                 .executes { ctx ->
-                    val config = StarredHeltix.feature.chat.autoReady
+                    val config = StarredHeltix.feature.dungeons.autoReady
                     if (config.enabled) {
                         Minecraft.getInstance().player?.connection?.sendCommand("pc ${config.readyMessage}")
                         ctx.source.sendFeedback(Component.literal("§aСообщение о готовности отправлено"))
@@ -189,7 +227,7 @@ object ConfigCommand {
     }
 
     private fun resetVoting(ctx: CommandContext<FabricClientCommandSource>): Int {
-        StarredHeltix.feature.misc.votingReminder.hasShownReminderToday = false
+        StarredHeltix.feature.misc.hasShownReminderToday = false
         StarredHeltix.configManager.saveConfig("reset-voting-reminder")
         ctx.source.sendFeedback(Component.literal("§aНапоминание о голосовании сброшено"))
         return 1
@@ -205,14 +243,14 @@ object ConfigCommand {
     private fun addFilter(ctx: CommandContext<FabricClientCommandSource>): Int {
         val message = StringArgumentType.getString(ctx, "message")
         MessageFilterManager.addFilter(message)
-        val id = StarredHeltix.feature.chat.messageFilter.filters.indexOf(message)
+        val id = StarredHeltix.feature.chat.general.messageFilter.filters.indexOf(message)
         ctx.source.sendFeedback(Component.literal("§aФильтр добавлен: [$id] $message"))
         return 1
     }
 
     private fun removeFilter(ctx: CommandContext<FabricClientCommandSource>): Int {
         val id = IntegerArgumentType.getInteger(ctx, "id")
-        val filters = StarredHeltix.feature.chat.messageFilter.filters
+        val filters = StarredHeltix.feature.chat.general.messageFilter.filters
         if (id >= 0 && id < filters.size) {
             val removed = filters.removeAt(id)
             StarredHeltix.configManager.saveConfig("filter-remove")
@@ -249,7 +287,7 @@ object ConfigCommand {
 
     private fun setPassword(ctx: CommandContext<FabricClientCommandSource>): Int {
         val password = StringArgumentType.getString(ctx, "password")
-        StarredHeltix.feature.misc.loginCommand.password = password
+        StarredHeltix.feature.misc.autoLogin.password = password
         StarredHeltix.configManager.saveConfig("config-password")
         ctx.source.sendFeedback(Component.literal("§aПароль установлен"))
         return 1
@@ -257,9 +295,9 @@ object ConfigCommand {
 
     private fun setReadyPhrase(ctx: CommandContext<FabricClientCommandSource>): Int {
         val phrase = StringArgumentType.getString(ctx, "phrase")
-        StarredHeltix.feature.chat.autoReady.readyMessage = phrase
-        StarredHeltix.configManager.saveConfig("config-readyphrase")
-        ctx.source.sendFeedback(Component.literal("§aФраза готовности установлена"))
+        StarredHeltix.feature.dungeons.autoReady.readyMessage = phrase
+        StarredHeltix.configManager.saveConfig("config-ready-phrase")
+        ctx.source.sendFeedback(Component.literal("§aФраза авто-готовности установлена: §e$phrase"))
         return 1
     }
 

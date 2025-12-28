@@ -14,13 +14,22 @@ import set.starlev.features.fishing.FishingNotifier;
 public class FishingHookMixin {
     @Inject(method = "handleSoundEvent", at = @At("HEAD"))
     private void onPlaySound(ClientboundSoundPacket packet, CallbackInfo ci) {
-        // Check for fishing splash sound
         String soundName = packet.getSound().value().location().toString();
-        if (soundName.equals("minecraft:entity.fishing_bobber.splash") ||
-            soundName.equals("entity.fishing_bobber.splash")) {
+        if (soundName.contains("fishing_bobber.splash") || soundName.contains("fishing_bobber.throw")) {
             Minecraft client = Minecraft.getInstance();
             if (client.player != null && client.player.fishing != null) {
-                FishingNotifier.INSTANCE.onBite();
+                FishingHook hook = client.player.fishing;
+                
+                // Проверяем дистанцию от звука до поплавка владельца
+                double dx = hook.getX() - packet.getX();
+                double dy = hook.getY() - packet.getY();
+                double dz = hook.getZ() - packet.getZ();
+                double distSq = dx * dx + dy * dy + dz * dz;
+
+                // Если звук всплеска произошел непосредственно в месте нахождения поплавка игрока (радиус ~0.5 блока)
+                if (distSq < 0.25) { 
+                    FishingNotifier.INSTANCE.onBite();
+                }
             }
         }
     }

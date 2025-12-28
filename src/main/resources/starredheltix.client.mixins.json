@@ -13,14 +13,22 @@
 		"ChatScreenMixin",
 		"MacroCheckMixin",
 		"LevelRendererMixin",
+		"ParticleManagerMixin",
 		"ExampleClientMixin",
 		"FishingHookMixin",
 		"EffectRenderingInventoryScreenMixin",
 		"ItemInHandRendererMixin",
+		"LightmapTextureManagerMixin",
 		"TreeCapBlockBreakMixin",
+		"MouseInputMixin",
+		"client.ClientLevelMixin",
+		"client.BiomeManagerMixin",
+		"client.LocalPlayerMixin",
+		"client.InventoryAccessor",
 		"accessors.LevelRendererAccessor",
 		"accessors.GuiAccessor",
-		"accessors.PlayerTabOverlayAccessor"
+		"accessors.PlayerTabOverlayAccessor",
+		"accessors.TextColorAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

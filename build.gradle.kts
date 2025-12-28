@@ -1,93 +1,71 @@
 plugins {
-    id("fabric-loom") version("1.13-SNAPSHOT")
-    id("maven-publish")
-    id("org.jetbrains.kotlin.jvm") version("2.2.21")
+    alias(libs.plugins.loom)
+    alias(libs.plugins.mavenPublish)
+    alias(libs.plugins.kotlin)
 }
 
-version = project.property("mod_version") as String
-group = project.property("maven_group") as String
+val mod_version: String by project
+val maven_group: String by project
+val archives_base_name: String by project
 
-base {
-    archivesName.set(project.property("archives_base_name") as String)
-}
+version = mod_version
+group = maven_group
+base.archivesName.set(archives_base_name)
 
 repositories {
-    maven {
-        name = "ParchmentMC"
-        url = uri("https://maven.parchmentmc.org")
-    }
-    maven {
-        name = "notenoughupdatesReleases"
-        url = uri("https://maven.notenoughupdates.org/releases")
-    }
-	maven {
-		url = uri("https://maven.terraformersmc.com/releases/") 
-	}
-}
-
-loom {
-    // splitEnvironmentSourceSets()
+    mavenCentral()
+    maven("https://maven.parchmentmc.org")
+    maven("https://maven.notenoughupdates.org/releases")
+    maven("https://maven.terraformersmc.com/releases/")
 }
 
 dependencies {
-    minecraft("com.mojang:minecraft:${project.property("minecraft_version")}")
+    minecraft(libs.minecraft)
     mappings(loom.layered {
         officialMojangMappings()
-		parchment("org.parchmentmc.data:parchment-1.21.10:2025.10.12@zip")
+        parchment("org.parchmentmc.data:parchment-1.21.10:2025.10.12@zip")
     })
-    modImplementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
-    modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
-    modImplementation("net.fabricmc:fabric-language-kotlin:${project.property("fabric_kotlin_version")}")
+    modImplementation(libs.bundles.fabric)
     modImplementation(include("org.notenoughupdates.moulconfig:modern-1.21.10:4.2.0-beta")!!)
-    modApi("com.terraformersmc:modmenu:16.0.0-rc.1")
+    modApi(libs.modMenu)
+}
+
+loom {
+    accessWidenerPath.set(file("src/main/resources/starredheltix.accesswidener"))
 }
 
 tasks.processResources {
-    inputs.property("version", project.version)
-
+    inputs.property("version", version)
     filesMatching("fabric.mod.json") {
-        expand(mapOf("version" to inputs.properties["version"]))
+        expand("version" to version)
     }
 }
 
-tasks.withType<JavaCompile>().configureEach {
+tasks.withType<JavaCompile> {
     options.release = 21
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-    }
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
 }
 
 java {
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
     withSourcesJar()
-
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.jar {
-    inputs.property("archivesName", project.base.archivesName.get())
-
     from("LICENSE") {
-        rename { "${it}_${inputs.properties["archivesName"]}"}
+        rename { "${it}_${archives_base_name}" }
     }
 }
 
-// configure the maven publication
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = "starredheltix"
+            artifactId = archives_base_name
             from(components["java"])
         }
-    }
-
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
     }
 }

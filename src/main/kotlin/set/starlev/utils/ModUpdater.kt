@@ -22,7 +22,7 @@ object ModUpdater {
             .map { it.metadata.version.friendlyString }
             .orElse("0.0.8")
 
-    fun checkUpdate() {
+    fun checkUpdate(quiet: Boolean = false) {
         CompletableFuture.runAsync {
             try {
                 val response = makeRequest(GITHUB_API)
@@ -39,13 +39,31 @@ object ModUpdater {
                     }
                     
                     mc.execute {
-                        mc.player?.displayClientMessage(
-                            Component.literal("§6[StarredHeltix] §eНовая версия: $latestVersion! §7/starredheltix update install"),
-                            false
-                        )
-                        mc.player?.playSound(ModSounds.UPDATE_AVAILABLE, 1.0f, 1.0f)
+                        if (!quiet) {
+                            mc.player?.displayClientMessage(
+                                Component.literal("§6[StarredHeltix] §eНовая версия: $latestVersion! §7/starredheltix update install"),
+                                false
+                            )
+                            mc.player?.playSound(ModSounds.UPDATE_AVAILABLE, 1.0f, 1.0f)
+                        } else {
+                            // Если тихо (при входе), показываем только если есть обнова
+                            // Добавляем небольшую задержку, чтобы сообщение не потерялось в спаме при входе
+                            CompletableFuture.runAsync {
+                                try { Thread.sleep(3000) } catch (e: Exception) {}
+                                mc.execute {
+                                    mc.player?.displayClientMessage(
+                                        Component.literal("§6§l[StarredHeltix] §e§lДоступно обновление: §a§l$latestVersion! §7(Текущая: $currentVersion)"),
+                                        false
+                                    )
+                                    mc.player?.displayClientMessage(
+                                        Component.literal("§7Используйте §f/sh update install §7для автоматической установки."),
+                                        false
+                                    )
+                                }
+                            }
+                        }
                     }
-                } else {
+                } else if (!quiet) {
                     mc.execute {
                         mc.player?.displayClientMessage(
                             Component.literal("§a[StarredHeltix] Последняя версия: $currentVersion"),
@@ -54,11 +72,13 @@ object ModUpdater {
                     }
                 }
             } catch (e: Exception) {
-                mc.execute {
-                    mc.player?.displayClientMessage(
-                        Component.literal("§c[StarredHeltix] Ошибка проверки: ${e.message}"),
-                        false
-                    )
+                if (!quiet) {
+                    mc.execute {
+                        mc.player?.displayClientMessage(
+                            Component.literal("§c[StarredHeltix] Ошибка проверки: ${e.message}"),
+                            false
+                        )
+                    }
                 }
             }
         }

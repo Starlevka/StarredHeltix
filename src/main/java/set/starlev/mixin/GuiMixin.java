@@ -13,7 +13,7 @@ import set.starlev.StarredHeltix;
 public class GuiMixin {
     @Inject(method = "renderEffects", at = @At("HEAD"), cancellable = true)
     private void onRenderEffects(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if (StarredHeltix.Companion.getFeature().getOptimization().getHideStatusEffects()) {
+        if (StarredHeltix.Companion.getFeature().getOptimization().getVisualOptimizations().getHideStatusEffects()) {
             ci.cancel();
         }
     }

@@ -12,7 +12,7 @@ import set.starlev.StarredHeltix;
 public class EffectRenderingInventoryScreenMixin {
     @Inject(method = "renderEffects(Lnet/minecraft/client/gui/GuiGraphics;II)V", at = @At("HEAD"), cancellable = true)
     private void onRenderEffects(GuiGraphics guiGraphics, int mouseX, int mouseY, CallbackInfo ci) {
-        if (StarredHeltix.Companion.getFeature().getOptimization().getHideStatusEffects()) {
+        if (StarredHeltix.Companion.getFeature().getOptimization().getVisualOptimizations().getHideStatusEffects()) {
             ci.cancel();
         }
     }

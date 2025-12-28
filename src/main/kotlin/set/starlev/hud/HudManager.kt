@@ -28,10 +28,12 @@ object HudManager {
     fun init() {
         // Регистрируем HUD элементы
         registerElement(set.starlev.features.fishing.FishingNotifier)
+        registerElement(set.starlev.features.fishing.LegendaryFishingNotifier)
         registerElement(set.starlev.features.foraging.TreeCapCooldown)
         registerElement(set.starlev.features.mining.PickaxeCooldownHud)
         registerElement(set.starlev.features.mining.SpeedBoostCooldownHud)
-        registerElement(set.starlev.features.combat.solvers.dungeons.BloodRoomTimer)
+        registerElement(set.starlev.features.combat.dungeons.BloodRoomTimer)
+        registerElement(set.starlev.features.misc.MouseLock)
         
         // Загружаем сохранённые позиции элементов
         loadAllLayouts()

@@ -24,8 +24,8 @@ object VotingReminder {
     }
 
     fun checkAndShowReminder() {
-        val config = StarredHeltix.feature.misc.votingReminder
-        if (!config.enabled) return
+        val misc = StarredHeltix.feature.misc
+        if (!misc.general.votingReminder) return
 
         checkAndResetDailyVoteStatus()
 
@@ -34,18 +34,18 @@ object VotingReminder {
         if (player != null) {
             val hasVotingCrate = (0..35).any { player.inventory.getItem(it).displayName.string.contains("Voting Crate") } ||
                     player.offhandItem.displayName.string.contains("Voting Crate")
-            if (hasVotingCrate && !config.hasVotedToday) {
-                config.hasVotedToday = true
+            if (hasVotingCrate && !misc.hasVotedToday) {
+                misc.hasVotedToday = true
                 StarredHeltix.configManager.saveConfig("voted-detected")
             }
         }
 
-        if (!config.hasShownReminderToday && !config.hasVotedToday && !isReminderScheduled) {
+        if (!misc.hasShownReminderToday && !misc.hasVotedToday && !isReminderScheduled) {
             isReminderScheduled = true
             Timer().schedule(object : TimerTask() {
                 override fun run() {
                     showReminder()
-                    config.hasShownReminderToday = true
+                    misc.hasShownReminderToday = true
                     StarredHeltix.configManager.saveConfig("reminder-shown")
                     isReminderScheduled = false
                 }
@@ -54,16 +54,16 @@ object VotingReminder {
     }
 
     private fun checkAndResetDailyVoteStatus() {
-        val config = StarredHeltix.feature.misc.votingReminder
+        val misc = StarredHeltix.feature.misc
         val now = LocalDateTime.now(moscowZone)
-        val lastCheck = LocalDateTime.ofEpochSecond(config.lastCheckTime / 1000, 0, java.time.ZoneOffset.UTC)
+        val lastCheck = LocalDateTime.ofEpochSecond(misc.lastCheckTime / 1000, 0, java.time.ZoneOffset.UTC)
         val nextResetTime = getNextDailyResetTime(lastCheck)
 
         if (now.isAfter(nextResetTime)) {
-            config.hasVotedToday = false
-            config.hasShownReminderToday = false
+            misc.hasVotedToday = false
+            misc.hasShownReminderToday = false
             isReminderScheduled = false
-            config.lastCheckTime = System.currentTimeMillis()
+            misc.lastCheckTime = System.currentTimeMillis()
             StarredHeltix.configManager.saveConfig("voting-reset")
         }
     }
@@ -77,8 +77,8 @@ object VotingReminder {
     }
 
     fun markAsVoted() {
-        val config = StarredHeltix.feature.misc.votingReminder
-        config.hasVotedToday = true
+        val misc = StarredHeltix.feature.misc
+        misc.hasVotedToday = true
         StarredHeltix.configManager.saveConfig("voted")
         Timer().schedule(object : TimerTask() {
             override fun run() {
@@ -91,7 +91,7 @@ object VotingReminder {
     }
 
     fun showNow() {
-        if (!StarredHeltix.feature.misc.votingReminder.enabled) return
+        if (!StarredHeltix.feature.misc.general.votingReminder) return
         showReminder()
     }
 

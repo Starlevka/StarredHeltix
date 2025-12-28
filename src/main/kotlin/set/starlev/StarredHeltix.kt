@@ -8,7 +8,8 @@ import org.slf4j.LoggerFactory
 import set.starlev.render.RenderEngine
 import set.starlev.config.ConfigManager
 import set.starlev.config.Features
-import set.starlev.features.combat.solvers.dungeons.ThreeWeirdosSolverObj
+import set.starlev.features.combat.solvers.dungeons.ThreeWeirdosSolver
+import set.starlev.features.misc.MouseLock
 import set.starlev.features.misc.WelcomeMessage
 
 class StarredHeltix : ClientModInitializer {
@@ -23,9 +24,17 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.events.KeyBindHandler.init()
         set.starlev.features.combat.EntityHighlight.init()
         set.starlev.features.chat.PartyCommands.init()
+        set.starlev.features.combat.dungeons.DeathCounter.init()
         set.starlev.features.misc.VotingReminder.init()
         set.starlev.features.misc.CustomBindManager.init()
-        WelcomeMessage.register()
+        set.starlev.features.misc.MouseLock.init()
+        set.starlev.hud.HudManager.registerElement(set.starlev.features.misc.MouseLock)
+        set.starlev.features.combat.slayer.AutoSlayer.init()
+        WelcomeMessage.init()
+        set.starlev.features.visual.GhostFrameFeature.init()
+        set.starlev.features.visual.GhostNPCHandler.init()
+        set.starlev.features.visual.Fullbright.init()
+        set.starlev.features.chat.mod.MacroCheck.init()
 
         // Register chat listeners
         set.starlev.features.chat.ChatEventsManager.registerIncoming { message ->
@@ -47,16 +56,19 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.hud.HudManager.init()
         
         // Инициализировать солверы подземелий
-        set.starlev.features.combat.solvers.dungeons.BloodRoomTimer.register()
-        ThreeWeirdosSolverObj.register()
-
+        set.starlev.features.combat.dungeons.BloodRoomTimer.init()
+        set.starlev.features.combat.solvers.dungeons.ThreeWeirdosSolver.init()
+        set.starlev.features.combat.solvers.dungeons.TicTacToeSolver.init()
+        set.starlev.features.combat.solvers.dungeons.CreeperBeamsSolver.init()
+        set.starlev.features.fishing.LegendaryFishingNotifier.init()
+        
         // Регистрация сохранения конфига при выходе из игры
         ClientLifecycleEvents.CLIENT_STOPPING.register { client ->
             configManager.saveConfig("client-stopping")
             set.starlev.hud.HudManager.saveAllLayouts()
         }
 
-        LOGGER.info("StarredHeltix инициализирован. Chat Copy Feature готов к использованию.")
+        LOGGER.info("StarredHeltix инициализирован.")
 
         Runtime.getRuntime().addShutdownHook(Thread {
             configManager.saveConfig("shutdown-hook")

@@ -19,29 +19,47 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import set.starlev.render.RenderContext;
 import set.starlev.render.RenderEvents;
 
+import com.mojang.blaze3d.resource.ResourceHandle;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.state.LevelRenderState;
+import net.minecraft.util.profiling.ProfilerFiller;
+
 @Mixin(LevelRenderer.class)
 public class LevelRendererMixin {
     @Shadow @Final private net.minecraft.client.renderer.RenderBuffers renderBuffers;
 
-    @Inject(method = "renderLevel", at = @At("RETURN"))
-    private void onRenderWorld(GraphicsResourceAllocator allocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, Matrix4f matrix4f, Matrix4f matrix4f2, Matrix4f matrix4f3, GpuBufferSlice gpuBufferSlice, Vector4f vector4f, boolean bl, CallbackInfo ci) {
+    @Inject(method = "method_62214", at = @At("RETURN"))
+    private void onRenderWorld(GpuBufferSlice gpuBufferSlice, LevelRenderState worldRenderState, ProfilerFiller profiler, Matrix4f matrix4f, ResourceHandle handle, ResourceHandle handle2, boolean bl, Frustum frustum, ResourceHandle handle3, ResourceHandle handle4, CallbackInfo ci) {
         PoseStack poseStack = new PoseStack();
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        Camera camera = mc.gameRenderer.getMainCamera();
         
-        // Apply camera rotation
-        poseStack.mulPose(Axis.XP.rotationDegrees(camera.getXRot()));
-        poseStack.mulPose(Axis.YP.rotationDegrees(camera.getYRot() + 180.0F));
+        // В 1.21.10 при использовании нового PoseStack() в RETURN инъекции, 
+        // он уже синхронизирован с матрицей вида, если мы не применяем лишних вращений.
+        // Однако, для корректного World Rendering нам нужно учитывать позицию камеры.
 
         MultiBufferSource.BufferSource bufferSource = this.renderBuffers.bufferSource();
 
         // Создаем RenderContext
-        RenderContext context = new RenderContext(poseStack, camera, deltaTracker.getGameTimeDeltaTicks(), bufferSource);
+        RenderContext context = new RenderContext(
+            poseStack, 
+            camera, 
+            mc.getDeltaTracker().getGameTimeDeltaTicks(), 
+            bufferSource,
+            worldRenderState.cameraRenderState
+        );
 
         // Вызываем RenderEvents
         RenderEvents.fireWorldRender(context);
 
         // Также вызываем старый RenderEngine для совместимости
+        // ВАЖНО: В 1.21.10 PoseStack в RETURN уже может иметь базовые трансформации.
+        // Мы используем абсолютные координаты мира, поэтому транслейтим обратно на позицию камеры.
+        poseStack.pushPose();
         poseStack.translate(-camera.getPosition().x, -camera.getPosition().y, -camera.getPosition().z);
-        set.starlev.render.RenderEngine.renderWorld(poseStack, bufferSource, deltaTracker.getGameTimeDeltaTicks());
+        set.starlev.render.RenderEngine.renderWorld(poseStack, bufferSource, mc.getDeltaTracker().getGameTimeDeltaTicks());
+        poseStack.popPose();
+        
         bufferSource.endBatch();
     }
 }
