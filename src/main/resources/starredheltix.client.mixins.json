@@ -19,7 +19,7 @@
 		"EffectRenderingInventoryScreenMixin",
 		"ItemInHandRendererMixin",
 		"LightmapTextureManagerMixin",
-		"TreeCapBlockBreakMixin",
+		"BlockBreakMixin",
 		"MouseInputMixin",
 		"client.ClientLevelMixin",
 		"client.BiomeManagerMixin",

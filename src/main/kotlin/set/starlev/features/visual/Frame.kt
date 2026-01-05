@@ -28,7 +28,7 @@ object GhostFrameFeature {
     fun init() {
         RenderEvents.register { context ->
             val level = mc.level ?: return@register
-            val config = set.starlev.StarredHeltix.feature.misc.newYear
+            val config = set.starlev.StarredHeltix.feature.visuals.newYear
             
             val currentDimId = level.dimension().location().toString()
             val isOverworld = currentDimId == OVERWORLD_DIM_ID || 

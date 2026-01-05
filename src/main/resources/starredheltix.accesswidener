@@ -1,18 +1,5 @@
 accessWidener v2 named
 
-accessible class net/minecraft/client/gui/font/TextRenderable
-accessible class net/minecraft/client/gui/font/glyphs/BakedGlyph
-accessible class net/minecraft/client/gui/font/glyphs/BakedSheetGlyph
-accessible class net/minecraft/client/gui/font/glyphs/BakedSheetGlyph$GlyphInstance
-accessible class net/minecraft/client/gui/font/glyphs/BakedSheetGlyph$EffectInstance
-
-accessible class net/minecraft/client/gui/Font
-accessible field net/minecraft/client/gui/Font provider Lnet/minecraft/client/gui/Font$Provider;
-
-# TextureStateShard access
-accessible class net/minecraft/client/renderer/RenderStateShard$TextureStateShard
-accessible method net/minecraft/client/renderer/RenderStateShard$TextureStateShard cutoutTexture ()Ljava/util/Optional;
-
 # Inventory access
 accessible field net/minecraft/world/entity/player/Inventory items Lnet/minecraft/core/NonNullList;
 accessible field net/minecraft/world/entity/player/Inventory selected I
@@ -23,3 +10,7 @@ accessible field net/minecraft/world/level/Level dimension Lnet/minecraft/resour
 accessible field net/minecraft/world/entity/Avatar DATA_PLAYER_MODE_CUSTOMISATION Lnet/minecraft/network/syncher/EntityDataAccessor;
 accessible field net/minecraft/world/entity/Avatar DATA_PLAYER_MAIN_HAND Lnet/minecraft/network/syncher/EntityDataAccessor;
 
+# Minecraft access
+# accessible field net/minecraft/client/Minecraft timer Lnet/minecraft/client/Timer;
+# accessible field net/minecraft/client/Timer tickDelta F
+# accessible field net/minecraft/client/Timer tickDeltaMatrix Lorg/joml/Matrix4f;

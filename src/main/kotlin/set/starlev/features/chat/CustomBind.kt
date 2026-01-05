@@ -1,4 +1,4 @@
-package set.starlev.features.misc
+package set.starlev.features.chat
 
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -8,7 +8,7 @@ import set.starlev.StarredHeltix
 
 object CustomBindManager {
     private val mc = Minecraft.getInstance()
-    private val binds = mutableMapOf<String, Pair<String, Int>>()
+    val binds = mutableMapOf<String, Pair<String, Int>>()
     private val keyStates = mutableMapOf<Int, Boolean>()
 
     fun init() {
@@ -16,7 +16,7 @@ object CustomBindManager {
     }
 
     fun tick() {
-        if (!StarredHeltix.feature.misc.general.customBinds) return
+        if (!StarredHeltix.feature.chat.binds.enabled) return
         if (mc.player == null) return
         if (mc.screen != null) return
 
@@ -68,19 +68,28 @@ object CustomBindManager {
             return false
         }
         if (keyName.equals("ESCAPE", true) || keyName.equals("ESC", true)) {
-            binds[name] = bind.first to GLFW.GLFW_KEY_UNKNOWN
-            save()
-            sendMsg("§aКлавиша для '$name' сброшена")
-            return true
+            return setKey(name, GLFW.GLFW_KEY_UNKNOWN)
         }
         val keyCode = parseKey(keyName)
         if (keyCode == GLFW.GLFW_KEY_UNKNOWN) {
             sendMsg("§cНеизвестная клавиша: $keyName")
             return false
         }
+        return setKey(name, keyCode)
+    }
+
+    fun setKey(name: String, keyCode: Int): Boolean {
+        val bind = binds[name] ?: run {
+            sendMsg("§cБинд '$name' не найден!")
+            return false
+        }
         binds[name] = bind.first to keyCode
         save()
-        sendMsg("§aКлавиша '$keyName' назначена для '$name'")
+        if (keyCode == GLFW.GLFW_KEY_UNKNOWN) {
+            sendMsg("§aКлавиша для '$name' сброшена")
+        } else {
+            sendMsg("§aКлавиша '${getKeyName(keyCode)}' назначена для '$name'")
+        }
         return true
     }
 
@@ -108,7 +117,7 @@ object CustomBindManager {
 
     private fun loadFromConfig() {
         binds.clear()
-        val config = StarredHeltix.feature.misc
+        val config = StarredHeltix.feature.chat.binds
         config.customBindsMap.forEach { (name, command) ->
             val keyCode = config.customBindsKeys[name] ?: GLFW.GLFW_KEY_UNKNOWN
             binds[name] = command to keyCode
@@ -116,7 +125,7 @@ object CustomBindManager {
     }
 
     private fun save() {
-        val config = StarredHeltix.feature.misc
+        val config = StarredHeltix.feature.chat.binds
         config.customBindsMap.clear()
         config.customBindsKeys.clear()
         binds.forEach { (name, pair) ->
@@ -149,7 +158,7 @@ object CustomBindManager {
         else -> GLFW.GLFW_KEY_UNKNOWN
     }
 
-    private fun getKeyName(keyCode: Int): String = when (keyCode) {
+    fun getKeyName(keyCode: Int): String = when (keyCode) {
         GLFW.GLFW_KEY_F1 -> "F1"; GLFW.GLFW_KEY_F2 -> "F2"; GLFW.GLFW_KEY_F3 -> "F3"; GLFW.GLFW_KEY_F4 -> "F4"
         GLFW.GLFW_KEY_F5 -> "F5"; GLFW.GLFW_KEY_F6 -> "F6"; GLFW.GLFW_KEY_F7 -> "F7"; GLFW.GLFW_KEY_F8 -> "F8"
         GLFW.GLFW_KEY_F9 -> "F9"; GLFW.GLFW_KEY_F10 -> "F10"; GLFW.GLFW_KEY_F11 -> "F11"; GLFW.GLFW_KEY_F12 -> "F12"

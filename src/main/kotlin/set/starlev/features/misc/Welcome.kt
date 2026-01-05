@@ -27,7 +27,7 @@ object WelcomeMessage {
             Component.literal("§b§lДобро пожаловать в StarredHeltix! §f(версия 0.0.11)"),
             Component.literal("§d§lНовое в этой версии:"),
             Component.literal("§b• Авто-слеер §e- авто-звонок Маддоксу на ЛКМ в меню, в категории Слеерство"),
-            Component.literal("§b• Зимняя атмосфера §e- снегопад, НПС §lМега-ящик§e???"),
+            Component.literal("§b• Зимняя атмосфера §e- снегопад, НПС §lПингвин§e???"),
             Component.literal("§b• Солверы для подземелий! (Крестики нолики и Крипер-лучи)"),
             Component.literal("§b• Изменения в Анимациях ударов"),
             Component.literal("§b• Уведомление о легендарных монстрах в Рыбалке"),

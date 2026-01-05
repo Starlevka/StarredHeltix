@@ -17,7 +17,7 @@ import set.starlev.StarredHeltix;
 public class BiomeManagerMixin {
     @Inject(method = "getBiome(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/core/Holder;", at = @At("RETURN"), cancellable = true)
     private void onGetBiome(BlockPos pos, CallbackInfoReturnable<Holder<Biome>> cir) {
-        if (StarredHeltix.getFeature().getMisc().getNewYear().getWinterAtmosphere()) {
+        if (StarredHeltix.getFeature().getVisuals().getNewYear().getWinterAtmosphere()) {
             Minecraft client = Minecraft.getInstance();
             if (client.level != null) {
                 client.level.registryAccess().lookup(Registries.BIOME)

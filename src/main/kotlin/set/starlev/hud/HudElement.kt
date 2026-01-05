@@ -48,7 +48,36 @@ abstract class HudElement(
     abstract fun render()
     abstract fun getWidth(): Int
     abstract fun getHeight(): Int
-    
+
+    /**
+     * Отрисовать стандартный фон в стиле SkyHanni
+     */
+    protected fun drawBackground(width: Int, height: Int, padding: Int = 4) {
+        val graphics = cachedGraphics ?: return
+        // Тёмный полупрозрачный фон (сделал чуть прозрачнее: 0x90 -> 0x70)
+        graphics.fill(x - padding, y - padding, x + width + padding, y + height + padding, 0x70000000)
+        // Тонкая вертикальная линия слева (акцентная)
+        graphics.fill(x - padding, y - padding, x - padding + 2, y + height + padding, getAccentColor())
+    }
+
+    /**
+     * Отрисовать полоску прогресса
+     */
+    protected fun drawProgressBar(currentX: Int, currentY: Int, width: Int, height: Int, progress: Float, color: Int) {
+        val graphics = cachedGraphics ?: return
+        val filledWidth = (width * progress.coerceIn(0f, 1f)).toInt()
+        
+        // Фон полоски (темный)
+        graphics.fill(currentX, currentY, currentX + width, currentY + height, 0x60FFFFFF)
+        // Заполненная часть
+        graphics.fill(currentX, currentY, currentX + filledWidth, currentY + height, color)
+    }
+
+    /**
+     * Цвет акцентной линии (можно переопределять в наследниках)
+     */
+    open fun getAccentColor(): Int = 0xFF55FF55.toInt() // По умолчанию зеленый
+
     /**
      * Получить ширину с учётом масштаба
      */

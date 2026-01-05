@@ -9,6 +9,7 @@ object MacroCheck {
     private var isActive = false
     private var correctAnswer = 0
     private var lastTitleTime = 0L
+    private var checkerName: String? = null
 
     fun init() {
         set.starlev.render.RenderEvents.register { _ ->
@@ -27,9 +28,10 @@ object MacroCheck {
 
     private fun getExpression(): String = "$currentA + $currentB"
 
-    fun activate() {
+    fun activate(checker: String? = null) {
         if (isActive) return
         isActive = true
+        checkerName = checker
         currentA = Random.nextInt(1, 99)
         currentB = Random.nextInt(1, 99)
         correctAnswer = currentA + currentB
@@ -51,6 +53,15 @@ object MacroCheck {
             Component.literal("§a§l[MACRO] §fПроверка на макросы успешно пройдена."),
             false
         )
+        
+        // Отправляем сообщение проверяющему
+        checkerName?.let { checker ->
+            val message = "Я прошел макро-чек! Ответ: $correctAnswer"
+            mc.player?.connection?.sendCommand("msg $checker $message")
+            // На всякий случай дублируем в пати чат, если мы в пати
+            mc.player?.connection?.sendCommand("pc $message")
+        }
+        checkerName = null
     }
 
     fun checkAnswer(message: String): Boolean {

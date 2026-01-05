@@ -30,11 +30,11 @@ class Features : Config() {
     }
 
     private fun buildChromaTitle(): String {
-        return "§6§lStarredHeltix §e§lv0.0.11"
+        return "§b§lStarredHeltix §r§lv0.0.12"
     }
 
     @Expose
-    @Category(name = "§lОсновные", desc = "· Общие настройки мода.")
+    @Category(name = "Основные", desc = "· Общие настройки мода.")
     var misc = MiscConfig()
 
     @Expose
@@ -74,7 +74,7 @@ class Features : Config() {
     var fishing = FishingConfig()
 
     @Expose
-    @Category(name = "✦ Лесорубство", desc = "· Функции для навыка лесорубства.")
+    @Category(name = "✦ Лесничество", desc = "· Функции для навыка лесничества.")
     var foraging = ForagingConfig()
 
     @Expose

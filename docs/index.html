@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StarredHeltix — С Новым Годом! ❄️</title>
+    <title>StarredHeltix — 100 лет Heltix Skyblock! 🎂</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -87,16 +87,20 @@
             padding: 20px;
             max-width: 650px;
             width: 100%;
+            perspective: 1000px;
         }
 
         .card {
             backdrop-filter: blur(15px);
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 24px;
             padding: 50px 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6);
             animation: fadeIn 1s ease-out;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+            will-change: transform;
         }
 
         @keyframes fadeIn {
@@ -108,7 +112,7 @@
             font-size: 3rem;
             font-weight: 800;
             margin-bottom: 10px;
-            background: linear-gradient(to right, #fff, #a5f3fc);
+            background: linear-gradient(to right, #fff, #ffd700);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             display: flex;
@@ -118,10 +122,11 @@
         }
 
         .subtitle {
-            font-size: 1.2rem;
-            color: #a5f3fc;
+            font-size: 1.4rem;
+            color: #ffd700;
             margin-bottom: 30px;
-            font-weight: 400;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         .features {
@@ -132,20 +137,20 @@
         }
 
         .feature {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.1);
             padding: 12px;
             border-radius: 12px;
             font-size: 0.95rem;
             display: flex;
             align-items: center;
             gap: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: transform 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s, background 0.2s;
         }
 
         .feature:hover {
-            transform: scale(1.02);
-            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .buttons {
@@ -166,13 +171,13 @@
         }
 
         .btn-primary {
-            background: #0ea5e9;
+            background: #e11d48;
             color: white;
-            box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
+            box-shadow: 0 4px 14px rgba(225, 29, 72, 0.4);
         }
 
         .btn-primary:hover {
-            background: #0284c7;
+            background: #be123c;
             transform: translateY(-2px);
         }
 
@@ -190,7 +195,7 @@
         .footer {
             margin-top: 40px;
             font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.7);
         }
 
         @media (max-width: 500px) {
@@ -207,23 +212,23 @@
     <div class="container">
         <div class="card">
             <h1 class="title">
-                <span>❄️</span>
+                <span>🎂</span>
                 StarredHeltix
             </h1>
-            <p class="subtitle">Новогоднее обновление 0.0.11</p>
+            <p class="subtitle">100 лет Хелтикс Скайблоку! (v0.0.12)</p>
 
             <div class="features">
-                <div class="feature"><span>🧩</span> Солверы и Авто-Слеер</div>
+                <div class="feature"><span>🐧</span> Пингвин-NPC с вкусняшками :3</div>
                 <div class="feature"><span>❄️</span> Зимняя атмосфера</div>
-                <div class="feature"><span>👤</span> NPC Мега-ящик?</div>
-                <div class="feature"><span>💡</span> Fullbright и Оптимизация</div>
-                <div class="feature"><span>🎮</span> QOL и Команды</div>
+                <div class="feature"><span>🧩</span> Улучшенный геймлей</div>
+                <div class="feature"><span>🤖</span> секретек</div>
+                <div class="feature"><span>📊</span> Статистика и Достижения</div>
                 <div class="feature"><span>🎨</span> HUD Редактор</div>
             </div>
 
             <div class="buttons">
                 <a href="https://github.com/Starlevka/StarredHeltix/releases/latest" class="btn btn-primary">
-                    <span>⬇️</span> Скачать мод
+                    <span>⬇️</span> Скачать обновление
                 </a>
                 <a href="https://github.com/Starlevka/StarredHeltix" class="btn btn-secondary">
                     <span>🔗</span> GitHub
@@ -231,8 +236,8 @@
             </div>
 
             <div class="footer">
-                <p>Версия 0.0.11 • Minecraft 1.21.10 • Java 21+</p>
-                <p style="margin-top: 8px;">Счастливого Нового Года! ★</p>
+                <p>Версия 0.0.12 • Minecraft 1.21.10 • Fabric</p>
+                <p style="margin-top: 8px;">С юбилеем, Хелтикс Скайблок! 🎉</p>
             </div>
         </div>
     </div>
@@ -269,6 +274,28 @@
 
         createSnow();
         createGarland();
+
+        // Interactive Card Tilt
+        const card = document.querySelector('.card');
+        const container = document.querySelector('.container');
+
+        container.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = (y - centerY) / 15;
+            const rotateY = (centerX - x) / 15;
+            
+            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        });
+
+        container.addEventListener('mouseleave', () => {
+            card.style.transform = 'rotateX(0deg) rotateY(0deg)';
+        });
     </script>
 </body>
 </html>

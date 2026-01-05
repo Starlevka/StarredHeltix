@@ -15,7 +15,7 @@ class ForagingConfig {
 
     class AxesConfig {
         @Expose
-        @ConfigOption(name = "Отображение КД топоров", desc = "Показывает перезарядку Treecapitator или Jungle Axe.")
+        @ConfigOption(name = "Отображение КД топоров", desc = "Показывает перезарядку Древоточеца и Джунглевского топора.")
         @Accordion
         var treeCapCooldown = TreeCapCooldownConfig()
     }

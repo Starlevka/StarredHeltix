@@ -32,7 +32,7 @@ public abstract class ClientLevelMixin implements BiomeIdentifier {
     @Inject(method = "getRainLevel(F)F", at = @At("HEAD"), cancellable = true)
     private void onGetRainLevel(float partialTick, CallbackInfoReturnable<Float> cir) {
         net.minecraft.world.level.Level level = (net.minecraft.world.level.Level) (Object) this;
-        if (level.isClientSide && StarredHeltix.getFeature().getMisc().getNewYear().getWinterAtmosphere()) {
+        if (level.isClientSide && StarredHeltix.getFeature().getVisuals().getNewYear().getWinterAtmosphere()) {
             cir.setReturnValue(1.0f);
         }
     }
@@ -40,7 +40,7 @@ public abstract class ClientLevelMixin implements BiomeIdentifier {
     @Inject(method = "isRaining()Z", at = @At("HEAD"), cancellable = true)
     private void onIsRaining(CallbackInfoReturnable<Boolean> cir) {
         net.minecraft.world.level.Level level = (net.minecraft.world.level.Level) (Object) this;
-        if (level.isClientSide && StarredHeltix.getFeature().getMisc().getNewYear().getWinterAtmosphere()) {
+        if (level.isClientSide && StarredHeltix.getFeature().getVisuals().getNewYear().getWinterAtmosphere()) {
             cir.setReturnValue(true);
         }
     }

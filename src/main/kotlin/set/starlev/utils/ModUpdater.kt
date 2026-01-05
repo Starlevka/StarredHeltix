@@ -106,7 +106,7 @@ object ModUpdater {
                 val fileName = "starredheltix-$latestVersion.jar"
                 val newMod = modsDir.resolve(fileName)
                 
-                URL(downloadUrl).openStream().use { input ->
+                java.net.URI(downloadUrl!!).toURL().openStream().use { input ->
                     Files.copy(input, newMod)
                 }
                 
@@ -128,7 +128,7 @@ object ModUpdater {
     }
 
     private fun makeRequest(url: String): String {
-        val conn = URL(url).openConnection() as HttpURLConnection
+        val conn = java.net.URI(url).toURL().openConnection() as HttpURLConnection
         conn.requestMethod = "GET"
         conn.setRequestProperty("User-Agent", "StarredHeltix-Updater")
         return conn.inputStream.bufferedReader().use { it.readText() }

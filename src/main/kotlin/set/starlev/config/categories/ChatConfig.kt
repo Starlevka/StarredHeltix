@@ -17,6 +17,11 @@ class ChatConfig {
     var general = GeneralChatConfig()
 
     @Expose
+    @ConfigOption(name = "Кастомные бинды", desc = "Настройки пользовательских горячих клавиш (/bind).")
+    @Accordion
+    var binds = BindsConfig()
+
+    @Expose
     @ConfigOption(name = "Команды пати", desc = "Настройки автоматизации команд для группы (Party).")
     @Accordion
     var party = PartyCommandsConfig()
@@ -31,6 +36,25 @@ class ChatConfig {
         @Expose
         @ConfigOption(name = "Фильтр сообщений", desc = "Скрывает сообщения, содержащие определенные слова.")
         var messageFilter = MessageFilterConfig()
+    }
+
+    class BindsConfig {
+        @Expose
+        @ConfigOption(name = "Включить бинды", desc = "Включает поддержку пользовательских горячих клавиш (/bind).")
+        @ConfigEditorBoolean
+        var enabled = true
+
+        @ConfigOption(name = "Открыть меню биндов", desc = "Настроить пользовательские клавиши через удобное меню.")
+        @ConfigEditorButton(buttonText = "Открыть")
+        val openBindsMenu = Runnable {
+            set.starlev.StarredHeltix.screenToOpen = set.starlev.config.BindsGui(null)
+        }
+
+        @Expose
+        var customBindsMap = mutableMapOf<String, String>()
+
+        @Expose
+        var customBindsKeys = mutableMapOf<String, Int>()
     }
 
     class PartyConfig {
@@ -62,6 +86,12 @@ class ChatConfig {
         @ConfigOption(name = "Включить", desc = "Включает фильтрацию сообщений. /sh filter")
         @ConfigEditorBoolean
         var enabled = false
+
+        @ConfigOption(name = "Открыть меню фильтров", desc = "Настроить слова для фильтрации через удобное меню.")
+        @ConfigEditorButton(buttonText = "Открыть")
+        val openFilterMenu = Runnable {
+            net.minecraft.client.Minecraft.getInstance().setScreen(set.starlev.config.FilterGui())
+        }
 
         @Expose
         var filters = mutableListOf<String>()

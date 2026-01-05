@@ -10,7 +10,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 class CombatConfig {
 
     @Expose
-    @ConfigOption(name = "Подсветка мобов", desc = "Настройки визуального выделения существ для удобства обнаружения.")
+    @ConfigOption(name = "Подсветка/Обводка мобов", desc = "Настройки визуального выделения существ для удобства обнаружения.")
     @Accordion
     var highlight = EntityHighlightConfig()
 
@@ -39,6 +39,11 @@ class CombatConfig {
         var enabled = false
 
         @Expose
+        @ConfigOption(name = "Включить обводку", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigEditorBoolean
+        var outline = false
+
+        @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
         @ConfigEditorColour
         var color = "0:255:255:0:255"
@@ -56,6 +61,11 @@ class CombatConfig {
         var enabled = false
 
         @Expose
+        @ConfigOption(name = "Включить обводку", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigEditorBoolean
+        var outline = false
+
+        @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
         @ConfigEditorColour
         var color = "0:255:0:255:255"
@@ -71,6 +81,11 @@ class CombatConfig {
         @ConfigOption(name = "Включить подсветку", desc = "Активирует обводку для волков.")
         @ConfigEditorBoolean
         var enabled = false
+
+        @Expose
+        @ConfigOption(name = "Включить обводку", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigEditorBoolean
+        var outline = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")

@@ -12,10 +12,12 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
+import set.starlev.config.BindsGui
+import set.starlev.config.FilterGui
 import set.starlev.config.ConfigGuiManager
 import set.starlev.config.Features
 import set.starlev.features.chat.MessageFilterManager
-import set.starlev.features.misc.CustomBindManager
+import set.starlev.features.chat.CustomBindManager
 import set.starlev.features.misc.MouseLock
 import set.starlev.utils.ConfigUtils
 
@@ -34,17 +36,6 @@ object ConfigCommand {
         // Также регистрировать как /starredheltix
         dispatcher.register(buildMainCommand("starredheltix"))
 
-        // Вспомогательная команда для диалогов (скрытая)
-        dispatcher.register(literal("sh_dialogue")
-            .then(argument("type", StringArgumentType.word())
-                .executes { ctx ->
-                    val type = StringArgumentType.getString(ctx, "type")
-                    set.starlev.features.visual.GhostNPCHandler.handleDialogueChoice(type)
-                    1
-                }
-            )
-        )
-
         // Простые команды
         registerSimpleCommands(dispatcher)
     }
@@ -56,6 +47,10 @@ object ConfigCommand {
             .then(literal("config").executes(::resetConfig))
         )
         .then(literal("filter")
+            .executes { 
+                StarredHeltix.screenToOpen = FilterGui(null)
+                1
+            }
             .then(literal("add")
                 .then(argument("message", StringArgumentType.greedyString())
                     .executes(::addFilter)
@@ -71,6 +66,9 @@ object ConfigCommand {
                     }
                     .executes(::removeFilter)
                 )
+            )
+            .then(literal("list")
+                .executes(::listFilters)
             )
         )
         // Утилиты
@@ -102,28 +100,11 @@ object ConfigCommand {
                 1
             })
         )
-        // NPC Commands
-        .then(literal("npc")
-            .then(literal("pos").executes { ctx ->
-                val client = Minecraft.getInstance()
-                val player = client.player
-                if (player != null) {
-                    val pos = player.blockPosition()
-                    set.starlev.features.visual.GhostNPCHandler.setPos(pos)
-                    ctx.source.sendFeedback(Component.literal("§6§l[NPC] §fПозиция установлена на: §e${pos.x}, ${pos.y}, ${pos.z}"))
-                } else {
-                    ctx.source.sendError(Component.literal("§cОшибка: игрок не найден"))
-                    return@executes 0
-                }
-                1
-            })
-            .then(literal("reset").executes { ctx ->
-                set.starlev.features.visual.GhostNPCHandler.resetDialogue()
-                ctx.source.sendFeedback(Component.literal("§6§l[NPC] §fДиалог сброшен"))
-                1
-            })
-        )
         .then(literal("binds")
+            .executes { 
+                StarredHeltix.screenToOpen = BindsGui(null)
+                1
+            }
             .then(literal("create")
                 .then(argument("name", StringArgumentType.word())
                     .then(argument("command", StringArgumentType.greedyString())
@@ -172,6 +153,7 @@ object ConfigCommand {
                 )
             )
         )
+        // Обновление
         .then(literal("update")
             .executes { ctx ->
                 set.starlev.utils.ModUpdater.checkUpdate()
@@ -181,6 +163,30 @@ object ConfigCommand {
                 set.starlev.utils.ModUpdater.installUpdate()
                 1
             })
+        )
+        // Секретный код
+        .then(literal("code")
+            .then(literal("starl")
+                .then(argument("code", StringArgumentType.word())
+                    .executes { ctx ->
+                        val code = StringArgumentType.getString(ctx, "code")
+                        val cleanCode = code.trim()
+                        
+                        if (cleanCode == set.starlev.secret.features.ai.AiConfig.AI_SECRET) {
+                            if (!set.starlev.secret.config.SecretMenuManager.secretConfig.funCategory.isAiUnlocked) {
+                                set.starlev.secret.config.SecretMenuManager.secretConfig.funCategory.isAiUnlocked = true
+                                set.starlev.secret.config.SecretMenuManager.save()
+                                ctx.source.sendFeedback(Component.literal("§d§l[Secret] §fСистема ИИ §aразблокирована§f!"))
+                            } else {
+                                ctx.source.sendFeedback(Component.literal("§d§l[Secret] §eСистема ИИ уже разблокирована!"))
+                            }
+                        } else {
+                            ctx.source.sendError(Component.literal("§d§l[Secret] §cНеверный код активации!"))
+                        }
+                        1
+                    }
+                )
+            )
         )
         .then(literal("coords").executes(::showCoords))
         .then(literal("mouselock")
@@ -241,10 +247,17 @@ object ConfigCommand {
     }
 
     private fun addFilter(ctx: CommandContext<FabricClientCommandSource>): Int {
-        val message = StringArgumentType.getString(ctx, "message")
+        var message = StringArgumentType.getString(ctx, "message")
+        
+        // Убираем кавычки, если пользователь их ввел
+        if (message.startsWith("\"") && message.endsWith("\"") && message.length > 1) {
+            message = message.substring(1, message.length - 1)
+        }
+        
         MessageFilterManager.addFilter(message)
         val id = StarredHeltix.feature.chat.general.messageFilter.filters.indexOf(message)
-        ctx.source.sendFeedback(Component.literal("§aФильтр добавлен: [$id] $message"))
+        ctx.source.sendFeedback(Component.literal("§aФильтр добавлен: §e[$id] §f$message"))
+        ctx.source.sendFeedback(Component.literal("§7(Будет скрывать сообщения, начинающиеся с этого или содержащие это в имени отправителя)"))
         return 1
     }
 
@@ -254,9 +267,23 @@ object ConfigCommand {
         if (id >= 0 && id < filters.size) {
             val removed = filters.removeAt(id)
             StarredHeltix.configManager.saveConfig("filter-remove")
-            ctx.source.sendFeedback(Component.literal("§aФильтр удалён: $removed"))
+            ctx.source.sendFeedback(Component.literal("§aФильтр удалён: §e$removed"))
         } else {
             ctx.source.sendError(Component.literal("§cФильтр с ID $id не найден"))
+        }
+        return 1
+    }
+
+    private fun listFilters(ctx: CommandContext<FabricClientCommandSource>): Int {
+        val filters = StarredHeltix.feature.chat.general.messageFilter.filters
+        if (filters.isEmpty()) {
+            ctx.source.sendFeedback(Component.literal("§cСписок фильтров пуст"))
+            return 1
+        }
+        
+        ctx.source.sendFeedback(Component.literal("§6§l[Список фильтров]"))
+        filters.forEachIndexed { index, filter ->
+            ctx.source.sendFeedback(Component.literal("§e$index. §f$filter"))
         }
         return 1
     }
@@ -316,7 +343,7 @@ object ConfigCommand {
             val y = String.format("%.1f", player.y)
             val z = String.format("%.1f", player.z)
 
-            val coordsMessage = "starreдheltix ✪ X: $x Y: $y Z: $z"
+            val coordsMessage = " / / starredheltix x: $x y: $y z: $z / /"
             client.keyboardHandler.setClipboard(coordsMessage)
 
             ctx.source.sendFeedback(Component.literal("§aКоординаты скопированы в буфер обмена: §e$coordsMessage"))

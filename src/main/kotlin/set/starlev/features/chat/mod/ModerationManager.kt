@@ -5,12 +5,34 @@ import net.minecraft.network.chat.Component
 
 object ModerationManager {
     private val admins = setOf("Starlev", "Owner", "Penguin", "Starlevka")
-    private val moderators = setOf("ZurGames", "MegaChromeX", "nik36c")
+    private val moderators = setOf("ZurGames", "MegaChromeX", "nik36c", "Tasik12")
     private val muted = mutableMapOf<String, MuteData>()
     private var localMuted: MuteData? = null
 
     fun isAdmin(player: String) = admins.contains(player)
     fun isModerator(player: String) = moderators.contains(player) || isAdmin(player)
+
+    /**
+     * Проверяет, может ли mod совершить действие над target.
+     * Админ может всё над всеми (кроме, возможно, других админов, но тут админ > модератор).
+     * Модератор НЕ может мутить/кикать админов.
+     */
+    fun canPerformAction(mod: String, target: String): Boolean {
+        if (isAdmin(mod)) return true
+        if (isModerator(mod) && isAdmin(target)) return false
+        return isModerator(mod)
+    }
+
+    /**
+     * Список команд, доступных модераторам.
+     * Админы имеют доступ ко всем командам.
+     */
+    private val moderatorCommands = setOf("sh_mute", "sh_kick", "sh_unmute", "sh_mc", "sh_unmc")
+
+    fun isCommandAllowed(mod: String, command: String): Boolean {
+        if (isAdmin(mod)) return true
+        return moderatorCommands.contains(command.lowercase())
+    }
 
     fun mute(target: String, mod: String, duration: String, reason: String) {
         val data = MuteData(mod, duration, reason, System.currentTimeMillis())

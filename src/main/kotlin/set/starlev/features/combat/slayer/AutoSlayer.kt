@@ -16,28 +16,34 @@ object AutoSlayer {
     private val mc = Minecraft.getInstance()
     private var isWaitingForClick = false
     private var phoneSlot = -1
-    private var lastMessageTime = 0L
+    private var lastTriggerTime = 0L
+    private var lastClickTime = 0L
     private val timer = Timer()
+    
 
     fun init() {
         ChatEventsManager.registerIncoming { message ->
             if (StarredHeltix.feature.slayer.general.autoSlayer) {
                 val cleanMessage = message.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "")
                 if (cleanMessage.contains("Поговорите с Маддоксом, чтобы получить опыт!")) {
-                    findPhoneAndShowTitle()
+                    findPhoneAndTrigger()
                 }
             }
         }
 
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             if (isWaitingForClick && mc.player != null && mc.screen == null) {
+                val currentTime = System.currentTimeMillis()
                 // If 10 seconds passed, cancel waiting
-                if (System.currentTimeMillis() - lastMessageTime > 10000) {
+                if (currentTime - lastTriggerTime > 10000) {
                     isWaitingForClick = false
                     return@register
                 }
 
                 if (mc.options.keyUse.isDown) {
+                    if (currentTime - lastClickTime < 5000) return@register
+                    lastClickTime = currentTime
+
                     mc.execute {
                         if (phoneSlot != -1) {
                             mc.player?.inventory?.selected = phoneSlot
@@ -53,7 +59,7 @@ object AutoSlayer {
         }
     }
 
-    private fun findPhoneAndShowTitle() {
+    private fun findPhoneAndTrigger() {
         val player = mc.player ?: return
         var foundSlot = -1
 
@@ -71,14 +77,16 @@ object AutoSlayer {
         if (foundSlot != -1) {
             phoneSlot = foundSlot
             isWaitingForClick = true
-            lastMessageTime = System.currentTimeMillis()
+            lastTriggerTime = System.currentTimeMillis()
 
-            timer.schedule(500L) {
-                mc.execute {
-                    mc.gui.setTimes(10, 60, 10)
-                    mc.gui.setTitle(Component.literal("§c§lПозвонить Маддоксу?"))
-                    mc.gui.setSubtitle(Component.literal("§4Нажмите ПКМ"))
-                    mc.soundManager.play(SimpleSoundInstance.forUI(SoundEvents.BELL_BLOCK, 1.0f))
+            if (StarredHeltix.feature.slayer.general.showTitle) {
+                timer.schedule(500L) {
+                    mc.execute {
+                        mc.gui.setTimes(10, 60, 10)
+                        mc.gui.setTitle(Component.literal("§c§lПозвонить Маддоксу?"))
+                        mc.gui.setSubtitle(Component.literal("§4Нажмите ПКМ"))
+                        mc.soundManager.play(SimpleSoundInstance.forUI(SoundEvents.BELL_BLOCK, 1.0f))
+                    }
                 }
             }
         }

@@ -16,21 +16,88 @@ data class RenderContext(
     val cameraRenderState: CameraRenderState? = null
 ) {
 
-    fun renderBox(box: AABB, red: Float, green: Float, blue: Float, alpha: Float) {
-        renderBox(box, red, green, blue, alpha, false)
+    fun renderBox(aabb: AABB, r: Float, g: Float, b: Float, a: Float) {
+        renderBox(aabb, r, g, b, a, false)
     }
 
-    fun renderBox(box: AABB, red: Float, green: Float, blue: Float, alpha: Float, filled: Boolean) {
+    fun renderBox(aabb: AABB, r: Float, g: Float, b: Float, a: Float, fill: Boolean) {
         val pos = camera.position
+        
         matrices.pushPose()
-        matrices.translate(-pos.x, -pos.y, -pos.z)
-
-        if (filled) {
-            DebugRenderer.renderFilledBox(matrices, vertexConsumers, box, red, green, blue, alpha)
+        matrices.translate(aabb.minX - pos.x, aabb.minY - pos.y, aabb.minZ - pos.z)
+        
+        val box = aabb.move(-aabb.minX, -aabb.minY, -aabb.minZ)
+        
+        // Используем специальный RenderType, который всегда рисует поверх (DEBUG_FILLED_BOX / DEBUG_LINE_STRIP)
+        // В 1.21.10 для просвечивания сквозь блоки лучше всего подходит debugQuads или custom
+        val renderType = if (fill) {
+            net.minecraft.client.renderer.RenderType.debugQuads()
         } else {
-            ShapeRenderer.renderLineBox(matrices.last(), vertexConsumers.getBuffer(net.minecraft.client.renderer.RenderType.lines()), box, red, green, blue, alpha)
+            net.minecraft.client.renderer.RenderType.lines()
         }
+        
+        val buffer = vertexConsumers.getBuffer(renderType)
+        val m = matrices.last().pose()
+        
+        if (fill) {
+            // Рисуем 6 граней вручную для максимального контроля
+            val x1 = box.minX.toFloat()
+            val y1 = box.minY.toFloat()
+            val z1 = box.minZ.toFloat()
+            val x2 = box.maxX.toFloat()
+            val y2 = box.maxY.toFloat()
+            val z2 = box.maxZ.toFloat()
+
+            // Нижняя
+            addQuad(buffer, m, x1, y1, z1, x2, y1, z1, x2, y1, z2, x1, y1, z2, r, g, b, a)
+            // Верхняя
+            addQuad(buffer, m, x1, y2, z1, x1, y2, z2, x2, y2, z2, x2, y2, z1, r, g, b, a)
+            // Северная
+            addQuad(buffer, m, x1, y1, z1, x1, y2, z1, x2, y2, z1, x2, y1, z1, r, g, b, a)
+            // Южная
+            addQuad(buffer, m, x1, y1, z2, x2, y1, z2, x2, y2, z2, x1, y2, z2, r, g, b, a)
+            // Западная
+            addQuad(buffer, m, x1, y1, z1, x1, y1, z2, x1, y2, z2, x1, y2, z1, r, g, b, a)
+            // Восточная
+            addQuad(buffer, m, x2, y1, z1, x2, y2, z1, x2, y2, z2, x2, y1, z2, r, g, b, a)
+        } else {
+            val x1 = box.minX.toFloat()
+            val y1 = box.minY.toFloat()
+            val z1 = box.minZ.toFloat()
+            val x2 = box.maxX.toFloat()
+            val y2 = box.maxY.toFloat()
+            val z2 = box.maxZ.toFloat()
+
+            // Линии с нормалью вверх для корректного освещения/видимости
+            addLine(buffer, m, x1, y1, z1, x2, y1, z1, r, g, b, a)
+            addLine(buffer, m, x2, y1, z1, x2, y1, z2, r, g, b, a)
+            addLine(buffer, m, x2, y1, z2, x1, y1, z2, r, g, b, a)
+            addLine(buffer, m, x1, y1, z2, x1, y1, z1, r, g, b, a)
+
+            addLine(buffer, m, x1, y2, z1, x2, y2, z1, r, g, b, a)
+            addLine(buffer, m, x2, y2, z1, x2, y2, z2, r, g, b, a)
+            addLine(buffer, m, x2, y2, z2, x1, y2, z2, r, g, b, a)
+            addLine(buffer, m, x1, y2, z2, x1, y2, z1, r, g, b, a)
+
+            addLine(buffer, m, x1, y1, z1, x1, y2, z1, r, g, b, a)
+            addLine(buffer, m, x2, y1, z1, x2, y2, z1, r, g, b, a)
+            addLine(buffer, m, x2, y1, z2, x2, y2, z2, r, g, b, a)
+            addLine(buffer, m, x1, y1, z2, x1, y2, z2, r, g, b, a)
+        }
+        
         matrices.popPose()
+    }
+
+    private fun addQuad(buffer: com.mojang.blaze3d.vertex.VertexConsumer, m: org.joml.Matrix4f, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, x3: Float, y3: Float, z3: Float, x4: Float, y4: Float, z4: Float, r: Float, g: Float, b: Float, a: Float) {
+        buffer.addVertex(m, x1, y1, z1).setColor(r, g, b, a).setLight(15728880)
+        buffer.addVertex(m, x2, y2, z2).setColor(r, g, b, a).setLight(15728880)
+        buffer.addVertex(m, x3, y3, z3).setColor(r, g, b, a).setLight(15728880)
+        buffer.addVertex(m, x4, y4, z4).setColor(r, g, b, a).setLight(15728880)
+    }
+
+    private fun addLine(buffer: com.mojang.blaze3d.vertex.VertexConsumer, matrix: org.joml.Matrix4f, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, r: Float, g: Float, b: Float, a: Float) {
+        buffer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setNormal(0f, 1f, 0f)
+        buffer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setNormal(0f, 1f, 0f)
     }
 
     fun renderItem(itemStack: net.minecraft.world.item.ItemStack, x: Double, y: Double, z: Double, scale: Float = 1f, rotation: Float = 0f) {
@@ -183,5 +250,102 @@ data class RenderContext(
         }
          
          matrices.popPose()
-     }
+    }
+
+    fun renderText(text: String, x: Double, y: Double, z: Double, color: Int = 0xFFFFFFFF.toInt(), scale: Float = 1f, shadow: Boolean = true, seeThrough: Boolean = true) {
+        val mc = net.minecraft.client.Minecraft.getInstance()
+        val font = mc.font
+        val pos = camera.position
+        
+        matrices.pushPose()
+        // Смещаем на позицию в мире относительно камеры
+        matrices.translate(x - pos.x, y - pos.y, z - pos.z)
+        
+        // Биллбординг: поворачиваем к камере
+        // Используем углы поворота камеры напрямую для надежности
+        matrices.mulPose(com.mojang.math.Axis.YP.rotationDegrees(-camera.yRot))
+        matrices.mulPose(com.mojang.math.Axis.XP.rotationDegrees(camera.xRot))
+        
+        // Масштабирование
+        val baseScale = -0.05f * scale // Увеличим базовый масштаб в 2 раза
+        matrices.scale(baseScale, baseScale, 1.0f)
+        
+        val matrix = matrices.last().pose()
+        val width = font.width(text).toFloat()
+        val xOffset = -width / 2
+        
+        // Рисуем фон для текста чтобы его было лучше видно
+        if (seeThrough) {
+            val bgOpacity = (0.4f * 255).toInt() shl 24
+            font.drawInBatch(
+                text,
+                xOffset,
+                0f,
+                color,
+                shadow,
+                matrix,
+                vertexConsumers,
+                net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH,
+                bgOpacity,
+                15728880
+            )
+        } else {
+            font.drawInBatch(
+                text,
+                xOffset,
+                0f,
+                color,
+                shadow,
+                matrix,
+                vertexConsumers,
+                net.minecraft.client.gui.Font.DisplayMode.NORMAL,
+                0,
+                15728880
+            )
+        }
+        
+        // Форсируем отрисовку текста немедленно
+        if (vertexConsumers is net.minecraft.client.renderer.MultiBufferSource.BufferSource) {
+            vertexConsumers.endBatch()
+        }
+        
+        matrices.popPose()
+    }
+
+    fun renderBeaconBeam(x: Double, y: Double, z: Double, height: Int, color: Int, tickDelta: Float) {
+        val mc = net.minecraft.client.Minecraft.getInstance()
+        val pos = camera.position
+        
+        matrices.pushPose()
+        matrices.translate(x - pos.x, y - pos.y, z - pos.z)
+        
+        // В 1.21.10 для просвечивания сквозь блоки лучше всего подходит debugQuads или custom
+        // lightning() тоже хорош, но попробуем debugQuads для надежности
+        val buffer = vertexConsumers.getBuffer(net.minecraft.client.renderer.RenderType.debugQuads())
+        
+        val r = (color shr 16 and 0xFF) / 255f
+        val g = (color shr 8 and 0xFF) / 255f
+        val b = (color and 0xFF) / 255f
+        val a = 0.5f
+        
+        val m = matrices.last().pose()
+        
+        // Рисуем простой луч (4 грани)
+        val size = 0.3f
+        
+        // Нижняя грань
+        addQuad(buffer, m, -size, 0f, -size, size, 0f, -size, size, 0f, size, -size, 0f, size, r, g, b, a)
+        // Стенки
+        addQuad(buffer, m, -size, 0f, -size, -size, height.toFloat(), -size, size, height.toFloat(), -size, size, 0f, -size, r, g, b, a)
+        addQuad(buffer, m, size, 0f, -size, size, height.toFloat(), -size, size, height.toFloat(), size, size, 0f, size, r, g, b, a)
+        addQuad(buffer, m, size, 0f, size, size, height.toFloat(), size, -size, height.toFloat(), size, -size, 0f, size, r, g, b, a)
+        addQuad(buffer, m, -size, 0f, size, -size, height.toFloat(), size, size, height.toFloat(), size, size, 0f, size, r, g, b, a)
+        
+        // Форсируем отрисовку луча
+        if (vertexConsumers is net.minecraft.client.renderer.MultiBufferSource.BufferSource) {
+            vertexConsumers.endBatch(net.minecraft.client.renderer.RenderType.debugQuads())
+        }
+        
+        matrices.popPose()
+    }
 }

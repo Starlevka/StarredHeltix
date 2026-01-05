@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation
 import org.lwjgl.glfw.GLFW
 import set.starlev.StarredHeltix
 import set.starlev.config.ConfigGuiManager
-import set.starlev.features.misc.CustomBindManager
+import set.starlev.features.chat.CustomBindManager
 import set.starlev.features.visual.GhostNPCHandler
 
 object KeyBindHandler {

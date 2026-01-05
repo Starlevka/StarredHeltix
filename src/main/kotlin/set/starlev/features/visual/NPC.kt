@@ -29,20 +29,20 @@ class GhostPlayer(level: ClientLevel, profile: GameProfile) : RemotePlayer(level
     
     override fun shouldShowName(): Boolean = true
     
-    override fun getCustomName(): Component = Component.literal("§eМега-Ящик")
+    override fun getCustomName(): Component = Component.literal("§b${this.gameProfile.name}")
     
     override fun hasCustomName(): Boolean = true
     
     override fun isCustomNameVisible(): Boolean = true
-
+    
     fun setSkinLayers(layers: Byte) {
         this.entityData.set(net.minecraft.world.entity.Avatar.DATA_PLAYER_MODE_CUSTOMISATION, layers)
     }
 
     override fun getSkin(): net.minecraft.world.entity.player.PlayerSkin {
-        val skinLocation = ResourceLocation.fromNamespaceAndPath("starredheltix", "textures/megachromex.png")
+        val skinLocation = ResourceLocation.fromNamespaceAndPath("starredheltix", "textures/penguin.png")
         val bodyTex = ClientAsset.ResourceTexture(skinLocation, skinLocation)
-        return net.minecraft.world.entity.player.PlayerSkin.insecure(bodyTex, null, null, PlayerModelType.WIDE)
+        return net.minecraft.world.entity.player.PlayerSkin.insecure(bodyTex, null, null, PlayerModelType.SLIM)
     }
 
     override fun shouldRenderAtSqrDistance(distance: Double): Boolean = true
@@ -50,34 +50,24 @@ class GhostPlayer(level: ClientLevel, profile: GameProfile) : RemotePlayer(level
 
 object GhostNPCHandler {
     private val mc = Minecraft.getInstance()
-    private var NPC_POS = BlockPos(2, 70, -89)
-    private val NPC_NAME = "Мега-Ящик"
+    private var NPC_POS = BlockPos(2, 72, -89)
+    private val NPC_NAME = "Penguin"
     private val NPC_UUID = UUID.fromString("8667ba71-b85a-4004-af54-445a97e63e11")
     private val OVERWORLD_DIM_ID = "minecraft:overworld"
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
     private val DIALOGUE = listOf(
-        "§e[Мега-Ящик]§f: Привет! Я — тот самый Мега-Ящик (§dMegaChromeX§f)!",
-        "§e[Мега-Ящик]§f: Ты нашел меня... Но я лишь проекция мода §6StarredHeltix§f.",
-        "§e[Мега-Ящик]§f: Я хотел бы передать тебе спасибо, что ты играешь, общаешься, хорошо проводишь время, преодолеваешь трудности и находишь новых друзей на §aHeltix Skyblock§f!",
-        "§e[Мега-Ящик]§f: §cПоздравляю нас с новым 2026 годом!"
+        "§7[§cPenguin§7]§f: Нашему Скайблоку исполнилось целых 100 лет! И только недавно мы оказались в 2026 году!",
+        "§7[§cPenguin§7]§f: Спасибо Вам, что вы есть и с интересом проводите время на сервере! §4:D",
+        "§7[§cPenguin§7]§f: Держи кусочек тортика 🍰!"
     )
-
-    private val DIALOGUE_SOUNDS = listOf(
-        ModSounds.NPC_1,
-        ModSounds.NPC_2,
-        ModSounds.NPC_3,
-        ModSounds.NPC_4
-    )
-
-    private val DIALOGUE_DELAYS = listOf(3000L, 4000L, 9000L, 4000L)
 
     private var currentDialogueIndex = -1
     private var isDialogueActive = false
-    private var isChoicePending = false
-    private var isSoundMode = false
     private var lastClickTime = 0L
     private var lastHintTime = 0L
+    private var interactionCount = 0
+    private var lastDialogueStepTime = 0L
 
     private var fakePlayer: GhostPlayer? = null
     private var targetYaw = 0f
@@ -94,11 +84,19 @@ object GhostNPCHandler {
     fun getPos(): BlockPos = NPC_POS
 
     fun init() {
-        RenderEvents.register { context ->
-            renderName(context)
-        }
         ClientTickEvents.END_CLIENT_TICK.register {
             updateFakePlayer()
+            updateDialogueAuto()
+        }
+    }
+
+    private fun updateDialogueAuto() {
+        if (!isDialogueActive) return
+        
+        val now = System.currentTimeMillis()
+        if (now - lastDialogueStepTime > 1500L) { // Пауза 1.5 секунды между репликами
+            lastDialogueStepTime = now
+            playNextDialogueLine()
         }
     }
 
@@ -106,7 +104,7 @@ object GhostNPCHandler {
         val player = mc.player ?: return
         if (currentDialogueIndex != -1) return
         
-        val hasTalked = StarredHeltix.feature.misc.newYear.hasTalkedToNPC
+        val hasTalked = StarredHeltix.feature.visuals.newYear.hasTalkedToPenguin
         if (hasTalked) return
 
         val npcVec = net.minecraft.world.phys.Vec3(
@@ -120,49 +118,9 @@ object GhostNPCHandler {
             val now = System.currentTimeMillis()
             if (now - lastHintTime > 30000L) {
                 lastHintTime = now
-                player.displayClientMessage(Component.literal("§e[Мега-Ящик]§f: Эй! Подойди и §bкликни по мне ЛКМ§f, чтобы поговорить!"), false)
+                player.displayClientMessage(Component.literal("§b[§cPenguin§b]§f: Эй! Подойди и §bкликни по мне ЛКМ§f, чтобы поговорить!"), false)
             }
         }
-    }
-
-    private fun renderName(context: RenderContext) {
-        val fake = fakePlayer ?: return
-        val player = mc.player ?: return
-        
-        if (fake.isRemoved) return
-        
-        val pos = fake.position()
-        val x = pos.x
-        val y = pos.y + fake.boundingBox.maxY - fake.y + 0.5
-        val z = pos.z
-        
-        val distSq = player.position().distanceToSqr(pos)
-        if (distSq > 400.0) return
-
-        val matrices = context.matrices
-        matrices.pushPose()
-        matrices.translate(x - context.camera.position.x, y - context.camera.position.y, z - context.camera.position.z)
-        
-        matrices.mulPose(context.camera.rotation())
-        matrices.scale(-0.025f, -0.025f, 0.025f)
-        
-        val name = Component.literal(NPC_NAME)
-        val width = mc.font.width(name)
-        
-        mc.font.drawInBatch(
-            name,
-            -width.toFloat() / 2f,
-            0f,
-            0xFFFFFF,
-            true,
-            matrices.last()!!.pose(),
-            context.vertexConsumers,
-            net.minecraft.client.gui.Font.DisplayMode.NORMAL,
-            0,
-            15728880
-        )
-        
-        matrices.popPose()
     }
 
     fun handleAttack(): Boolean {
@@ -173,11 +131,7 @@ object GhostNPCHandler {
         if (target != null && target.type == HitResult.Type.ENTITY) {
             val entityTarget = target as EntityHitResult
             if (entityTarget.entity == fake) {
-                if (isDialogueActive) {
-                    if (!isChoicePending && !isSoundMode) {
-                        playNextDialogueLine(withSound = false)
-                    }
-                } else {
+                if (!isDialogueActive) {
                     startDialogue()
                 }
                 return true
@@ -189,32 +143,9 @@ object GhostNPCHandler {
     fun resetDialogue() {
         isDialogueActive = false
         currentDialogueIndex = -1
-        isChoicePending = false
-        isSoundMode = false
     }
 
-    fun handleDialogueChoice(type: String) {
-        if (!isChoicePending) return
-        isChoicePending = false
-        
-        if (type == "sound") {
-            isSoundMode = true
-            startSoundDialogue()
-        } else {
-            isSoundMode = false
-            startTextDialogue()
-        }
-    }
-
-    private fun startTextDialogue() {
-        playNextDialogueLine(withSound = false)
-    }
-
-    private fun startSoundDialogue() {
-        playNextDialogueLine(withSound = true)
-    }
-
-    private fun playNextDialogueLine(withSound: Boolean = false) {
+    private fun playNextDialogueLine() {
         mc.execute {
             if (currentDialogueIndex >= DIALOGUE.size) {
                 finishDialogue()
@@ -224,21 +155,9 @@ object GhostNPCHandler {
             val line = DIALOGUE[currentDialogueIndex]
             mc.player?.displayClientMessage(Component.literal(line), false)
 
-            if (withSound) {
-                val sound = DIALOGUE_SOUNDS[currentDialogueIndex]
-                mc.player?.playSound(sound, 1.0f, 1.0f)
-                
-                val delay = DIALOGUE_DELAYS[currentDialogueIndex]
-                currentDialogueIndex++
-                
-                scheduler.schedule({
-                    playNextDialogueLine(withSound)
-                }, delay, TimeUnit.MILLISECONDS)
-            } else {
-                currentDialogueIndex++
-                if (currentDialogueIndex >= DIALOGUE.size) {
-                    finishDialogue()
-                }
+            currentDialogueIndex++
+            if (currentDialogueIndex >= DIALOGUE.size) {
+                finishDialogue()
             }
         }
     }
@@ -246,8 +165,7 @@ object GhostNPCHandler {
     private fun finishDialogue() {
         isDialogueActive = false
         currentDialogueIndex = -1
-        isSoundMode = false
-        StarredHeltix.feature.misc.newYear.hasTalkedToNPC = true
+        StarredHeltix.feature.visuals.newYear.hasTalkedToPenguin = true
     }
 
     private fun startDialogue() {
@@ -268,26 +186,36 @@ object GhostNPCHandler {
         val now = System.currentTimeMillis()
         if (now - lastClickTime < 1000) return
         lastClickTime = now
+        interactionCount++
 
-        if (StarredHeltix.feature.misc.newYear.hasTalkedToNPC) {
-            mc.player?.displayClientMessage(Component.literal("§e[Мега-Ящик]§f: Мы ведь уже говорили! С Новым Годом тебя еще раз! §c❤"), false)
+        if (StarredHeltix.feature.visuals.newYear.hasTalkedToPenguin) {
+            val achievements = mapOf(
+                10 to "§6§l[Достижение] §eЛюбитель сладкого! §f(10 кусочков тортика)",
+                20 to "§6§l[Достижение] §eЦенитель десертов! §f(§l20 кусочков тортика, ура!§f)",
+                50 to "§6§l[Достижение] §eТортовый магнат! §f(§c50 кусочков тортика, ты не думаешь, что это уже много?§f)",
+                100 to "§6§l[Достижение] §eСахарный король! §f(§c100 кусочков тортика, юху!!! ДИАБЕТ! §f)",
+                500 to "§6§l[Достижение] §eКондитерский мастер! §f(§c500 кусочков тортика, куда тебе столько???§f)",
+                1000 to "§6§l[Достижение] §eЛегендарный едок! §f(§c§l1000 кусочков тортика! ЗАЧЕМ ТЕБЕ СТОЛЬКО?§f)",
+                5000 to "§6§l[Достижение] §dТортовая аномалия! §f(§c§l5000 кусочков тортика! Вы уже накормили ВЕСЬ СЕРВЕР!)",
+                10000 to "§6§l[Достижение] §dСладкая бесконечность! §f(§4§l10000 кусочков тортика! Когда закончится запас тортиков?§f)",
+                50000 to "§6§l[Достижение] §bПовелитель сахара! §f(§4§l50000 кусочков тортика!!! Я СЕЙЧАС ЧУВСТВУЮ СЕБЯ ТОРТИКОМ!!! §f)",
+                100000 to "§6§l[Достижение] §5БОГ ТОРТИКОВ! §f(§4§l100000 кусочков тортика!!! 🍰 !!! ВЫ ОКОНЧАТЕЛЬНО СТАЛИ МАГНАТОМ КУСОЧКОВ ТОРТИКА !!!§f)"
+            )
+
+            mc.player?.displayClientMessage(Component.literal("§7[§cPenguin§7]§f: Мы ведь уже говорили! С юбилеем Скайблока! Вот тебе ещё кусочек тортика 🍰."), false)
+            mc.player?.displayClientMessage(Component.literal("§8[§7Статистика§8] §fВы получили уже §b$interactionCount §fкусочков тортика!"), false)
+            
+            achievements[interactionCount]?.let { achievementMsg ->
+                mc.player?.displayClientMessage(Component.literal(achievementMsg), false)
+                mc.player?.playSound(net.minecraft.sounds.SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f)
+            }
             return
         }
 
         isDialogueActive = true
-        isChoicePending = true
         currentDialogueIndex = 0
-        
-        val message = Component.literal("§e[Мега-Ящик]§f: Выбери режим диалога: ")
-            .append(Component.literal("§b[ЗВУК]")
-                .withStyle { s -> s.withClickEvent(ClickEvent.RunCommand("/sh_dialogue sound"))
-                                   .withHoverEvent(HoverEvent.ShowText(Component.literal("Включить озвучку"))) })
-            .append(Component.literal(" §7| "))
-            .append(Component.literal("§a[ТЕКСТ]")
-                .withStyle { s -> s.withClickEvent(ClickEvent.RunCommand("/sh_dialogue text"))
-                                   .withHoverEvent(HoverEvent.ShowText(Component.literal("Только текстовый режим"))) })
-        
-        mc.player?.displayClientMessage(message, false)
+        lastDialogueStepTime = System.currentTimeMillis()
+        playNextDialogueLine()
     }
 
     fun updateFakePlayer() {
@@ -328,33 +256,59 @@ object GhostNPCHandler {
                     return@let
                 }
 
+                // Плавная анимация полета с использованием System.currentTimeMillis()
+                // Это исправляет "рванность" в сетевой игре, так как время не зависит от тиков сервера
+                val floatRange = 0.4 // Амплитуда
+                val floatSpeed = 0.002 // Скорость (для millis)
+                
+                val time = System.currentTimeMillis()
+                val verticalOffset = 1.2 + Math.sin(time.toDouble() * floatSpeed) * floatRange
+                
+                // Обновляем старые координаты перед установкой новых для плавной интерполяции
+                fake.xo = fake.x
+                fake.yo = fake.y
+                fake.zo = fake.z
+                fake.xOld = fake.x
+                fake.yOld = fake.y
+                fake.zOld = fake.z
+                
+                val targetX = NPC_POS.x.toDouble() + 0.5
+                val targetY = NPC_POS.y.toDouble() + verticalOffset
+                val targetZ = NPC_POS.z.toDouble() + 0.5
+
+                fake.setPos(targetX, targetY, targetZ)
+                
+                fake.yRotO = fake.yRot
+                fake.xRotO = fake.xRot
+                fake.yHeadRotO = fake.yHeadRot
+                
                 if (!level.entitiesForRendering().contains(fake)) {
                     StarredHeltix.LOGGER.warn("Ghost NPC was missing from rendering list, re-adding...")
                     level.addEntity(fake)
                 }
                 val dx = player.x - fake.x
-                val dy = (player.y + player.eyeHeight) - (fake.y + fake.eyeHeight)
+                val dy = (player.y + player.eyeHeight) - (fake.eyeHeight + fake.y)
                 val dz = player.z - fake.z
-                val distance = Math.sqrt(dx * dx + dz * dz)
+                val distanceToPlayer = Math.sqrt(dx * dx + dz * dz)
+                val totalDistanceSq = player.position().distanceToSqr(fake.position())
+
+                if (totalDistanceSq < 144.0) { // Within 12 blocks
+                    targetYaw = (Math.atan2(dz, dx) * 180.0 / Math.PI).toFloat() - 90f
+                    targetPitch = (-(Math.atan2(dy, distanceToPlayer) * 180.0 / Math.PI)).toFloat()
+                } else { // Further than 12 blocks - Idle look
+                    if (now - lastIdleLookTime > 4000L) {
+                        targetYaw = (random.nextFloat() * 360f) - 180f
+                        targetPitch = (random.nextFloat() * 60f) - 30f // Look slightly up/down
+                        lastIdleLookTime = now
+                    }
+                }
                 
-                targetYaw = (Math.atan2(dz, dx) * 180.0 / Math.PI).toFloat() - 90f
-                targetPitch = (-(Math.atan2(dy, distance) * 180.0 / Math.PI)).toFloat()
-                
-                currentYaw = rotLerp(currentYaw, targetYaw, 0.15f)
-                currentPitch = rotLerp(currentPitch, targetPitch, 0.15f)
+                currentYaw = rotLerp(currentYaw, targetYaw, 0.1f)
+                currentPitch = rotLerp(currentPitch, targetPitch, 0.1f)
                 
                 fake.setYRot(currentYaw)
                 fake.setXRot(currentPitch)
                 fake.setYHeadRot(currentYaw)
-                
-                // Idle look logic
-                if (now - lastIdleLookTime > 5000L) {
-                    if (random.nextFloat() < 0.2f) {
-                        targetYaw += (random.nextFloat() - 0.5f) * 60f
-                        targetPitch += (random.nextFloat() - 0.5f) * 30f
-                        lastIdleLookTime = now
-                    }
-                }
 
                 checkHint()
             }

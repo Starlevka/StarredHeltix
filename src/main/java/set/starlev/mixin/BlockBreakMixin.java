@@ -14,7 +14,7 @@ import set.starlev.features.foraging.TreeCapCooldown;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 
 @Mixin(MultiPlayerGameMode.class)
-public class TreeCapBlockBreakMixin {
+public class BlockBreakMixin {
     @Inject(method = "destroyBlock", at = @At("HEAD"))
     private void onDestroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
         Minecraft mc = Minecraft.getInstance();

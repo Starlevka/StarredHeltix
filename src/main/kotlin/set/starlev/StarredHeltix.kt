@@ -17,6 +17,7 @@ class StarredHeltix : ClientModInitializer {
         LOGGER.info("Инициализация ЛлЛлЛлЛлЛл StarredHeltix...")
         configManager = ConfigManager
         configManager.firstLoad()
+        set.starlev.secret.config.SecretMenuManager.load(forceSave = false)
 
         ModSounds.register()
 
@@ -24,20 +25,27 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.events.KeyBindHandler.init()
         set.starlev.features.combat.EntityHighlight.init()
         set.starlev.features.chat.PartyCommands.init()
+        set.starlev.secret.features.AutoResponder.init()
         set.starlev.features.combat.dungeons.DeathCounter.init()
         set.starlev.features.misc.VotingReminder.init()
-        set.starlev.features.misc.CustomBindManager.init()
+        set.starlev.features.chat.CustomBindManager.init()
         set.starlev.features.misc.MouseLock.init()
         set.starlev.hud.HudManager.registerElement(set.starlev.features.misc.MouseLock)
         set.starlev.features.combat.slayer.AutoSlayer.init()
+        set.starlev.features.combat.slayer.SlayerHud.init()
         WelcomeMessage.init()
         set.starlev.features.visual.GhostFrameFeature.init()
         set.starlev.features.visual.GhostNPCHandler.init()
         set.starlev.features.visual.Fullbright.init()
         set.starlev.features.chat.mod.MacroCheck.init()
+        set.starlev.features.mining.DwarvenWaypoints.init()
+        set.starlev.features.mining.AutoCommissions.init()
 
         // Register chat listeners
         set.starlev.features.chat.ChatEventsManager.registerIncoming { message ->
+            // AutoResponder
+            set.starlev.secret.features.AutoResponder.onChatMessage(message)
+
             // Detect mining ability usage using patterns
             val pickaxePattern = Regex(".*Вы использовали Киркобулус!.*")
             val speedPattern = Regex(".*Вы использовали Увеличение скорости копания!.*")

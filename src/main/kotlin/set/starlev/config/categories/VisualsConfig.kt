@@ -14,6 +14,11 @@ class VisualsConfig {
     @Accordion
     var animations = AnimationsConfig()
 
+    @Expose
+    @ConfigOption(name = "Новогодние приколы", desc = "§fНовогодние визуальные эффекты.")
+    @Accordion
+    var newYear = NewYearVisualsConfig()
+
     class AnimationsConfig {
         @Expose
         @ConfigOption(name = "Анимация удара", desc = "§c[BETA] §fИзменяет положение и скорость анимации руки.")
@@ -67,6 +72,45 @@ class VisualsConfig {
         @ConfigOption(name = "Множитель Swing Z", desc = "Множитель анимации удара по Z.")
         @ConfigEditorSlider(minValue = -2.0f, maxValue = 2.0f, minStep = 0.05f)
         var swingZ = 1.0
+    }
+
+    class NewYearVisualsConfig {
+        @Expose
+        @ConfigOption(name = "§fЗимняя атмосфера", desc = "Включает зимний биом и визуальный дождь (снег) в обычном мире.")
+        @ConfigEditorBoolean
+        var winterAtmosphere = true
+
+        @ConfigOption(name = "§fСбросить диалог NPC", desc = "Сбрасывает прогресс диалога с Пингвином, позволяя поговорить с ним снова.")
+        @io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton(buttonText = "Сбросить")
+        val resetNPCDialogue: Runnable = Runnable {
+            hasTalkedToPenguin = false
+            set.starlev.features.visual.GhostNPCHandler.resetDialogue()
+            net.minecraft.client.Minecraft.getInstance().player?.displayClientMessage(
+                net.minecraft.network.chat.Component.literal("§e[StarredHeltix] §fДиалог с NPC сброшен!"),
+                false
+            )
+        }
+
+        @Expose
+        @ConfigOption(name = "Показывать Пингвина", desc = "Отображает новогоднего NPC-Пингвина.")
+        @ConfigEditorBoolean
+        var ghostNPC = true
+
+        @Expose
+        @ConfigOption(name = "Показывать картинку 1", desc = "Отображает первую секретную картинку.")
+        @ConfigEditorBoolean
+        var secretFrame = true
+
+        @Expose
+        @ConfigOption(name = "Показывать картинку 2", desc = "Отображает вторую секретную картинку.")
+        @ConfigEditorBoolean
+        var secretFrame2 = true
+
+        @Expose
+        var hasTalkedToNPC = false
+
+        @Expose
+        var hasTalkedToPenguin = false
     }
 }
 

@@ -32,6 +32,8 @@ object HudManager {
         registerElement(set.starlev.features.foraging.TreeCapCooldown)
         registerElement(set.starlev.features.mining.PickaxeCooldownHud)
         registerElement(set.starlev.features.mining.SpeedBoostCooldownHud)
+        registerElement(set.starlev.features.mining.CommissionsHud)
+        registerElement(set.starlev.features.combat.slayer.SlayerHud)
         registerElement(set.starlev.features.combat.dungeons.BloodRoomTimer)
         registerElement(set.starlev.features.misc.MouseLock)
         

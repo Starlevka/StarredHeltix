@@ -17,23 +17,17 @@ public class ChatScreenMixin {
     private void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         try {
             ChatCopyFeature.INSTANCE.handleRender(graphics, mouseX, mouseY);
-        } catch (Exception e) {
-            System.err.println("Error in ChatCopyFeature.handleRender: " + e);
-            e.printStackTrace();
+        } catch (Exception ignored) {
         }
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onMouseClicked(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
-        System.out.println("ChatScreen.mouseClicked called with button=" + event.button() + " at (" + event.x() + ", " + event.y() + ") doubleClick=" + doubleClick);
         try {
             if (ChatCopyFeature.INSTANCE.handleMouseClick(event.x(), event.y(), event.button())) {
-                System.out.println("ChatCopyFeature handled the click");
                 cir.setReturnValue(true);
             }
-        } catch (Exception e) {
-            System.err.println("Error in ChatCopyFeature.handleMouseClick: " + e);
-            e.printStackTrace();
+        } catch (Exception ignored) {
         }
     }
 }

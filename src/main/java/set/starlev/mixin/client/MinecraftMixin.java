@@ -23,6 +23,6 @@ public class MinecraftMixin {
         }
         set.starlev.features.combat.dungeons.AutoReadyNotifier.INSTANCE.tick();
         set.starlev.features.misc.AutoSprint.INSTANCE.tick();
-        set.starlev.features.misc.CustomBindManager.INSTANCE.tick();
+        set.starlev.features.chat.CustomBindManager.INSTANCE.tick();
     }
 }

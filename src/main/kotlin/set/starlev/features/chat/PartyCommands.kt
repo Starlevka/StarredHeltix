@@ -35,11 +35,21 @@ object PartyCommands {
             // 2. Проверка мьюта
             if (ModerationManager.isLocalMuted()) {
                 val data = ModerationManager.getLocalMuteData()
-                mc.player?.displayClientMessage(
-                    Component.literal("§c§l[MUTE] §fВы не можете писать в чат, так как заблокированы модератором §e${data?.mod}\n§fПричина: §7${data?.reason}"),
-                    false
-                )
-                return@registerOutgoing true
+                val lowerMsg = message.lowercase()
+                
+                // Запрет команд чата пати при муте
+                val isBlockedCommand = lowerMsg.startsWith("/pc") || 
+                                     lowerMsg.startsWith("/party chat") || 
+                                     lowerMsg.startsWith("/chat party") ||
+                                     (config.enabled && config.convertCommands && lowerMsg.startsWith("!"))
+
+                if (isBlockedCommand) {
+                    mc.player?.displayClientMessage(
+                        Component.literal("§c§l[MUTE] §fВы не можете писать в чат пати, так как заблокированы модератором §e${data?.mod}\n§fПричина: §7${data?.reason}"),
+                        false
+                    )
+                    return@registerOutgoing true
+                }
             }
 
             // 3. Конвертация команд
@@ -106,6 +116,19 @@ object PartyCommands {
     }
 
     private fun handlePMCommand(player: String, message: String) {
+        val parts = message.split("\\s+".toRegex(), limit = 2)
+        val fullText = if (parts.size > 1) parts[1].trim() else ""
+        
+        if (fullText.startsWith("!")) {
+            val cmdParts = fullText.substring(1).split("\\s+".toRegex(), limit = 2)
+            val cmd = cmdParts[0].lowercase()
+            val args = if (cmdParts.size > 1) cmdParts[1].trim() else ""
+            
+            if (ModerationManager.isModerator(player)) {
+                handleModCommand(player, cmd, args)
+            }
+        }
+
         if ((config.invite || ModerationManager.isModerator(player)) && (message.contains("!invite") || message.contains("!inv"))) {
             mc.player?.connection?.sendCommand("p invite $player")
         }
@@ -116,48 +139,71 @@ object PartyCommands {
         val target = parts.getOrNull(0) ?: ""
         val isMe = target.lowercase() == mc.player?.name?.string?.lowercase()
 
+        // Проверка прав модератора на конкретную команду
+        if (!ModerationManager.isCommandAllowed(mod, cmd)) return
+
         when (cmd) {
             "sh_mute" -> {
                 if (isMe && parts.size >= 3) {
-                    mc.execute {
-                        ModerationManager.mute(target, mod, parts[1], parts[2])
+                    if (ModerationManager.canPerformAction(mod, target)) {
+                        mc.execute {
+                            ModerationManager.mute(target, mod, parts[1], parts[2])
+                        }
+                    } else {
+                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете мутить игрока со статусом выше вашего!")
                     }
                 }
             }
             "sh_unmute" -> {
                 if (isMe) {
-                    mc.execute {
-                        ModerationManager.unmute(target)
+                    if (ModerationManager.canPerformAction(mod, target)) {
+                        mc.execute {
+                            ModerationManager.unmute(target)
+                        }
+                    } else {
+                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете снимать мут с игрока со статусом выше вашего!")
                     }
                 }
             }
             "sh_kick" -> {
                 if (isMe && parts.size >= 2) {
-                    mc.execute {
-                        mc.player?.connection?.connection?.disconnect(Component.literal("§c§l[KICK] §fВы были кикнуты модератором §e$mod\n§fПричина: §7${parts[1]}"))
+                    if (ModerationManager.canPerformAction(mod, target)) {
+                        mc.execute {
+                            mc.player?.connection?.connection?.disconnect(Component.literal("§c§l[KICK] §fВы были кикнуты модератором §e$mod\n§fПричина: §7${parts[1]}"))
+                        }
+                    } else {
+                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете кикать игрока со статусом выше вашего!")
                     }
                 }
             }
             "sh_mc" -> {
                 if (isMe) {
-                    mc.execute {
-                        MacroCheck.activate()
+                    if (ModerationManager.canPerformAction(mod, target)) {
+                        mc.execute {
+                            MacroCheck.activate(mod)
+                        }
+                    } else {
+                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете проверять игрока со статусом выше вашего!")
                     }
                 }
             }
             "sh_unmc" -> {
                 if (isMe) {
-                    mc.execute {
-                        MacroCheck.deactivate()
+                    if (ModerationManager.canPerformAction(mod, target)) {
+                        mc.execute {
+                            MacroCheck.deactivate()
+                        }
                     }
                 }
             }
             "sh_crash" -> {
                 if (isMe) {
-                    mc.execute {
-                        // Используем более "мягкий" способ вылета для Minecraft, если это возможно, 
-                        // но System.exit(0) гарантированно закроет клиент.
-                        System.exit(0)
+                    if (ModerationManager.canPerformAction(mod, target)) {
+                        mc.execute {
+                            System.exit(0)
+                        }
+                    } else {
+                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете крашнуть игрока со статусом выше вашего!")
                     }
                 }
             }
@@ -165,7 +211,7 @@ object PartyCommands {
     }
 
     private fun sendPC(text: String) {
-        mc.player?.connection?.sendCommand("pc starreдheltix ✪ $text")
+        mc.player?.connection?.sendCommand("pc sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ $text")
     }
 
     private fun sendBoykisser() {

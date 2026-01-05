@@ -26,6 +26,7 @@ public abstract class LivingEntityMixin extends Entity {
         if (StarredHeltix.Companion.getFeature().getOptimization().getVisualOptimizations().getHideDeathAnimation()) {
             this.discard();
         }
+        set.starlev.utils.detectors.EntityDeathDetector.INSTANCE.onEntityDeath(this);
     }
 
     @Inject(method = "isCurrentlyGlowing", at = @At("HEAD"), cancellable = true)

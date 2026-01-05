@@ -9,7 +9,6 @@ import set.starlev.StarredHeltix
 import set.starlev.render.RenderEvents
 import set.starlev.render.RenderContext
 import java.awt.Color
-import kotlin.math.sin
 
 /**
  * Система подсветки мобов в мире.
@@ -35,19 +34,19 @@ object EntityHighlight {
                     is EnderMan -> {
                         if (config.enderman.enabled) {
                             val color = parseColorString(config.enderman.color)
-                            renderEntityBox(context, entity, color, config.enderman.transparency)
+                            renderEntityBox(context, entity, color, config.enderman.transparency, config.enderman.outline)
                         }
                     }
                     is Creeper -> {
                         if (config.creeper.enabled && entity.isPowered) {
                             val color = parseColorString(config.creeper.color)
-                            renderEntityBox(context, entity, color, config.creeper.transparency)
+                            renderEntityBox(context, entity, color, config.creeper.transparency, config.creeper.outline)
                         }
                     }
                     is Wolf -> {
                         if (config.wolf.enabled) {
                             val color = parseColorString(config.wolf.color)
-                            renderEntityBox(context, entity, color, config.wolf.transparency)
+                            renderEntityBox(context, entity, color, config.wolf.transparency, config.wolf.outline)
                         }
                     }
                 }
@@ -55,7 +54,7 @@ object EntityHighlight {
         }
     }
 
-    private fun renderEntityBox(context: RenderContext, entity: Entity, color: Int, globalAlpha: Float) {
+    private fun renderEntityBox(context: RenderContext, entity: Entity, color: Int, globalAlpha: Float, outline: Boolean = false) {
         val r = ((color shr 16) and 0xFF) / 255f
         val g = ((color shr 8) and 0xFF) / 255f
         val b = (color and 0xFF) / 255f
@@ -64,7 +63,7 @@ object EntityHighlight {
         // Применяем глобальную прозрачность
         val a = baseAlpha * globalAlpha
         
-        context.renderBox(entity.boundingBox, r, g, b, a, true)
+        context.renderBox(entity.boundingBox, r, g, b, a, !outline)
     }
 
     /**

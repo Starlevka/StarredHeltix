@@ -16,13 +16,15 @@ object DeathCounter {
     private var lastTitle = ""
     private var lastActionBar = ""
 
+    private val DEATH_PATTERN = java.util.regex.Pattern.compile("^☠\\s*(\\w+)")
+
     fun init() {
         ChatEventsManager.registerIncoming { message ->
             if (config.deathDetect) {
-                // Ищем символ смерти и ник игрока после него
-                val deathIndex = message.indexOf("☠")
-                if (deathIndex != -1 && deathIndex + 1 < message.length) {
-                    // Есть символ смерти и после него есть текст
+                // Ищем символ черепка и ник игрока после него
+                val cleanMessage = message.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "")
+                val matcher = DEATH_PATTERN.matcher(cleanMessage)
+                if (matcher.find()) {
                     trigger()
                 }
             }
@@ -32,18 +34,24 @@ object DeathCounter {
             if (!config.deathDetect) return@register
             
             val currentTitle = TitleDetector.getTitleText()
-            val deathIndexTitle = currentTitle.indexOf("☠")
-            if (deathIndexTitle != -1 && deathIndexTitle + 1 < currentTitle.length && currentTitle != lastTitle) {
-                trigger()
+            if (currentTitle != lastTitle) {
+                val cleanTitle = currentTitle.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "")
+                val matcher = DEATH_PATTERN.matcher(cleanTitle)
+                if (matcher.find()) {
+                    trigger()
+                }
+                lastTitle = currentTitle
             }
-            lastTitle = currentTitle
 
             val currentActionBar = ActionBarDetector.getActionBarText()
-            val deathIndexAction = currentActionBar.indexOf("☠")
-            if (deathIndexAction != -1 && deathIndexAction + 1 < currentActionBar.length && currentActionBar != lastActionBar) {
-                trigger()
+            if (currentActionBar != lastActionBar) {
+                val cleanActionBar = currentActionBar.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "")
+                val matcher = DEATH_PATTERN.matcher(cleanActionBar)
+                if (matcher.find()) {
+                    trigger()
+                }
+                lastActionBar = currentActionBar
             }
-            lastActionBar = currentActionBar
         }
     }
 

@@ -51,33 +51,33 @@ class DungeonsConfig {
         var enabled = true
 
         @Expose
-        @ConfigOption(name = "Сообщение", desc = "Текст сообщения, отправляемого при готовности комнаты.")
+        @ConfigOption(name = "Сообщение", desc = "Текст сообщения, который будет отправлен в /pc")
         @ConfigEditorText
-        var message = "starreдheltix ✪ Кровавая комната готова!"
+        var message = "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ Кровавая комната готова!"
     }
 
     class AutoReadyConfig {
         @Expose
-        @ConfigOption(name = "Включить", desc = "Включает автоматическую отправку сообщения о готовности.")
+        @ConfigOption(name = "Включить", desc = "Отправка сообщения о готовности, находясь за Мортом")
         @ConfigEditorBoolean
         var enabled = true
 
         @Expose
-        @ConfigOption(name = "Сообщение", desc = "Текст сообщения, который будет отправлен.")
+        @ConfigOption(name = "Сообщение", desc = "Текст сообщения, который будет отправлен в /pc.")
         @ConfigEditorText
-        var readyMessage = "starreдheltix ✪ Я готов к подземельям!"
+        var readyMessage = "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ Я готов к подземельям!"
     }
 
     class DeathCounterConfig {
         @Expose
-        @ConfigOption(name = "Детект смерти ☠", desc = "Отправляет сообщение в пати чат при нахождении иконки смерти.")
+        @ConfigOption(name = "Детект смерти в данже", desc = "Отправляет сообщение в пати чат, когда кто-то погибает.")
         @ConfigEditorBoolean
         var deathDetect = true
 
         @Expose
         @ConfigOption(name = "Сообщение при смерти", desc = "Текст сообщения, который будет отправлен в /pc.")
         @ConfigEditorText
-        var deathMessage = "Кто погиб, тот ЛЛЛ"
+        var deathMessage = "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx | Кто погиб, тот ЛЛЛ"
     }
 }
 

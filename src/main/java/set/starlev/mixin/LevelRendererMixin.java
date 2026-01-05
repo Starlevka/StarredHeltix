@@ -29,15 +29,14 @@ public class LevelRendererMixin {
     @Shadow @Final private net.minecraft.client.renderer.RenderBuffers renderBuffers;
 
     @Inject(method = "method_62214", at = @At("RETURN"))
-    private void onRenderWorld(GpuBufferSlice gpuBufferSlice, LevelRenderState worldRenderState, ProfilerFiller profiler, Matrix4f matrix4f, ResourceHandle handle, ResourceHandle handle2, boolean bl, Frustum frustum, ResourceHandle handle3, ResourceHandle handle4, CallbackInfo ci) {
+    private void onRenderWorld(GpuBufferSlice gpuBufferSlice, LevelRenderState worldRenderState, net.minecraft.util.profiling.ProfilerFiller profiler, Matrix4f matrix4f, ResourceHandle handle, ResourceHandle handle2, boolean bl, net.minecraft.client.renderer.culling.Frustum frustum, ResourceHandle handle3, ResourceHandle handle4, CallbackInfo ci) {
+        // В 1.21.10 мы можем попробовать использовать matrix4f для инициализации PoseStack
         PoseStack poseStack = new PoseStack();
+        // poseStack.mulPose(matrix4f); // Это может быть опасно если matrix4f уже включает проекцию
+        
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         Camera camera = mc.gameRenderer.getMainCamera();
         
-        // В 1.21.10 при использовании нового PoseStack() в RETURN инъекции, 
-        // он уже синхронизирован с матрицей вида, если мы не применяем лишних вращений.
-        // Однако, для корректного World Rendering нам нужно учитывать позицию камеры.
-
         MultiBufferSource.BufferSource bufferSource = this.renderBuffers.bufferSource();
 
         // Создаем RenderContext
@@ -49,17 +48,22 @@ public class LevelRendererMixin {
             worldRenderState.cameraRenderState
         );
 
-        // Вызываем RenderEvents
         RenderEvents.fireWorldRender(context);
 
-        // Также вызываем старый RenderEngine для совместимости
-        // ВАЖНО: В 1.21.10 PoseStack в RETURN уже может иметь базовые трансформации.
-        // Мы используем абсолютные координаты мира, поэтому транслейтим обратно на позицию камеры.
+        // Рисуем старый RenderEngine
         poseStack.pushPose();
-        poseStack.translate(-camera.getPosition().x, -camera.getPosition().y, -camera.getPosition().z);
+        // Мы НЕ делаем транслейт на камеру здесь, так как RenderContext.renderText сам это делает
         set.starlev.render.RenderEngine.renderWorld(poseStack, bufferSource, mc.getDeltaTracker().getGameTimeDeltaTicks());
         poseStack.popPose();
         
+        // Форсируем отрисовку всех буферов
         bufferSource.endBatch();
+        
+        // Для просвечивания сквозь блоки в 1.21.10 используем специфические типы
+        bufferSource.endBatch(net.minecraft.client.renderer.RenderType.lightning());
+        bufferSource.endBatch(net.minecraft.client.renderer.RenderType.debugQuads());
+        // Добавим типы для текста. В 1.21.10 путь к текстуре может быть другим, 
+        // используем стандартную текстуру шрифта если константа не найдена
+        bufferSource.endBatch(net.minecraft.client.renderer.RenderType.textSeeThrough(net.minecraft.resources.ResourceLocation.withDefaultNamespace("textures/font/ascii.png")));
     }
 }

@@ -10,17 +10,5 @@
     "sounds": [
       "starredheltix:update_available"
     ]
-  },
-  "dialogue.1": {
-    "sounds": [ "starredheltix:dialogue/1" ]
-  },
-  "dialogue.2": {
-    "sounds": [ "starredheltix:dialogue/2" ]
-  },
-  "dialogue.3": {
-    "sounds": [ "starredheltix:dialogue/3" ]
-  },
-  "dialogue.4": {
-    "sounds": [ "starredheltix:dialogue/4" ]
   }
 }

@@ -67,14 +67,10 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
         if (matcher.find()) {
             val floor = getFloor()
             val delay = when (floor) {
-                1 -> 37000L
-                2 -> 41000L
+                1 -> 38000L
+                2 -> 42000L
                 3 -> 50000L
-                4 -> 60000L
-                5 -> 70000L
-                6 -> 75000L
-                7 -> 85000L
-                else -> 30000L
+                else -> 31000L
             }
             endTime = System.currentTimeMillis() + delay
             active = true
@@ -140,7 +136,8 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
                 active = false
                 
                 // Отправляем сообщение в чат ПАРТИИ
-                MC.player?.connection?.sendCommand("pc starredheltix ✪ Кровавая комната готова!")
+                val config = StarredHeltix.feature.dungeons.bloodRoom
+                MC.player?.connection?.sendCommand("pc ${config.message}")
                 
                 // Показываем Title
                 MC.gui.setTitle(Component.literal("§cКровавая комната заполнена!"))

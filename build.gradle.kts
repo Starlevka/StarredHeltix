@@ -36,8 +36,14 @@ loom {
 
 tasks.processResources {
     inputs.property("version", version)
+    inputs.property("aiSecret", libs.versions.aiSecret.get())
+    
     filesMatching("fabric.mod.json") {
         expand("version" to version)
+    }
+    
+    filesMatching("ai_config.properties") {
+        expand("aiSecret" to libs.versions.aiSecret.get())
     }
 }
 

@@ -21,12 +21,10 @@ object ShaderManager {
     fun loadShader(name: String): Int {
         if (shaders.containsKey(name)) return shaders[name]!!
 
-        println("Loading shader: $name")
         val vertexSource = loadResource("shaders/$name.vsh")
         val fragmentSource = loadResource("shaders/$name.fsh")
 
         if (vertexSource == null || fragmentSource == null) {
-            println("Failed to load shader sources for: $name")
             return -1
         }
 
@@ -34,7 +32,6 @@ object ShaderManager {
         val fragmentShader = compileShader(GL20.GL_FRAGMENT_SHADER, fragmentSource)
 
         if (vertexShader == -1 || fragmentShader == -1) {
-            println("Failed to compile shaders for: $name")
             return -1
         }
 
@@ -44,11 +41,9 @@ object ShaderManager {
         GL20.glLinkProgram(program)
 
         if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
-            println("Failed to link shader program: $name. Log: ${GL20.glGetProgramInfoLog(program, 1024)}")
             return -1
         }
 
-        println("Successfully loaded shader program: $name (id: $program)")
         shaders[name] = program
         return program
     }
@@ -69,7 +64,6 @@ object ShaderManager {
         GL20.glCompileShader(shader)
 
         if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-            println("Failed to compile shader: ${GL20.glGetShaderInfoLog(shader, 1024)}")
             return -1
         }
         return shader
