@@ -58,16 +58,16 @@ object AutoResponder {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             if (client.player == null) return@EndTick
             
-            val isUnlocked = SecretMenuManager.secretConfig.funCategory.isAiUnlocked
+            val isUnlocked = SecretMenuManager.secretConfig.chatBot.isAiUnlocked
             
-            val isEnabled = SecretMenuManager.secretConfig.funCategory.autoResponderEnabled && isUnlocked
-            val fullMode = SecretMenuManager.secretConfig.funCategory.fullModeEnabled && isUnlocked
+            val isEnabled = SecretMenuManager.secretConfig.chatBot.autoResponderEnabled && isUnlocked
+            val fullMode = SecretMenuManager.secretConfig.chatBot.fullModeEnabled && isUnlocked
             
             // Auto-disable if not unlocked
-            if (!isUnlocked && (SecretMenuManager.secretConfig.funCategory.autoResponderEnabled || SecretMenuManager.secretConfig.funCategory.aiEnabled)) {
-                SecretMenuManager.secretConfig.funCategory.autoResponderEnabled = false
-                SecretMenuManager.secretConfig.funCategory.aiEnabled = false
-                SecretMenuManager.secretConfig.funCategory.greetingsEnabled = false
+            if (!isUnlocked && (SecretMenuManager.secretConfig.chatBot.autoResponderEnabled || SecretMenuManager.secretConfig.chatBot.aiEnabled)) {
+                SecretMenuManager.secretConfig.chatBot.autoResponderEnabled = false
+                SecretMenuManager.secretConfig.chatBot.aiEnabled = false
+                SecretMenuManager.secretConfig.chatBot.greetingsEnabled = false
                 SecretMenuManager.save()
             }
             
@@ -90,8 +90,8 @@ object AutoResponder {
 
         // Handle player join for greetings
         ClientPlayConnectionEvents.JOIN.register { handler, sender, client ->
-            if (!SecretMenuManager.secretConfig.funCategory.autoResponderEnabled) return@register
-            if (!SecretMenuManager.secretConfig.funCategory.greetingsEnabled) return@register
+            if (!SecretMenuManager.secretConfig.chatBot.autoResponderEnabled) return@register
+            if (!SecretMenuManager.secretConfig.chatBot.greetingsEnabled) return@register
             
             val playerName = client.player?.name?.string ?: return@register
             val selfName = client.player?.name?.string ?: ""
@@ -158,8 +158,8 @@ object AutoResponder {
         val cleanContent = rawContent.trim()
         
         if (cleanContent == AiConfig.AI_SECRET) {
-            if (!SecretMenuManager.secretConfig.funCategory.isAiUnlocked) {
-                SecretMenuManager.secretConfig.funCategory.isAiUnlocked = true
+            if (!SecretMenuManager.secretConfig.chatBot.isAiUnlocked) {
+                SecretMenuManager.secretConfig.chatBot.isAiUnlocked = true
                 SecretMenuManager.save()
                 mc.player?.displayClientMessage(Component.literal("§d§l[Secret] §fСистема ИИ §aразблокирована§f!"), false)
             } else {
@@ -168,7 +168,7 @@ object AutoResponder {
             return
         }
 
-        val isUnlocked = SecretMenuManager.secretConfig.funCategory.isAiUnlocked
+        val isUnlocked = SecretMenuManager.secretConfig.chatBot.isAiUnlocked
         // Only allow if unlocked via secret code
         if (!isUnlocked) {
             // Optional: notify only on certain triggers to avoid spamming "Incorrect code"
@@ -179,10 +179,10 @@ object AutoResponder {
         }
 
         val currentTime = System.currentTimeMillis()
-        val isEnabled = SecretMenuManager.secretConfig.funCategory.autoResponderEnabled
+        val isEnabled = SecretMenuManager.secretConfig.chatBot.autoResponderEnabled
         
         // Handle Join/Leave messages and Achievements (System)
-        if (isEnabled && SecretMenuManager.secretConfig.funCategory.greetingsEnabled) {
+        if (isEnabled && SecretMenuManager.secretConfig.chatBot.greetingsEnabled) {
             val lowerMsg = message.lowercase()
             
             if (lowerMsg.contains("присоединился") || lowerMsg.contains("зашел") || lowerMsg.contains("вошел") || 
@@ -215,7 +215,7 @@ object AutoResponder {
         val lowerSender = sender.lowercase()
         
         // Отладочный режим: разрешаем отвечать самому себе, если включен LM Studio и мы тестируем
-        val isTestMode = SecretMenuManager.secretConfig.lmStudio.enabled && SecretMenuManager.secretConfig.funCategory.fullModeEnabled
+        val isTestMode = SecretMenuManager.secretConfig.chatBot.lmStudioEnabled && SecretMenuManager.secretConfig.chatBot.fullModeEnabled
         
         if (!isTestMode && sender == selfName) return
         if (lowerSender == "system" || lowerSender == "server" || lowerSender == "сервер") return
@@ -249,7 +249,7 @@ object AutoResponder {
         if (currentTime - lastPlayerTime < AiConfig.PLAYER_RESPONSE_COOLDOWN) return
 
         val isAddressed = AiConfig.TRIGGERS.any { content.lowercase().contains(it) }
-        val isFullMode = SecretMenuManager.secretConfig.funCategory.fullModeEnabled
+        val isFullMode = SecretMenuManager.secretConfig.chatBot.fullModeEnabled
         val isGreeting = AiConfig.GREETINGS.any { content.lowercase().contains(it) }
         
         // Increased responsiveness: reply to direct addressing, greetings or long questions
@@ -299,23 +299,23 @@ object AutoResponder {
         val context = AiContext.getOrUpdateContext(sender, message)
         AiLearning.processSelfLearning(sender, message, context)
 
-        val lmConfig = SecretMenuManager.secretConfig.lmStudio
+        val config = SecretMenuManager.secretConfig.chatBot
         
         // Check if main AutoResponder is enabled
-        if (!SecretMenuManager.secretConfig.funCategory.autoResponderEnabled) return
+        if (!config.autoResponderEnabled) return
 
         // 1. Try rule-based response first (instant and precise)
         val (intentResponse, confidence) = AiThinking.matchIntent(message, sender, context)
         
         // If we found a very confident local intent (greetings, simple commands), use it immediately
         // Unless user explicitly set "ALWAYS_LM" mode
-        if (intentResponse != null && confidence > 0.7 && lmConfig.mode != set.starlev.secret.config.SecretConfig.LmMode.ALWAYS_LM) {
+        if (intentResponse != null && confidence > 0.7 && config.mode != set.starlev.secret.config.SecretConfig.LmMode.ALWAYS_LM) {
             pendingResponses.add(PendingResponse(intentResponse, sender, currentTime, isGlobal))
             return
         }
 
         // 2. If LM Studio is enabled, try it for everything else or if local confidence is low
-        if (lmConfig.enabled) {
+        if (config.lmStudioEnabled) {
             // Cooldown check for LM Studio (5 seconds as requested)
             // But we ignore cooldown for the very first message after activation if needed
             if (currentTime - lastSentResponseTime < 5000 && lastSentResponseTime != 0L) return

@@ -1,12 +1,13 @@
-package set.starlev.features.combat.solvers.dungeons
+package set.starlev.features.combat.dungeons.solvers
 
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
+import set.starlev.utils.detectors.DungeonDetector
 import java.util.regex.Pattern
 
-object ThreeWeirdosSolver {
+object ThreeWeirdos {
     private val STRANGER_PATTERN = Pattern.compile("\\[Персонаж] (.+?):")
     private val statements = mutableMapOf<String, String>()
     
@@ -47,10 +48,10 @@ object ThreeWeirdosSolver {
     
     private fun solve() {
         val client = Minecraft.getInstance()
-        if (client.player == null || client.level == null) return
+        if (client.player == null) return
         
         // Проверка на нахождение в подземельях
-        if (!client.level!!.dimension().location().toString().startsWith("minecraft:dungeon_")) {
+        if (!DungeonDetector.isInDungeon()) {
             statements.clear()
             return
         }

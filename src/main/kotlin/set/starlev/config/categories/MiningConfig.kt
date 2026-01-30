@@ -3,6 +3,7 @@ package set.starlev.config.categories
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorText
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
@@ -20,7 +21,7 @@ class MiningConfig {
 
     class CommissionsConfig {
         @Expose
-        @ConfigOption(name = "Поручений HUD", desc = "Показывает текущие поручения на экране.")
+        @ConfigOption(name = "HUD поручений", desc = "Показывает текущие поручения на экране.")
         @ConfigEditorBoolean
         var enabled = true
 
@@ -35,9 +36,19 @@ class MiningConfig {
         var autoCommissions = true
 
         @Expose
-        @ConfigOption(name = "Показывать уведомление", desc = "Показывает большой текст на экране для активации голубя.")
+        @ConfigOption(name = "А-П уведомление", desc = "Показывает большой текст на экране для активации голубя.")
         @ConfigEditorBoolean
         var showTitle = true
+
+        @Expose
+        @ConfigOption(name = "Цвет акцента", desc = "Цвет полоски прогресса и важных элементов.")
+        @ConfigEditorColour
+        var accentColorV2 = "0:255:255:170:0"
+
+        @Expose
+        @ConfigOption(name = "Фон HUD", desc = "Отображает фон у HUD поручений.")
+        @ConfigEditorBoolean
+        var showBackground = true
     }
 
     class AbilitiesConfig {
@@ -49,24 +60,29 @@ class MiningConfig {
 
     class AbilityCooldownConfig {
         @Expose
-        @ConfigOption(name = "Киркобулус", desc = "Включает отслеживание КД способности Pickobulus.")
+        @ConfigOption(name = "Киркобулус", desc = "Включает отслеживание КД способности Киркобулуса.")
         @ConfigEditorBoolean
         var pickaxeBoostEnabled = true
 
         @Expose
-        @ConfigOption(name = "Увеличение скорости копания", desc = "Включает отслеживание КД способности Mining Speed Boost.")
+        @ConfigOption(name = "УСК", desc = "Включает отслеживание КД способности Увеличения скорости копания.")
         @ConfigEditorBoolean
         var speedBoostEnabled = true
 
         @Expose
-        @ConfigOption(name = "КД Киркобулуса (сек)", desc = "Время перезарядки способности Киркобулус.")
+        @ConfigOption(name = "КД Киркобулуса (сек)", desc = "Время перезарядки способности Киркобулуса.")
         @ConfigEditorText
         var pickaxeBoostCooldown = "60"
 
         @Expose
-        @ConfigOption(name = "КД скорости копания (сек)", desc = "Время перезарядки способности Speed Boost.")
+        @ConfigOption(name = "КД УСК (сек)", desc = "Время перезарядки способности УСК.")
         @ConfigEditorText
         var speedBoostCooldown = "120"
+
+        @Expose
+        @ConfigOption(name = "Фон HUD", desc = "Отображает фон у КД способностей.")
+        @ConfigEditorBoolean
+        var showBackground = false
     }
 }
 

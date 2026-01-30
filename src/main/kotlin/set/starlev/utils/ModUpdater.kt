@@ -59,6 +59,7 @@ object ModUpdater {
                                         Component.literal("§7Используйте §f/sh update install §7для автоматической установки."),
                                         false
                                     )
+                                    mc.player?.playSound(ModSounds.UPDATE_AVAILABLE, 1.0f, 1.0f)
                                 }
                             }
                         }

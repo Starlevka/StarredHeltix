@@ -4,6 +4,8 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.TooltipFlag
 import net.minecraft.client.Minecraft
 import net.minecraft.world.item.Item
+import set.starlev.StarredHeltix
+import set.starlev.utils.CacheManager
 
 object ItemLoreDetector {
 
@@ -13,23 +15,43 @@ object ItemLoreDetector {
      */
     fun getLore(stack: ItemStack): List<String> {
         if (stack.isEmpty) return emptyList()
+
+        if (StarredHeltix.feature.optimization.performance.cacheItemLore) {
+            val hash = getItemStackHash(stack)
+            val cached = CacheManager.getCachedLore(hash)
+            if (cached != null) return cached
+            
+            val lore = generateLore(stack)
+            CacheManager.cacheLore(hash, lore)
+            return lore
+        }
         
+        return generateLore(stack)
+    }
+
+    private fun generateLore(stack: ItemStack): List<String> {
         val client = Minecraft.getInstance()
         val player = client.player ?: return emptyList()
         
-        // Get tooltip components
         val tooltipComponents = stack.getTooltipLines(
             Item.TooltipContext.of(client.level),
             player,
             TooltipFlag.NORMAL
         )
 
-        // Drop the first line (item name) and convert rest to string
         return if (tooltipComponents.isNotEmpty()) {
             tooltipComponents.drop(1).map { it.string }
         } else {
             emptyList()
         }
+    }
+
+    private fun getItemStackHash(stack: ItemStack): Int {
+        // Хэш зависит от предмета и его NBT (компонентов в 1.21)
+        var result = stack.item.hashCode()
+        result = 31 * result + stack.components.hashCode()
+        result = 31 * result + stack.count
+        return result
     }
 
     /**

@@ -68,12 +68,19 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
     }
 
     override fun mouseClicked(event: MouseButtonEvent, isDoubleClick: Boolean): Boolean {
-        if (event.button() == 0) {
+        if (event.button() == 0) { // ЛКМ - Перетаскивание
             for ((_, element) in HudManager.getAllElements()) {
                 if (element.isHovered(event.x().toInt(), event.y().toInt())) {
                     draggingElement = element
                     dragOffsetX = event.x().toInt() - element.x
                     dragOffsetY = event.y().toInt() - element.y
+                    return true
+                }
+            }
+        } else if (event.button() == 1) { // ПКМ - Вкл/Выкл фона
+            for ((_, element) in HudManager.getAllElements()) {
+                if (element.isHovered(event.x().toInt(), event.y().toInt())) {
+                    element.showBackground = !element.showBackground
                     return true
                 }
             }

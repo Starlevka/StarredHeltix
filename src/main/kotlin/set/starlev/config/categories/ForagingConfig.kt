@@ -30,6 +30,11 @@ class ForagingConfig {
         @ConfigOption(name = "КД топоров (сек)", desc = "Время перезарядки в секундах (обычно 2 сек).")
         @ConfigEditorText
         var cooldown = "2"
+
+        @Expose
+        @ConfigOption(name = "Фон HUD", desc = "Отображает фон у КД топоров")
+        @ConfigEditorBoolean
+        var showBackground = false
     }
 }
 

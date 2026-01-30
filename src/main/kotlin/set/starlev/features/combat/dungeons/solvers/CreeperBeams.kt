@@ -1,4 +1,4 @@
-package set.starlev.features.combat.solvers.dungeons
+package set.starlev.features.combat.dungeons.solvers
 
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -9,13 +9,14 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import set.starlev.StarredHeltix
 import set.starlev.render.RenderEvents
+import set.starlev.utils.detectors.DungeonDetector
 import org.joml.Intersectiond
 
 /**
- * CreeperBeamsSolver - Сольвер для головоломки с лучами криперов в подземельях.
+ * CreeperBeams - Сольвер для головоломки с лучами криперов в подземельях.
  * Исправленная версия с учетом оригинальной логики Skyblocker.
  */
-object CreeperBeamsSolver {
+object CreeperBeams {
     private val MC = Minecraft.getInstance()
     private val list = mutableListOf<Beam>()
     private var base: BlockPos? = null
@@ -70,10 +71,9 @@ object CreeperBeamsSolver {
         }
 
         val player = MC.player ?: return
-        val level = MC.level ?: return
-
+        
         // Проверка на нахождение в подземельях
-        if (!level.dimension().location().toString().startsWith("minecraft:dungeon_")) {
+        if (!DungeonDetector.isInDungeon()) {
             list.clear()
             base = null
             return
@@ -81,6 +81,7 @@ object CreeperBeamsSolver {
 
         // Попытка найти базу если она еще не найдена
         if (base == null) {
+            val level = MC.level ?: return
             base = findCreeperBase(level)
             if (base != null) {
                 StarredHeltix.LOGGER.info("CreeperBeams: Found base at $base")
@@ -94,6 +95,7 @@ object CreeperBeamsSolver {
         }
 
         if (base != null) {
+            val level = MC.level ?: return
             // Обновляем состояние лучей
             list.forEach { it.updateState(level) }
 

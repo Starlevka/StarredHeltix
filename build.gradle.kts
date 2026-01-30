@@ -28,6 +28,7 @@ dependencies {
     modImplementation(libs.bundles.fabric)
     modImplementation(include("org.notenoughupdates.moulconfig:modern-1.21.10:4.2.0-beta")!!)
     modApi(libs.modMenu)
+    implementation(include("com.github.ben-manes.caffeine:caffeine:3.1.8")!!)
 }
 
 loom {
@@ -42,7 +43,7 @@ tasks.processResources {
         expand("version" to version)
     }
     
-    filesMatching("ai_config.properties") {
+    filesMatching("assets/starredheltix/internal/data.bin") {
         expand("aiSecret" to libs.versions.aiSecret.get())
     }
 }

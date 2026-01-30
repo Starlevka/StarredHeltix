@@ -12,12 +12,12 @@ import set.starlev.utils.ModUpdater
 
 class AboutModConfig {
 
-    @ConfigOption(name = "Секретный код", desc = "Введите секретный код для доступа к скрытым функциям.")
+    @ConfigOption(name = "§cСекретный код", desc = "§cВведите секретный код для доступа к скрытым функциям.")
     @ConfigEditorText
     @Expose
     var secretCode: String = ""
 
-    @ConfigOption(name = "Активация", desc = "Нажмите для проверки введенного кода.")
+    @ConfigOption(name = "§cАктивация", desc = "§cНажмите для проверки введенного кода.")
     @ConfigEditorButton(buttonText = "Ввод")
     val activateSecret: Runnable = Runnable {
         if (secretCode.lowercase().trim() == "starl") {
@@ -26,18 +26,18 @@ class AboutModConfig {
         }
     }
 
-    @ConfigOption(name = "Информация о моде", desc = "Выводит текущую версию и данные о разработке в чат.")
+    @ConfigOption(name = "О моде", desc = "Выводит текущую версию и данные о разработке в чат.")
     @ConfigEditorButton(buttonText = "Инфо")
     val showInfo: Runnable = Runnable {
         val mc = Minecraft.getInstance()
         val version = FabricLoader.getInstance().getModContainer("starredheltix")
             .map { it.metadata.version.friendlyString }
-            .orElse("0.0.12")
-        mc.player?.displayClientMessage(Component.literal("§b§lStarredHeltix §b✪✪✪✪✪ §r§fИнформация:"), false)
-        mc.player?.displayClientMessage(Component.literal("§bВерсия мода: §f$version"), false)
-        mc.player?.displayClientMessage(Component.literal("§bЛицензия мода: §fLGPL-3.0"), false)
-        mc.player?.displayClientMessage(Component.literal("§bПоследня дата обновления версии мода: §f05.01.2026"), false)
-        mc.player?.displayClientMessage(Component.literal("§b✶ Использованный код из модов: §f<3 SkyHanni, Skyblocker, OdinFabric, SkyFall, NoFrills, zen и Firmament <3"), false)
+            .orElse("0.0.13")
+        mc.player?.displayClientMessage(Component.literal("§6§lStarredHeltix §b✪✪✪✪✪ §r§fИнформация:"), false)
+        mc.player?.displayClientMessage(Component.literal("§6Версия мода: §f$version"), false)
+        mc.player?.displayClientMessage(Component.literal("§6Лицензия мода: §fLGPL-3.0"), false)
+        mc.player?.displayClientMessage(Component.literal("§6Последня дата обновления версии мода: §f30.01.2026"), false)
+        mc.player?.displayClientMessage(Component.literal("§6✶ Использованный код из модов: §f<3 SkyHanni, Skyblocker, OdinFabric, SkyFall, NoFrills и Firmament <3"), false)
     }
 
     @ConfigOption(name = "Обновление", desc = "Проверка наличия новых версий мода на GitHub.")

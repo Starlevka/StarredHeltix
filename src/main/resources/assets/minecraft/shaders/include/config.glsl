@@ -1,0 +1,23 @@
+#version 150
+
+#define SHAKE_SPEED 8.0
+#define SHAKE_INTENSITY 1.0
+
+#define PULSE_SPEED 20.0
+#define PULSE_SIZE 0.4
+
+#define WAVE_SPEED 12000.0
+#define WAVE_AMPLITUDE 0.5
+#define WAVE_X_FREQUENCY 0.35
+
+#define RAINBOW_SPEED 500.0
+
+#define BOUNCE_SPEED 3000.0
+#define BOUNCE_AMPLITUDE 1.0
+
+#define BLINK_SPEED 0.5
+
+#define SPIN_SPEED 2500.0
+#define ONCE_SPIN_SPEED 5000.0
+
+#define FADE_SPEED 1.0

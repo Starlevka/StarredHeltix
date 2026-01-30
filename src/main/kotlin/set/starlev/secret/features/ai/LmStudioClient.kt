@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.secret.config.SecretMenuManager
 import java.net.HttpURLConnection
-import java.net.URL
+import java.net.URI
 import java.util.concurrent.CompletableFuture
 
 object LmStudioClient {
@@ -14,11 +14,11 @@ object LmStudioClient {
 
     fun generateResponse(prompt: String, sender: String): CompletableFuture<String> {
         return CompletableFuture.supplyAsync {
-            val config = SecretMenuManager.secretConfig.lmStudio
-            if (!config.enabled) return@supplyAsync ""
+            val config = SecretMenuManager.secretConfig.chatBot
+            if (!config.lmStudioEnabled) return@supplyAsync ""
 
             try {
-                val url = URL("${config.apiUrl.removeSuffix("/")}/chat/completions")
+                val url = URI("${config.apiUrl.removeSuffix("/")}/chat/completions").toURL()
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Content-Type", "application/json")
@@ -31,7 +31,8 @@ object LmStudioClient {
                         "Пиши только одной строкой. НИКАКИХ переносов строк (\\n), никаких табуляций (\\t), эмодзи или иероглифов." +
                         "Используй только русский алфавит, цифры и базовые знаки (. , ! ? - :)." +
                         "Твой ответ будет отправлен напрямую в чат игры, поэтому любые запрещенные символы приведут к кику игрока." +
-                        "Если в сообщении есть [!], ты отвечаешь в глобальный чат и ОБЯЗАТЕЛЬНО начни ответ с символа ! (восклицательный знак), иначе его никто не увидит."
+                        "Если в сообщении есть [!], ты отвечаешь в глобальный чат и ОБЯЗАТЕЛЬНО начни ответ с символа ! (восклицательный знак), иначе его никто не увидит." +
+                        "Если в начале сообщения написано Пати, ты отвечаешь в пати чат и ОБЯЗАТЕЛЬНО начни ответ с команды /pc "
 
                 val requestBody = JsonObject().apply {
                     addProperty("model", if (config.modelId.isBlank()) "local-model" else config.modelId)

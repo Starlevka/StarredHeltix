@@ -2,8 +2,11 @@ package set.starlev.utils.detectors
 
 import net.minecraft.client.Minecraft
 import set.starlev.mixin.accessors.ChatComponentAccessor
+import set.starlev.utils.CacheManager
 
 object ChatDetector {
+
+    private const val COLOR_PATTERN = "(?i)§[0-9a-fk-orlnmxz]"
 
     /**
      * Returns the last chat message received.
@@ -24,6 +27,13 @@ object ChatDetector {
         } catch (e: Exception) {
             ""
         }
+    }
+
+    /**
+     * Clean text from color codes.
+     */
+    fun cleanColor(text: String): String {
+        return text.replace(CacheManager.getRegex(COLOR_PATTERN), "")
     }
 
     /**

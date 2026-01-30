@@ -13,6 +13,8 @@ import set.starlev.render.RenderEngine;
 public class HudRenderMixin {
     @Inject(method = "render", at = @At("RETURN"))
     private void onRenderHud(GuiGraphics graphics, DeltaTracker delta, CallbackInfo ci) {
-        RenderEngine.renderHud(graphics, delta.getGameTimeDeltaPartialTick(false));
+        if (net.minecraft.client.Minecraft.getInstance().screen == null) {
+            RenderEngine.renderHud(graphics, delta.getGameTimeDeltaPartialTick(false));
+        }
     }
 }

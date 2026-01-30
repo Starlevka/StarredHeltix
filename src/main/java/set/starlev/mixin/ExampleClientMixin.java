@@ -15,6 +15,5 @@ public class ExampleClientMixin {
 
 	@Inject(at = @At("TAIL"), method = "setLevel")
 	private void onWorldJoin(CallbackInfo info) {
-		set.starlev.features.misc.VotingReminder.INSTANCE.checkAndShowReminder();
 	}
 }

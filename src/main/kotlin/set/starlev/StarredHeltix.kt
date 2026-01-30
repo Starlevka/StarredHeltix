@@ -8,13 +8,25 @@ import org.slf4j.LoggerFactory
 import set.starlev.render.RenderEngine
 import set.starlev.config.ConfigManager
 import set.starlev.config.Features
-import set.starlev.features.combat.solvers.dungeons.ThreeWeirdosSolver
+import set.starlev.features.combat.dungeons.solvers.ThreeWeirdos
 import set.starlev.features.misc.MouseLock
 import set.starlev.features.misc.WelcomeMessage
+
+import net.minecraft.client.renderer.entity.EntityRenderers
+import net.minecraft.world.entity.monster.Monster
+import set.starlev.registry.EntityRegistry
+import set.starlev.render.MegaChestRenderer
 
 class StarredHeltix : ClientModInitializer {
     override fun onInitializeClient() {
         LOGGER.info("Инициализация ЛлЛлЛлЛлЛл StarredHeltix...")
+        
+        EntityRegistry.init()
+        EntityRenderers.register(EntityRegistry.MEGA_CHEST_MAGMA, ::MegaChestRenderer)
+
+        // Регистрация атрибутов для кастомных сущностей (необходимо для работы ИИ и предотвращения крашей)
+        net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricDefaultAttributeRegistry.register(EntityRegistry.MEGA_CHEST_MAGMA, Monster.createMonsterAttributes())
+
         configManager = ConfigManager
         configManager.firstLoad()
         set.starlev.secret.config.SecretMenuManager.load(forceSave = false)
@@ -24,22 +36,29 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.commands.ConfigCommand.register()
         set.starlev.events.KeyBindHandler.init()
         set.starlev.features.combat.EntityHighlight.init()
+        set.starlev.utils.detectors.SkillXpDetector.init()
         set.starlev.features.chat.PartyCommands.init()
         set.starlev.secret.features.AutoResponder.init()
         set.starlev.features.combat.dungeons.DeathCounter.init()
-        set.starlev.features.misc.VotingReminder.init()
         set.starlev.features.chat.CustomBindManager.init()
         set.starlev.features.misc.MouseLock.init()
-        set.starlev.hud.HudManager.registerElement(set.starlev.features.misc.MouseLock)
         set.starlev.features.combat.slayer.AutoSlayer.init()
         set.starlev.features.combat.slayer.SlayerHud.init()
+        set.starlev.features.combat.slayer.SlayerScoreboard.init()
         WelcomeMessage.init()
         set.starlev.features.visual.GhostFrameFeature.init()
-        set.starlev.features.visual.GhostNPCHandler.init()
+        // set.starlev.features.visual.GhostNPCHandler.init() - Удалено из меню
+        set.starlev.features.visual.MegaChestNPCHandler.init()
         set.starlev.features.visual.Fullbright.init()
+        set.starlev.features.visual.InventoryHistoryLog.init()
+        set.starlev.secret.features.SecretFunFeatures.init()
         set.starlev.features.chat.mod.MacroCheck.init()
         set.starlev.features.mining.DwarvenWaypoints.init()
         set.starlev.features.mining.AutoCommissions.init()
+        set.starlev.utils.detectors.ContainerDetector.init()
+        set.starlev.utils.detectors.ActionBarDetector
+        set.starlev.utils.detectors.MuseumDetector.init()
+        set.starlev.features.skyblock.Museum.init()
 
         // Register chat listeners
         set.starlev.features.chat.ChatEventsManager.registerIncoming { message ->
@@ -65,9 +84,9 @@ class StarredHeltix : ClientModInitializer {
         
         // Инициализировать солверы подземелий
         set.starlev.features.combat.dungeons.BloodRoomTimer.init()
-        set.starlev.features.combat.solvers.dungeons.ThreeWeirdosSolver.init()
-        set.starlev.features.combat.solvers.dungeons.TicTacToeSolver.init()
-        set.starlev.features.combat.solvers.dungeons.CreeperBeamsSolver.init()
+        set.starlev.features.combat.dungeons.solvers.ThreeWeirdos.init()
+        set.starlev.features.combat.dungeons.solvers.CreeperBeams.init()
+        set.starlev.features.combat.dungeons.ScoreCounter.init()
         set.starlev.features.fishing.LegendaryFishingNotifier.init()
         
         // Регистрация сохранения конфига при выходе из игры

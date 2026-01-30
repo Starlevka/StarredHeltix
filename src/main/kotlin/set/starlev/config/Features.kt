@@ -16,6 +16,7 @@ import set.starlev.config.categories.MiningConfig
 import set.starlev.config.categories.MiscConfig
 import set.starlev.config.categories.SlayerConfig
 import set.starlev.config.categories.OptimizationConfig
+import set.starlev.config.categories.SkyblockConfig
 import set.starlev.config.categories.VisualsConfig
 import set.starlev.utils.ConfigUtils.asStructuredText
 import java.awt.Color
@@ -26,11 +27,11 @@ class Features : Config() {
     }
 
     override fun getTitle(): io.github.notenoughupdates.moulconfig.common.text.StructuredText {
-        return buildChromaTitle().asStructuredText()
+        return io.github.notenoughupdates.moulconfig.common.text.StructuredText.of(buildTitle())
     }
 
-    private fun buildChromaTitle(): String {
-        return "§b§lStarredHeltix §r§lv0.0.12"
+    private fun buildTitle(): String {
+        return "§6§lStarredHeltix §e§lv0.0.13"
     }
 
     @Expose
@@ -52,6 +53,10 @@ class Features : Config() {
     @Expose
     @Category(name = "Оптимизация", desc = "· Настройки геймплея.")
     var optimization = OptimizationConfig()
+
+    @Expose
+    @Category(name = "✦ Скайблок", desc = "· Функции для Skyblock.")
+    var skyblock = SkyblockConfig()
 
     @Expose
     @Category(name = "✦ Бой", desc = "· Функции для навыка боя.")

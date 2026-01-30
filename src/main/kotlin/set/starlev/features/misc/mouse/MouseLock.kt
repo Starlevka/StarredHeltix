@@ -51,20 +51,22 @@ object MouseLock : HudElement("MouseLock") {
 
     // HudElement implementation
     override fun render() {
-        if (!raw()) return
-        cachedGraphics?.drawString(mc.font, text, x, y, 0xFFFFAA00.toInt())
+        if (!raw() && !isEditing) return
+        this.showBackground = set.starlev.StarredHeltix.feature.misc.mouselock.showBackground
+        drawBackground(getWidth(), getHeight())
+        
+        // Используем forceEffects для применения эффектов текста точечно
+        set.starlev.secret.features.SecretFunFeatures.withForceEffects {
+            cachedGraphics?.drawString(mc.font, text, x, y, 0xFFFFAA00.toInt())
+        }
     }
 
     override fun getWidth(): Int = mc.font.width(text)
     override fun getHeight(): Int = mc.font.lineHeight
 
-    override fun getDefaultX(): Int {
-        val screenWidth = mc.window.guiScaledWidth
-        return screenWidth / 2 - 60
-    }
+    override fun getDefaultScale(): Float = 1.2f
 
-    override fun getDefaultY(): Int {
-        val screenHeight = mc.window.guiScaledHeight
-        return screenHeight / 2 + 15
-    }
+    override fun getDefaultX(): Int = 420
+
+    override fun getDefaultY(): Int = 285
 }

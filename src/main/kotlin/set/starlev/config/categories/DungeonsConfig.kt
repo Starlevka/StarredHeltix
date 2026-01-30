@@ -23,20 +23,37 @@ class DungeonsConfig {
     var autoReady = AutoReadyConfig()
 
     @Expose
-    @ConfigOption(name = "Детект смерти ☠", desc = "Отправляет сообщение в пати чат при нахождении иконки смерти.")
+    @ConfigOption(name = "Детект смерти §c☠", desc = "Отправляет сообщение в пати чат при нахождении иконки смерти.")
     @Accordion
     var deathCounter = DeathCounterConfig()
+
+    @Expose
+    @ConfigOption(name = "Счётчик очков", desc = "Отслеживает очки подземелья и уведомляет при достижении 270.")
+    @Accordion
+    var scoreCounter = ScoreCounterConfig()
+
+    @Expose
+    @ConfigOption(name = "Визуал", desc = "Визуальные улучшения для подземелий.")
+    @Accordion
+    var visuals = DungeonsVisualsConfig()
+
+    class DungeonsVisualsConfig {
+        @Expose
+        @ConfigOption(name = "Зеленые сундуки", desc = "Меняет текстуру сундуков в данже на зеленую (как у сундука с сокровищами).")
+        @ConfigEditorBoolean
+        var greenChests = true
+
+        @Expose
+        @ConfigOption(name = "Зеленые летучие мыши", desc = "Окрашивает летучих мышей в зеленый цвет для лучшей видимости.")
+        @ConfigEditorBoolean
+        var greenBats = true
+    }
 
     class SolversConfig {
         @Expose
         @ConfigOption(name = "Три незнакомца", desc = "Подсвечивает правильного незнакомца в пазле Three Weirdos.")
         @ConfigEditorBoolean
         var threeWeirdos = true
-
-        @Expose
-        @ConfigOption(name = "Крестики-нолики", desc = "Помогает в решении пазла Tic Tac Toe.")
-        @ConfigEditorBoolean
-        var ticTacToe = true
 
         @Expose
         @ConfigOption(name = "Крипер-лучи", desc = "Отображает лучи для пазла Creeper Beams. (Нужен лук)")
@@ -46,7 +63,7 @@ class DungeonsConfig {
 
     class BloodRoomConfig {
         @Expose
-        @ConfigOption(name = "Включить", desc = "Активирует оповещение о готовности кровавой комнаты.")
+        @ConfigOption(name = "Включить?", desc = "Активирует оповещение о готовности кровавой комнаты.")
         @ConfigEditorBoolean
         var enabled = true
 
@@ -54,11 +71,16 @@ class DungeonsConfig {
         @ConfigOption(name = "Сообщение", desc = "Текст сообщения, который будет отправлен в /pc")
         @ConfigEditorText
         var message = "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ Кровавая комната готова!"
+
+        @Expose
+        @ConfigOption(name = "Фон HUD", desc = "Показывать темный фон позади текста.")
+        @ConfigEditorBoolean
+        var showBackground = false
     }
 
     class AutoReadyConfig {
         @Expose
-        @ConfigOption(name = "Включить", desc = "Отправка сообщения о готовности, находясь за Мортом")
+        @ConfigOption(name = "Включить?", desc = "Отправка сообщения о готовности, находясь за Мортом")
         @ConfigEditorBoolean
         var enabled = true
 
@@ -70,7 +92,7 @@ class DungeonsConfig {
 
     class DeathCounterConfig {
         @Expose
-        @ConfigOption(name = "Детект смерти в данже", desc = "Отправляет сообщение в пати чат, когда кто-то погибает.")
+        @ConfigOption(name = "Включить?", desc = "Отправляет сообщение в пати чат, когда кто-то погибает.")
         @ConfigEditorBoolean
         var deathDetect = true
 
@@ -78,6 +100,23 @@ class DungeonsConfig {
         @ConfigOption(name = "Сообщение при смерти", desc = "Текст сообщения, который будет отправлен в /pc.")
         @ConfigEditorText
         var deathMessage = "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx | Кто погиб, тот ЛЛЛ"
+    }
+
+    class ScoreCounterConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Активирует HUD и уведомления об очках.")
+        @ConfigEditorBoolean
+        var enabled = true
+
+        @Expose
+        @ConfigOption(name = "Сообщение в пати", desc = "Текст сообщения для отправки в /pc.")
+        @ConfigEditorText
+        var message = "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ Ранг S ✪ Можно идти к боссу."
+
+        @Expose
+        @ConfigOption(name = "Фон HUD", desc = "Показывать темный фон позади текста.")
+        @ConfigEditorBoolean
+        var showBackground = true
     }
 }
 

@@ -15,7 +15,7 @@ public class MinecraftMixin {
     public Screen screen;
 
     @Inject(method = "tick", at = @At("HEAD"))
-    private void onTick(CallbackInfo ci) {
+    private void onTick(CallbackInfo ci) {   
         Screen toOpen = StarredHeltix.Companion.getScreenToOpen();
         if (toOpen != null) {
             StarredHeltix.Companion.setScreenToOpen(null);
@@ -24,5 +24,6 @@ public class MinecraftMixin {
         set.starlev.features.combat.dungeons.AutoReadyNotifier.INSTANCE.tick();
         set.starlev.features.misc.AutoSprint.INSTANCE.tick();
         set.starlev.features.chat.CustomBindManager.INSTANCE.tick();
+        set.starlev.features.visual.InventoryHistoryLog.INSTANCE.tick();
     }
 }

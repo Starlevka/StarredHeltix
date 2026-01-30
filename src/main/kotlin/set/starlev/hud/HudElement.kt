@@ -1,6 +1,5 @@
 package set.starlev.hud
 
-import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.gui.GuiGraphics
 
 abstract class HudElement(
@@ -9,6 +8,7 @@ abstract class HudElement(
     var x: Int = 0
     var y: Int = 0
     var scale: Float = 1.0f
+    var showBackground: Boolean = true
     var isEditing = false
     protected var cachedGraphics: net.minecraft.client.gui.GuiGraphics? = null
     private var initialized = false
@@ -19,7 +19,7 @@ abstract class HudElement(
         const val SCALE_STEP = 0.1f
     }
     
-    private fun ensureInitialized() {
+    protected fun ensureInitialized() {
         if (!initialized) {
             x = getDefaultX()
             y = getDefaultY()
@@ -51,13 +51,32 @@ abstract class HudElement(
 
     /**
      * Отрисовать стандартный фон в стиле SkyHanni
+     * @param width Ширина контента
+     * @param height Высота контента
+     * @param padding Внутренние отступы
+     * @param centerAnchor Если true, фон будет центрирован относительно позиции x (используется для однострочных худов)
      */
-    protected fun drawBackground(width: Int, height: Int, padding: Int = 4) {
+    protected fun drawBackground(width: Int, height: Int, padding: Int = 4, centerAnchor: Boolean = false, shadow: Boolean = false, shadowBottom: Boolean = false) {
         val graphics = cachedGraphics ?: return
-        // Тёмный полупрозрачный фон (сделал чуть прозрачнее: 0x90 -> 0x70)
-        graphics.fill(x - padding, y - padding, x + width + padding, y + height + padding, 0x70000000)
-        // Тонкая вертикальная линия слева (акцентная)
-        graphics.fill(x - padding, y - padding, x - padding + 2, y + height + padding, getAccentColor())
+        if (!showBackground) return
+        
+        val x1 = if (centerAnchor) x - width / 2 - padding else x - padding
+        val y1 = y - padding
+        val x2 = if (centerAnchor) x + width / 2 + padding else x + width + padding
+        val y2 = y + height + padding
+
+        if (shadow) {
+            // Рисуем тень (с небольшим смещением)
+            if (shadowBottom) {
+                // Смещение вниз для Slayer Scoreboard
+                graphics.fill(x1, y2, x2, y2 + 2, 0x50000000)
+            } else {
+                graphics.fill(x1 + 2, y1 + 2, x2 + 2, y2 + 2, 0x50000000)
+            }
+        }
+
+        // Тёмный полупрозрачный фон
+        graphics.fill(x1, y1, x2, y2, 0x70000000)
     }
 
     /**
@@ -67,8 +86,8 @@ abstract class HudElement(
         val graphics = cachedGraphics ?: return
         val filledWidth = (width * progress.coerceIn(0f, 1f)).toInt()
         
-        // Фон полоски (темный)
-        graphics.fill(currentX, currentY, currentX + width, currentY + height, 0x60FFFFFF)
+        // Фон полоски (темный полупрозрачный)
+        graphics.fill(currentX, currentY, currentX + width, currentY + height, 0x80000000.toInt())
         // Заполненная часть
         graphics.fill(currentX, currentY, currentX + filledWidth, currentY + height, color)
     }
@@ -76,7 +95,7 @@ abstract class HudElement(
     /**
      * Цвет акцентной линии (можно переопределять в наследниках)
      */
-    open fun getAccentColor(): Int = 0xFF55FF55.toInt() // По умолчанию зеленый
+    open fun getAccentColor(): Int = 0xFF55FF55.toInt() // В 1.21.10 .toInt() все еще может быть нужен для Long литералов
 
     /**
      * Получить ширину с учётом масштаба
@@ -88,8 +107,8 @@ abstract class HudElement(
      */
     fun getScaledHeight(): Int = (getHeight() * scale).toInt()
     
-    open fun getDefaultX(): Int = 10
-    open fun getDefaultY(): Int = 10
+    open fun getDefaultX(): Int = 2
+    open fun getDefaultY(): Int = 2
     open fun getDefaultScale(): Float = 1.0f
 
     fun isHovered(mouseX: Int, mouseY: Int): Boolean {

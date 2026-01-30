@@ -21,6 +21,11 @@ class FishingConfig {
         @ConfigOption(name = "Легендарный улов", desc = "Особое уведомление при поимке легендарных морских существ.")
         @ConfigEditorBoolean
         var legendaryFishingNotifier = true
+
+        @Expose
+        @ConfigOption(name = "Фон HUD", desc = "Отображает фон у уведомлений")
+        @ConfigEditorBoolean
+        var showBackground = false
     }
 }
 

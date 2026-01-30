@@ -30,7 +30,7 @@ object EntityDeathDetector {
     fun isRelevantForSlayer(entity: Entity, slayerType: String): Boolean {
         return when (slayerType.lowercase()) {
             "мститель", "revenant" -> entity is Zombie
-            "тарантула", "tarantula" -> entity is Spider || entity is CaveSpider
+            "тарантула", "tarantula", "тарантул" -> entity is Spider || entity is CaveSpider
             "свен", "sven" -> entity is Wolf
             else -> false
         }

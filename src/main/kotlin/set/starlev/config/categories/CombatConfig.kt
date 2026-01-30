@@ -30,23 +30,38 @@ class CombatConfig {
         @ConfigOption(name = "Волки", desc = "Настройки подсветки волков.")
         @Accordion
         var wolf = WolfConfig()
+
+        @Expose
+        @ConfigOption(name = "Пауки", desc = "Настройки подсветки пауков.")
+        @Accordion
+        var spider = SpiderConfig()
+
+        @Expose
+        @ConfigOption(name = "Пещерные пауки", desc = "Настройки подсветки пещерных пауков.")
+        @Accordion
+        var caveSpider = CaveSpiderConfig()
+
+        @Expose
+        @ConfigOption(name = "Зомби", desc = "Настройки подсветки зомби.")
+        @Accordion
+        var zombie = ZombieConfig()
     }
 
     class EndermanConfig {
         @Expose
-        @ConfigOption(name = "Включить подсветку", desc = "Активирует обводку для эндерменов.")
+        @ConfigOption(name = "Подсветка", desc = "Активирует обводку для эндерменов.")
         @ConfigEditorBoolean
         var enabled = false
 
         @Expose
-        @ConfigOption(name = "Включить обводку", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
         @ConfigEditorBoolean
         var outline = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
         @ConfigEditorColour
-        var color = "0:255:255:0:255"
+        var colorV2 = "0:255:255:0:255"
 
         @Expose
         @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
@@ -56,19 +71,19 @@ class CombatConfig {
 
     class CreeperConfig {
         @Expose
-        @ConfigOption(name = "Включить подсветку", desc = "Активирует обводку для криперов.")
+        @ConfigOption(name = "Подсветка", desc = "Активирует обводку для криперов.")
         @ConfigEditorBoolean
         var enabled = false
 
         @Expose
-        @ConfigOption(name = "Включить обводку", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
         @ConfigEditorBoolean
         var outline = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
         @ConfigEditorColour
-        var color = "0:255:0:255:255"
+        var colorV2 = "0:255:0:255:255"
 
         @Expose
         @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
@@ -78,19 +93,85 @@ class CombatConfig {
 
     class WolfConfig {
         @Expose
-        @ConfigOption(name = "Включить подсветку", desc = "Активирует обводку для волков.")
+        @ConfigOption(name = "Подсветка", desc = "Активирует обводку для волков.")
         @ConfigEditorBoolean
         var enabled = false
 
         @Expose
-        @ConfigOption(name = "Включить обводку", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
         @ConfigEditorBoolean
         var outline = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
         @ConfigEditorColour
-        var color = "0:255:0:255:0"
+        var colorV2 = "0:255:0:255:0"
+
+        @Expose
+        @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
+        @ConfigEditorSlider(minValue = 0.0f, maxValue = 1.0f, minStep = 0.05f)
+        var transparency = 0.5f
+    }
+
+    class SpiderConfig {
+        @Expose
+        @ConfigOption(name = "Подсветка", desc = "Активирует обводку для пауков.")
+        @ConfigEditorBoolean
+        var enabled = false
+
+        @Expose
+        @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigEditorBoolean
+        var outline = false
+
+        @Expose
+        @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
+        @ConfigEditorColour
+        var colorV2 = "0:255:255:0:0"
+
+        @Expose
+        @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
+        @ConfigEditorSlider(minValue = 0.0f, maxValue = 1.0f, minStep = 0.05f)
+        var transparency = 0.5f
+    }
+
+    class CaveSpiderConfig {
+        @Expose
+        @ConfigOption(name = "Подсветка", desc = "Активирует обводку для пещерных пауков.")
+        @ConfigEditorBoolean
+        var enabled = false
+
+        @Expose
+        @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigEditorBoolean
+        var outline = false
+
+        @Expose
+        @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
+        @ConfigEditorColour
+        var colorV2 = "0:255:128:0:128"
+
+        @Expose
+        @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
+        @ConfigEditorSlider(minValue = 0.0f, maxValue = 1.0f, minStep = 0.05f)
+        var transparency = 0.5f
+    }
+
+    class ZombieConfig {
+        @Expose
+        @ConfigOption(name = "Подсветка", desc = "Активирует обводку для зомби.")
+        @ConfigEditorBoolean
+        var enabled = false
+
+        @Expose
+        @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigEditorBoolean
+        var outline = false
+
+        @Expose
+        @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
+        @ConfigEditorColour
+        var colorV2 = "0:255:0:128:0"
 
         @Expose
         @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")

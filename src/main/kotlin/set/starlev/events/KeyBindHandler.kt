@@ -10,6 +10,7 @@ import set.starlev.StarredHeltix
 import set.starlev.config.ConfigGuiManager
 import set.starlev.features.chat.CustomBindManager
 import set.starlev.features.visual.GhostNPCHandler
+import set.starlev.features.visual.MegaChestNPCHandler
 
 object KeyBindHandler {
     private val configKey = KeyBindingHelper.registerKeyBinding(
@@ -35,9 +36,9 @@ object KeyBindHandler {
                 }
             }
 
-            // Проверка ЛКМ для GhostNPC
-            if (client.options.keyAttack.isDown) { // Пробуем isDown вместо consumeClick
-                if (GhostNPCHandler.handleAttack()) {
+            // Проверка ЛКМ для GhostNPC и Мега-ящиков
+            if (client.options.keyAttack.isDown) {
+                if (GhostNPCHandler.handleAttack() || MegaChestNPCHandler.handleAttack()) {
                     // Обработано
                 }
             }

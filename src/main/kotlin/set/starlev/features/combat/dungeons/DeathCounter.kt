@@ -16,13 +16,13 @@ object DeathCounter {
     private var lastTitle = ""
     private var lastActionBar = ""
 
-    private val DEATH_PATTERN = java.util.regex.Pattern.compile("^☠\\s*(\\w+)")
+    private val DEATH_PATTERN = java.util.regex.Pattern.compile("^☠\\s*([a-zA-Z0-9_]{3,16})\\s+был убит")
 
     fun init() {
         ChatEventsManager.registerIncoming { message ->
             if (config.deathDetect) {
-                // Ищем символ черепка и ник игрока после него
-                val cleanMessage = message.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "")
+                // Ищем символ черепка, ник игрока и фразу "был убит"
+                val cleanMessage = message.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
                 val matcher = DEATH_PATTERN.matcher(cleanMessage)
                 if (matcher.find()) {
                     trigger()
@@ -35,7 +35,7 @@ object DeathCounter {
             
             val currentTitle = TitleDetector.getTitleText()
             if (currentTitle != lastTitle) {
-                val cleanTitle = currentTitle.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "")
+                val cleanTitle = currentTitle.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
                 val matcher = DEATH_PATTERN.matcher(cleanTitle)
                 if (matcher.find()) {
                     trigger()
@@ -45,7 +45,7 @@ object DeathCounter {
 
             val currentActionBar = ActionBarDetector.getActionBarText()
             if (currentActionBar != lastActionBar) {
-                val cleanActionBar = currentActionBar.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "")
+                val cleanActionBar = currentActionBar.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
                 val matcher = DEATH_PATTERN.matcher(cleanActionBar)
                 if (matcher.find()) {
                     trigger()
@@ -57,10 +57,14 @@ object DeathCounter {
 
     fun trigger() {
         if (!config.deathDetect) return
-        val level = mc.level ?: return
         
-        // Проверка на нахождение в подземельях
-        if (!level.dimension().location().toString().startsWith("minecraft:dungeon_")) return
+        // Проверка на нахождение в подземельях через заголовок скорборда
+        val title = set.starlev.utils.detectors.ScoreboardDetector.getScoreboardTitle()
+        val isDungeon = title.contains("КАТАКОМБЫ", ignoreCase = true) || 
+                        title.contains("CATACOMBS", ignoreCase = true) ||
+                        (mc.level?.dimension()?.location()?.toString()?.startsWith("minecraft:dungeon_") ?: false)
+        
+        if (!isDungeon) return
         
         val now = System.currentTimeMillis()
         if (now - lastTriggered < COOLDOWN) return

@@ -12,6 +12,14 @@ object TreeCapCooldown : HudElement("TreeCapCooldown") {
     private var lastBreakTime = 0L
     private var isOnCooldown = false
 
+    private fun calculateSize(): Pair<Int, Int> {
+        val config = StarredHeltix.feature.foraging.axes.treeCapCooldown
+        val text = if (isEditing) "§a§l2.0" else "§c§l${config.cooldown}"
+        val width = mc.font.width(text) + 8 // padding * 2
+        val height = mc.font.lineHeight + 8 // padding * 2
+        return width to height
+    }
+
     override fun render() {
         val config = StarredHeltix.feature.foraging.axes.treeCapCooldown
         if (!config.enabled) return
@@ -24,12 +32,15 @@ object TreeCapCooldown : HudElement("TreeCapCooldown") {
         val text = if (isEditing) "§a§l2.0" else if (remainingTime > 0) "§c§l${String.format("%.1f", remainingTime)}" else ""
         
         if (text.isEmpty()) return
-        val pose = cachedGraphics?.pose() ?: return
-        pose.pushMatrix()
-        pose.translate(x.toFloat(), y.toFloat())
-        pose.scale(2f, 2f)
-        cachedGraphics?.drawString(mc.font, text, 0, 0, 0xFFFFFFFF.toInt())
-        pose.popMatrix()
+
+        val (width, height) = calculateSize()
+        val padding = 4
+        this.showBackground = config.showBackground
+        // Используем centerAnchor = true для центрирования фона относительно позиции X
+        drawBackground(width, height, 0, true)
+
+        // Отрисовываем текст так, чтобы x был центром
+        cachedGraphics?.drawString(mc.font, text, x - mc.font.width(text) / 2, y + padding, 0xFFFFFFFF.toInt(), true)
     }
 
     fun onLogBreak(blockName: String) {
@@ -53,16 +64,13 @@ object TreeCapCooldown : HudElement("TreeCapCooldown") {
         return config.enabled
     }
 
-    override fun getWidth() = mc.font.width(StarredHeltix.feature.foraging.axes.treeCapCooldown.cooldown) * 2
-    override fun getHeight() = mc.font.lineHeight * 2
+    override fun getWidth(): Int = calculateSize().first
+
+    override fun getHeight(): Int = calculateSize().second
     
-    override fun getDefaultX(): Int {
-        val window = mc.window
-        return (window.guiScaledWidth / 2) + 30
-    }
+    override fun getDefaultScale(): Float = 1.8000002f
     
-    override fun getDefaultY(): Int {
-        val window = mc.window
-        return (window.guiScaledHeight / 2) - 5
-    }
+    override fun getDefaultX(): Int = 515
+    
+    override fun getDefaultY(): Int = 238
 }

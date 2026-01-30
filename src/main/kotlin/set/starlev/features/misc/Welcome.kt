@@ -14,9 +14,9 @@ object WelcomeMessage {
             // Всегда проверяем обновления при входе (тихий режим)
             set.starlev.utils.ModUpdater.checkUpdate(quiet = true)
 
-            if (!StarredHeltix.feature.misc.hasShownWelcome) {
+            if (!StarredHeltix.feature.misc.hasShownWelcome013) {
                 sendWelcomeMessage()
-                StarredHeltix.feature.misc.hasShownWelcome = true
+                StarredHeltix.feature.misc.hasShownWelcome013 = true
                 StarredHeltix.configManager.saveConfig("welcome-message-shown")
             }
         }
@@ -24,24 +24,25 @@ object WelcomeMessage {
 
     private fun sendWelcomeMessage() {
         val messages = listOf(
-            Component.literal("§b§lДобро пожаловать в StarredHeltix! §f(версия 0.0.11)"),
+            Component.literal("§b§lДобро пожаловать в StarredHeltix! §f(версия 0.0.13)"),
             Component.literal("§d§lНовое в этой версии:"),
-            Component.literal("§b• Авто-слеер §e- авто-звонок Маддоксу на ЛКМ в меню, в категории Слеерство"),
-            Component.literal("§b• Зимняя атмосфера §e- снегопад, НПС §lПингвин§e???"),
-            Component.literal("§b• Солверы для подземелий! (Крестики нолики и Крипер-лучи)"),
-            Component.literal("§b• Изменения в Анимациях ударов"),
-            Component.literal("§b• Уведомление о легендарных монстрах в Рыбалке"),
-            Component.literal("§b• Death Detect §e- оповещение о смерти в подземельях"),
-            Component.literal("§b• Фишки-команды для Фермерства"),
-            Component.literal("§b• /sh mouselock - блокировка движения мыши"),
-            Component.literal("§b• /sh rotation <yaw> <pitch> - подстановка позиции yaw и pitch"),
+            Component.literal("§b• SkillHUD §7(SkillXpHud) §e- отображение прогресса навыков и опыта"),
+            Component.literal("§b• PetOverlay §7(PetOverlay) §e- информация о текущем питомце"),
+            Component.literal("§b• Museum §7(Museum) §e- помощник по музею (статусы предметов)"),
+            Component.literal("§b• Оптимизации §e- улучшение производительности мода и игры"),
+            Component.literal("§b• Мега-ящики §7(MegaChestNPC) §e- новые визуальные элементы"),
+            Component.literal("§b• Scoreboard §7(SlayerScoreboard) §e- кастомный скорборд и слеер в нем"),
+            Component.literal("§b• Хайлайты §7(EntityHighlight) §e- подсветка Пауков и Зомби"),
+            Component.literal("§b• Dungeon Fixes §7(DeathCounter, ScoreCounter) §e- фикс детекта смертей и счётчик очков"),
+            Component.literal("§b• Логирование предметов §7(InventoryHistoryLog) §e- история получения вещей"),
+            Component.literal("§b• Совместимость §e- поддержка шейдеров и оптимизации рендеринга"),
+            Component.literal("§c• Удаление §e- убраны крестики-нолики (тяжело сделать пока-что)"),
             Component.literal("§e§lОсновные команды:"),
             Component.literal("§b/sh §eили §b/starredheltix §e- открыть меню настроек"),
             Component.literal("§b/sh update §e- проверить обновления, §b/sh update install §e- установить"),
             Component.literal("§e§lБыстрые команды:"),
             Component.literal("§b/вход §e- быстрый вход с паролем"),
             Component.literal("§b/яготовлёвал §e- отправить сообщение готовности"),
-            Component.literal("§b/d §eили §b/в §e- быстрый /dh (голосование)"),
             Component.literal("§e§lУправление биндами:"),
             Component.literal("§b/sh binds create <имя> <команда> §e- создать бинд"),
             Component.literal("§b/sh binds delete <имя> §e- удалить бинд"),
@@ -55,7 +56,6 @@ object WelcomeMessage {
             Component.literal("§e§lКонфигурация:"),
             Component.literal("§b/sh config password <пароль> §e- установить пароль для входа"),
             Component.literal("§b/sh config readyphrase <фраза> §e- установить фразу готовности"),
-            Component.literal("§b/sh reset voting §e- сбросить напоминание о голосовании"),
             Component.literal("§b/sh reset config §e- сбросить всю конфигурацию"),
             Component.literal("§aНаслаждайтесь игрой на сервере Heltix Skyblock!")
         )

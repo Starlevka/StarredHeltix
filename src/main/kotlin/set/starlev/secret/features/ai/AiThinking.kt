@@ -149,7 +149,7 @@ object AiThinking {
         val lowerMessage = message.lowercase()
         
         // 0. ПРИОРИТЕТ ЛИЧНОСТИ (AiPersona)
-        val persona = SecretMenuManager.secretConfig.funCategory.aiPersona
+        val persona = SecretMenuManager.secretConfig.chatBot.aiPersona
         
         // 0.1 ПРИОРИТЕТ КОНТЕКСТА (Повторение, просьбы повторить)
         
@@ -333,7 +333,7 @@ object AiThinking {
         }
 
         // 8. Финальный ответ-заглушка (только если боту было адресовано или включен полный режим)
-        if (AiConfig.TRIGGERS.any { message.lowercase().contains(it) } || SecretMenuManager.secretConfig.funCategory.fullModeEnabled) {
+        if (AiConfig.TRIGGERS.any { message.lowercase().contains(it) } || SecretMenuManager.secretConfig.chatBot.fullModeEnabled) {
             return pickRandomWithCooldown(AiLeksikon.UNKNOWN_RESPONSES, sender, context)
         }
         
@@ -341,7 +341,7 @@ object AiThinking {
     }
 
     fun buildDynamicResponse(baseResponse: String, sender: String, context: UserContext): String {
-        val persona = SecretMenuManager.secretConfig.funCategory.aiPersona
+        val persona = SecretMenuManager.secretConfig.chatBot.aiPersona
         val hasPrefix = baseResponse.startsWith("!")
         var finalResponse = if (hasPrefix) baseResponse.substring(1) else baseResponse
         

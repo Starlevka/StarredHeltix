@@ -1,14 +1,20 @@
 package set.starlev.secret.features.ai
 
+import set.starlev.utils.CacheManager
 import java.util.Stack
 import kotlin.math.pow
 
 object AiMath {
     // Улучшенное регулярное выражение для поиска математических выражений
-    // Поддерживает: числа с . и ,, пробелы, операторы +, -, *, /, ^, x, скобки
-    private val mathRegex = Regex("""(?<=\s|^|\b)(?:\(?\s*\d+[\.,]?\d*\s*\)?[\s\+\-\*\/\^x]*)+(?=\s|$|\?|=|\b)""")
+    private const val MATH_PATTERN = "(?<=\\s|^|\\b)(?:\\(?\\s*\\d+[\\.,]?\\d*\\s*\\)?[\\s\\+\\-\\*\\/\\^x]*)+(?=\\s|$|\\?|=|\\b)"
 
     fun trySolve(message: String): String? {
+        return CacheManager.getCachedAiMath(message) {
+            solveInternal(message)
+        }
+    }
+
+    private fun solveInternal(message: String): String? {
         val lowerMessage = message.lowercase()
         
         // Очищаем сообщение от триггеров обращения, чтобы не мешали регексу
@@ -29,7 +35,7 @@ object AiMath {
         
         if (!isMathQuestion) {
             // Если нет ключевых слов, проверяем просто наличие выражения
-            if (!mathRegex.containsMatchIn(cleanMessage)) return null
+            if (!CacheManager.getRegex(MATH_PATTERN).containsMatchIn(cleanMessage)) return null
         }
 
         var expression = extractExpression(cleanMessage) ?: return null
@@ -83,7 +89,7 @@ object AiMath {
     }
 
     private fun extractExpression(message: String): String? {
-        val match = mathRegex.find(message)
+        val match = CacheManager.getRegex(MATH_PATTERN).find(message)
         return match?.value?.trim()
     }
 

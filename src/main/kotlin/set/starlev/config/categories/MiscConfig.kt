@@ -23,12 +23,19 @@ class MiscConfig {
         @ConfigOption(name = "Авто-спринт", desc = "Автоматически включает бег при движении вперед.")
         @ConfigEditorBoolean
         var autoSprint = false
-
-        @Expose
-        @ConfigOption(name = "Напоминание о голосовании", desc = "Напоминает о возможности проголосовать за сервер один раз в день.")
-        @ConfigEditorBoolean
-        var votingReminder = true
     }
+
+    class MouseLockConfig {
+        @Expose
+        @ConfigOption(name = "Фон HUD", desc = "Отображает фон во время блокировки движения мыши")
+        @ConfigEditorBoolean
+        var showBackground = false
+    }
+
+    @Expose
+    @ConfigOption(name = "/sh mouselock", desc = "Настройки блокировки мыши.")
+    @Accordion
+    var mouselock = MouseLockConfig()
 
     class LoginConfig {
         @Expose
@@ -38,14 +45,5 @@ class MiscConfig {
     }
 
     @Expose
-    var hasVotedToday = false
-
-    @Expose
-    var hasShownWelcome = false
-
-    @Expose
-    var hasShownReminderToday = false
-
-    @Expose
-    var lastCheckTime = System.currentTimeMillis()
+    var hasShownWelcome013 = false
 }

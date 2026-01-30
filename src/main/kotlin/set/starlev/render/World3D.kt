@@ -32,47 +32,72 @@ object World3D {
             val r = ((color shr 16) and 0xFF) / 255f
             val g = ((color shr 8) and 0xFF) / 255f
             val b = (color and 0xFF) / 255f
-            val buf = buffer.getBuffer(RenderType.debugFilledBox())
-            val m = stack.last()
-            buf.addVertex(m, x1, y1, z1).setColor(r, g, b, a)
-            buf.addVertex(m, x1, y1, z2).setColor(r, g, b, a)
-            buf.addVertex(m, x1, y2, z1).setColor(r, g, b, a)
-            buf.addVertex(m, x1, y2, z2).setColor(r, g, b, a)
-            buf.addVertex(m, x2, y2, z2).setColor(r, g, b, a)
-            buf.addVertex(m, x1, y1, z2).setColor(r, g, b, a)
-            buf.addVertex(m, x2, y1, z2).setColor(r, g, b, a)
-            buf.addVertex(m, x1, y1, z1).setColor(r, g, b, a)
-            buf.addVertex(m, x2, y1, z1).setColor(r, g, b, a)
-            buf.addVertex(m, x1, y2, z1).setColor(r, g, b, a)
-            buf.addVertex(m, x2, y2, z1).setColor(r, g, b, a)
-            buf.addVertex(m, x2, y2, z2).setColor(r, g, b, a)
-            buf.addVertex(m, x2, y1, z1).setColor(r, g, b, a)
-            buf.addVertex(m, x2, y1, z2).setColor(r, g, b, a)
-        } else {
-            val buf = buffer.getBuffer(RenderType.lines())
+            val buf = buffer.getBuffer(RenderType.lightning())
             val m = stack.last().pose()
+            
+            // Bottom
+            addQuad(buf, m, x1, y1, z1, x2, y1, z1, x2, y1, z2, x1, y1, z2, r, g, b, a)
+            // Top
+            addQuad(buf, m, x1, y2, z1, x1, y2, z2, x2, y2, z2, x2, y2, z1, r, g, b, a)
+            // North
+            addQuad(buf, m, x1, y1, z1, x1, y2, z1, x2, y2, z1, x2, y1, z1, r, g, b, a)
+            // South
+            addQuad(buf, m, x1, y1, z2, x2, y1, z2, x2, y2, z2, x1, y2, z2, r, g, b, a)
+            // West
+            addQuad(buf, m, x1, y1, z1, x1, y1, z2, x1, y2, z2, x1, y2, z1, r, g, b, a)
+            // East
+            addQuad(buf, m, x2, y1, z1, x2, y2, z1, x2, y2, z2, x2, y1, z2, r, g, b, a)
+        } else {
+            val buf = buffer.getBuffer(RenderType.lightning())
+            val m = stack.last().pose()
+            val r = ((color shr 16) and 0xFF) / 255f
+            val g = ((color shr 8) and 0xFF) / 255f
+            val b = (color and 0xFF) / 255f
+            val a = ((color shr 24) and 0xFF) / 255f
+            val t = 0.01f
+            
             // Bottom face
-            drawLine(m, buf, x1, y1, z1, x2, y1, z1, color)
-            drawLine(m, buf, x2, y1, z1, x2, y1, z2, color)
-            drawLine(m, buf, x2, y1, z2, x1, y1, z2, color)
-            drawLine(m, buf, x1, y1, z2, x1, y1, z1, color)
+            drawThickLine(buf, m, x1, y1, z1, x2, y1, z1, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y1, z1, x2, y1, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y1, z2, x1, y1, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x1, y1, z2, x1, y1, z1, r, g, b, a, t)
             // Top face
-            drawLine(m, buf, x1, y2, z1, x2, y2, z1, color)
-            drawLine(m, buf, x2, y2, z1, x2, y2, z2, color)
-            drawLine(m, buf, x2, y2, z2, x1, y2, z2, color)
-            drawLine(m, buf, x1, y2, z2, x1, y2, z1, color)
+            drawThickLine(buf, m, x1, y2, z1, x2, y2, z1, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y2, z1, x2, y2, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y2, z2, x1, y2, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x1, y2, z2, x1, y2, z1, r, g, b, a, t)
             // Vertical edges
-            drawLine(m, buf, x1, y1, z1, x1, y2, z1, color)
-            drawLine(m, buf, x2, y1, z1, x2, y2, z1, color)
-            drawLine(m, buf, x2, y1, z2, x2, y2, z2, color)
-            drawLine(m, buf, x1, y1, z2, x1, y2, z2, color)
+            drawThickLine(buf, m, x1, y1, z1, x1, y2, z1, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y1, z1, x2, y2, z1, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y1, z2, x2, y2, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x1, y1, z2, x1, y2, z2, r, g, b, a, t)
         }
         stack.popPose()
     }
 
-    private fun drawLine(m: Matrix4f, buf: VertexConsumer, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, color: Int) {
-        buf.addVertex(m, x1, y1, z1).setColor(color).setNormal(0f, 1f, 0f)
-        buf.addVertex(m, x2, y2, z2).setColor(color).setNormal(0f, 1f, 0f)
+    private fun drawThickLine(buffer: VertexConsumer, m: Matrix4f, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, r: Float, g: Float, b: Float, a: Float, t: Float) {
+        val dx = x2 - x1
+        val dy = y2 - y1
+        val dz = z2 - z1
+        
+        // Выбираем перпендикулярные векторы в зависимости от направления линии
+        if (Math.abs(dx) > 0.001f) { // Линия вдоль X
+            addQuad(buffer, m, x1, y1-t, z1, x2, y1-t, z1, x2, y1+t, z1, x1, y1+t, z1, r, g, b, a)
+            addQuad(buffer, m, x1, y1, z1-t, x2, y1, z1-t, x2, y1, z1+t, x1, y1, z1+t, r, g, b, a)
+        } else if (Math.abs(dy) > 0.001f) { // Линия вдоль Y
+            addQuad(buffer, m, x1-t, y1, z1, x1+t, y1, z1, x1+t, y2, z1, x1-t, y2, z1, r, g, b, a)
+            addQuad(buffer, m, x1, y1, z1-t, x1, y1, z1+t, x1, y2, z1+t, x1, y2, z1-t, r, g, b, a)
+        } else { // Линия вдоль Z
+            addQuad(buffer, m, x1-t, y1, z1, x1+t, y1, z1, x1+t, y1, z2, x1-t, y1, z2, r, g, b, a)
+            addQuad(buffer, m, x1, y1-t, z1, x1, y1+t, z1, x1, y1+t, z2, x1, y1-t, z2, r, g, b, a)
+        }
+    }
+
+    private fun addQuad(buffer: VertexConsumer, m: Matrix4f, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, x3: Float, y3: Float, z3: Float, x4: Float, y4: Float, z4: Float, r: Float, g: Float, b: Float, a: Float) {
+        buffer.addVertex(m, x1, y1, z1).setColor(r, g, b, a)
+        buffer.addVertex(m, x2, y2, z2).setColor(r, g, b, a)
+        buffer.addVertex(m, x3, y3, z3).setColor(r, g, b, a)
+        buffer.addVertex(m, x4, y4, z4).setColor(r, g, b, a)
     }
 
     fun block(stack: PoseStack, buffer: MultiBufferSource, pos: BlockPos, color: Int) {
@@ -87,40 +112,57 @@ object World3D {
             val r = ((color shr 16) and 0xFF) / 255f
             val g = ((color shr 8) and 0xFF) / 255f
             val b = (color and 0xFF) / 255f
-            val buf = buffer.getBuffer(RenderType.debugFilledBox())
-            val m = stack.last()
-            buf.addVertex(m, box.minX.toFloat(), box.minY.toFloat(), box.minZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.minX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.minX.toFloat(), box.maxY.toFloat(), box.minZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.minX.toFloat(), box.maxY.toFloat(), box.maxZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.maxX.toFloat(), box.maxY.toFloat(), box.maxZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.minX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.maxX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.minX.toFloat(), box.minY.toFloat(), box.minZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.maxX.toFloat(), box.minY.toFloat(), box.minZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.minX.toFloat(), box.maxY.toFloat(), box.minZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.maxX.toFloat(), box.maxY.toFloat(), box.minZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.maxX.toFloat(), box.maxY.toFloat(), box.maxZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.maxX.toFloat(), box.minY.toFloat(), box.minZ.toFloat()).setColor(r, g, b, a)
-            buf.addVertex(m, box.maxX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat()).setColor(r, g, b, a)
-        } else {
-            val buf = buffer.getBuffer(RenderType.lines())
+            val buf = buffer.getBuffer(RenderType.lightning())
             val m = stack.last().pose()
+            val x1 = box.minX.toFloat()
+            val y1 = box.minY.toFloat()
+            val z1 = box.minZ.toFloat()
+            val x2 = box.maxX.toFloat()
+            val y2 = box.maxY.toFloat()
+            val z2 = box.maxZ.toFloat()
+
+            // Bottom
+            addQuad(buf, m, x1, y1, z1, x2, y1, z1, x2, y1, z2, x1, y1, z2, r, g, b, a)
+            // Top
+            addQuad(buf, m, x1, y2, z1, x1, y2, z2, x2, y2, z2, x2, y2, z1, r, g, b, a)
+            // North
+            addQuad(buf, m, x1, y1, z1, x1, y2, z1, x2, y2, z1, x2, y1, z1, r, g, b, a)
+            // South
+            addQuad(buf, m, x1, y1, z2, x2, y1, z2, x2, y2, z2, x1, y2, z2, r, g, b, a)
+            // West
+            addQuad(buf, m, x1, y1, z1, x1, y1, z2, x1, y2, z2, x1, y2, z1, r, g, b, a)
+            // East
+            addQuad(buf, m, x2, y1, z1, x2, y2, z1, x2, y2, z2, x2, y1, z2, r, g, b, a)
+        } else {
+            val buf = buffer.getBuffer(RenderType.lightning())
+            val m = stack.last().pose()
+            val r = ((color shr 16) and 0xFF) / 255f
+            val g = ((color shr 8) and 0xFF) / 255f
+            val b = (color and 0xFF) / 255f
+            val a = ((color shr 24) and 0xFF) / 255f
+            val t = 0.01f
+            val x1 = box.minX.toFloat()
+            val y1 = box.minY.toFloat()
+            val z1 = box.minZ.toFloat()
+            val x2 = box.maxX.toFloat()
+            val y2 = box.maxY.toFloat()
+            val z2 = box.maxZ.toFloat()
+
             // Bottom face
-            drawLine(m, buf, box.minX.toFloat(), box.minY.toFloat(), box.minZ.toFloat(), box.maxX.toFloat(), box.minY.toFloat(), box.minZ.toFloat(), color)
-            drawLine(m, buf, box.maxX.toFloat(), box.minY.toFloat(), box.minZ.toFloat(), box.maxX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat(), color)
-            drawLine(m, buf, box.maxX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat(), box.minX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat(), color)
-            drawLine(m, buf, box.minX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat(), box.minX.toFloat(), box.minY.toFloat(), box.minZ.toFloat(), color)
+            drawThickLine(buf, m, x1, y1, z1, x2, y1, z1, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y1, z1, x2, y1, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y1, z2, x1, y1, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x1, y1, z2, x1, y1, z1, r, g, b, a, t)
             // Top face
-            drawLine(m, buf, box.minX.toFloat(), box.maxY.toFloat(), box.minZ.toFloat(), box.maxX.toFloat(), box.maxY.toFloat(), box.minZ.toFloat(), color)
-            drawLine(m, buf, box.maxX.toFloat(), box.maxY.toFloat(), box.minZ.toFloat(), box.maxX.toFloat(), box.maxY.toFloat(), box.maxZ.toFloat(), color)
-            drawLine(m, buf, box.maxX.toFloat(), box.maxY.toFloat(), box.maxZ.toFloat(), box.minX.toFloat(), box.maxY.toFloat(), box.maxZ.toFloat(), color)
-            drawLine(m, buf, box.minX.toFloat(), box.maxY.toFloat(), box.maxZ.toFloat(), box.minX.toFloat(), box.maxY.toFloat(), box.minZ.toFloat(), color)
+            drawThickLine(buf, m, x1, y2, z1, x2, y2, z1, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y2, z1, x2, y2, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y2, z2, x1, y2, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x1, y2, z2, x1, y2, z1, r, g, b, a, t)
             // Vertical edges
-            drawLine(m, buf, box.minX.toFloat(), box.minY.toFloat(), box.minZ.toFloat(), box.minX.toFloat(), box.maxY.toFloat(), box.minZ.toFloat(), color)
-            drawLine(m, buf, box.maxX.toFloat(), box.minY.toFloat(), box.minZ.toFloat(), box.maxX.toFloat(), box.maxY.toFloat(), box.minZ.toFloat(), color)
-            drawLine(m, buf, box.maxX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat(), box.maxX.toFloat(), box.maxY.toFloat(), box.maxZ.toFloat(), color)
-            drawLine(m, buf, box.minX.toFloat(), box.minY.toFloat(), box.maxZ.toFloat(), box.minX.toFloat(), box.maxY.toFloat(), box.maxZ.toFloat(), color)
+            drawThickLine(buf, m, x1, y1, z1, x1, y2, z1, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y1, z1, x2, y2, z1, r, g, b, a, t)
+            drawThickLine(buf, m, x2, y1, z2, x2, y2, z2, r, g, b, a, t)
+            drawThickLine(buf, m, x1, y1, z2, x1, y2, z2, r, g, b, a, t)
         }
         stack.popPose()
     }
@@ -129,13 +171,14 @@ object World3D {
         val cam = mc.gameRenderer.mainCamera.position
         stack.pushPose()
         stack.translate(-cam.x, -cam.y, -cam.z)
-        val buf = buffer.getBuffer(RenderType.lines())
-        val normal = Vector3f(to.x.toFloat(), to.y.toFloat(), to.z.toFloat())
-            .sub(from.x.toFloat(), from.y.toFloat(), from.z.toFloat()).normalize()
-        buf.addVertex(stack.last(), from.x.toFloat(), from.y.toFloat(), from.z.toFloat())
-            .setColor(color).setNormal(stack.last(), normal)
-        buf.addVertex(stack.last(), to.x.toFloat(), to.y.toFloat(), to.z.toFloat())
-            .setColor(color).setNormal(stack.last(), normal)
+        val buf = buffer.getBuffer(RenderType.lightning())
+        val m = stack.last().pose()
+        val r = ((color shr 16) and 0xFF) / 255f
+        val g = ((color shr 8) and 0xFF) / 255f
+        val b = (color and 0xFF) / 255f
+        val a = ((color shr 24) and 0xFF) / 255f
+        
+        drawThickLine(buf, m, from.x.toFloat(), from.y.toFloat(), from.z.toFloat(), to.x.toFloat(), to.y.toFloat(), to.z.toFloat(), r, g, b, a, 0.01f)
         stack.popPose()
     }
 

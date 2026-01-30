@@ -7,58 +7,96 @@ import net.minecraft.world.phys.Vec3
 import set.starlev.StarredHeltix
 import set.starlev.render.RenderEvents
 import set.starlev.utils.detectors.ScoreboardDetector
-import java.awt.Color
+import java.util.Locale
 
 object DwarvenWaypoints {
     private val mc = Minecraft.getInstance()
+
+    private var cacheUpdatedAt = 0L
+    private var cachedAreaLower = ""
+    private var cachedActiveCommissionsLower: List<String> = emptyList()
+    private var cachedIsInDwarvenMines = false
+    private val dwarvenKeywordsLower = listOf("гномьи", "dwarven", "mines", "шахты")
+
+    private fun waypoint(pos: BlockPos, aliases: List<String>): WaypointData {
+        return WaypointData(pos, aliases, aliases.map { it.lowercase(Locale.getDefault()) })
+    }
     
     private val WAYPOINTS = mapOf(
-        "Верхние шахты" to WaypointData(BlockPos(-122, 172, -71), listOf("Верхние шахты", "Upper Mines", "Верхние пещеры", "Upper Caves", "Верхние")),
-        "Лавовый источник" to WaypointData(BlockPos(61, 199, -17), listOf("Лавовый источник", "Lava Springs", "Лава", "Lava")),
-        "Горные рудники" to WaypointData(BlockPos(6, 129, 47), listOf("Горные рудники", "Cliffside Veins", "Cliffside", "Клифсайд")),
-        "Карьер" to WaypointData(BlockPos(-88, 147, 1), listOf("Карьер", "Quarry", "Карьер")),
-        "Королевские шахты" to WaypointData(BlockPos(153, 152, 35), listOf("Королевские шахты", "Royal mines", "Королевские", "Royal")),
+        "Верхние шахты" to waypoint(BlockPos(-122, 172, -71), listOf("Верхние шахты", "Upper Mines", "Верхние пещеры", "Upper Caves", "Верхние")),
+        "Лавовый источник" to waypoint(BlockPos(61, 199, -17), listOf("Лавовый источник", "Lava Springs", "Лава", "Lava")),
+        "Горные рудники" to waypoint(BlockPos(6, 129, 47), listOf("Горные рудники", "Cliffside Veins", "Cliffside", "Клифсайд")),
+        "Карьер" to waypoint(BlockPos(-88, 147, 1), listOf("Карьер", "Quarry", "Карьер")),
+        "Королевские шахты" to waypoint(BlockPos(153, 152, 35), listOf("Королевские шахты", "Royal mines", "Королевские", "Royal")),
     )
 
-    private data class WaypointData(val pos: BlockPos, val aliases: List<String>)
+    private data class WaypointData(val pos: BlockPos, val aliases: List<String>, val aliasesLower: List<String>)
 
     fun init() {
         RenderEvents.register { context ->
-
-
             val config = StarredHeltix.feature.mining.commissions
             if (!config.waypointsEnabled) return@register
             
-            val level = mc.level ?: return@register
-            
-            // Проверка на нахождение в Dwarven Mines
-            if (!isInDwarvenMines()) return@register
-            
-            val currentArea = getCurrentArea()
-            val activeCommissions = CommissionsHud.getActiveCommissions()
+            updateCache()
+            if (!cachedIsInDwarvenMines) return@register
 
             WAYPOINTS.forEach { (name, data) ->
-                val hasCommission = activeCommissions.any { commission ->
-                    data.aliases.any { alias -> 
-                        commission.contains(alias, ignoreCase = true)
+                val hasCommission = cachedActiveCommissionsLower.any { commissionLower ->
+                    data.aliasesLower.any { aliasLower ->
+                        commissionLower.contains(aliasLower)
                     }
                 }
 
-                val isInside = data.aliases.any { alias -> 
-                    currentArea.contains(alias, ignoreCase = true) 
+                if (!hasCommission) return@forEach
+
+                val isInside = data.aliasesLower.any { aliasLower ->
+                    cachedAreaLower.contains(aliasLower)
                 }
 
-                if (hasCommission && !isInside) {
+                if (!isInside) {
                     renderWaypoint(context, name, data.pos)
                 }
             }
         }
     }
-    
-    private fun getCurrentArea(): String {
+
+    private fun updateCache() {
+        val now = System.currentTimeMillis()
+        if (now - cacheUpdatedAt < 250) return
+        cacheUpdatedAt = now
+
+        val level = mc.level
+        if (level == null) {
+            cachedAreaLower = ""
+            cachedActiveCommissionsLower = emptyList()
+            cachedIsInDwarvenMines = false
+            return
+        }
+
         val title = ScoreboardDetector.getScoreboardTitle()
         val lines = ScoreboardDetector.getScoreboardText()
-        
+
+        val area = getCurrentArea(title, lines)
+        cachedAreaLower = area.lowercase(Locale.getDefault())
+        cachedActiveCommissionsLower = CommissionsHud.getActiveCommissions().map { it.string.lowercase(Locale.getDefault()) }
+
+        val dimensionLower = level.dimension().location().toString().lowercase(Locale.getDefault())
+        if (dimensionLower.contains("dwarven")) {
+            cachedIsInDwarvenMines = true
+            return
+        }
+
+        val titleLower = title.lowercase(Locale.getDefault())
+        val matchesKeyword = dwarvenKeywordsLower.any { keywordLower ->
+            cachedAreaLower.contains(keywordLower) || titleLower.contains(keywordLower)
+        }
+
+        cachedIsInDwarvenMines = matchesKeyword || WAYPOINTS.values.any { data ->
+            data.aliasesLower.any { aliasLower -> cachedAreaLower.contains(aliasLower) }
+        }
+    }
+    
+    private fun getCurrentArea(title: String, lines: List<String>): String {
         // 1. Ищем строку с символом локации или ключевым словом
         val locationLine = lines.find { 
             it.contains("⏣") || 
@@ -97,30 +135,6 @@ object DwarvenWaypoints {
         }
         
         return title
-    }
-    
-    private fun isInDwarvenMines(): Boolean {
-        val level = mc.level ?: return false
-        val dimension = level.dimension().location().toString()
-        
-        // Базовая проверка по измерению
-        if (dimension.contains("dwarven", ignoreCase = true)) return true
-        
-        val area = getCurrentArea()
-        val title = ScoreboardDetector.getScoreboardTitle()
-        
-        val dwarvenKeywords = listOf("Гномьи", "Dwarven", "Mines", "Шахты")
-        
-        val matchesKeyword = dwarvenKeywords.any { 
-            area.contains(it, ignoreCase = true) || title.contains(it, ignoreCase = true) 
-        }
-        
-        if (matchesKeyword) return true
-        
-        // Если мы находимся в одной из зон вейпоинтов - мы точно в шахтах
-        return WAYPOINTS.any { (_, data) -> 
-            data.aliases.any { alias -> area.contains(alias, ignoreCase = true) } 
-        }
     }
     
     private fun renderWaypoint(context: set.starlev.render.RenderContext, name: String, pos: BlockPos) {

@@ -34,8 +34,14 @@ object HudManager {
         registerElement(set.starlev.features.mining.SpeedBoostCooldownHud)
         registerElement(set.starlev.features.mining.CommissionsHud)
         registerElement(set.starlev.features.combat.slayer.SlayerHud)
+        registerElement(set.starlev.features.skyblock.SkillXpHud)
+        registerElement(set.starlev.features.skyblock.Museum)
+        registerElement(set.starlev.features.skyblock.PetOverlay)
         registerElement(set.starlev.features.combat.dungeons.BloodRoomTimer)
+        registerElement(set.starlev.features.combat.dungeons.ScoreCounter)
         registerElement(set.starlev.features.misc.MouseLock)
+        registerElement(set.starlev.hud.HudScoreboard)
+        registerElement(set.starlev.features.visual.InventoryHistoryLog)
         
         // Загружаем сохранённые позиции элементов
         loadAllLayouts()
@@ -64,8 +70,28 @@ object HudManager {
      * Отрисовать все зарегистрированные элементы
      */
     fun renderAll(guiGraphics: GuiGraphics) {
+        val mc = net.minecraft.client.Minecraft.getInstance()
+        val inWorld = mc.player != null && mc.level != null
+        val screen = mc.screen
+        val inInventory = screen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>
+        
         for ((id, element) in elements) {
             element.isEditing = isEditMode
+            
+            // Логика видимости
+            if (!isEditMode) {
+                // 1. Скрывать всё вне игры (главное меню и т.д.)
+                if (!inWorld) continue
+                
+                // 2. В инвентаре отображать ТОЛЬКО Музей
+                val isMuseum = id == "MuseumHud"
+                if (inInventory) {
+                    if (!isMuseum) continue
+                } else {
+                    // Вне инвентаря скрывать Музей (согласно его собственной логике, но продублируем здесь для надёжности)
+                    if (isMuseum) continue
+                }
+            }
             
             try {
                 element.renderWithGraphics(guiGraphics)
@@ -112,7 +138,7 @@ object HudManager {
     fun saveAllLayouts() {
         try {
             val layoutData = elements.mapValues { (_, element) ->
-                HudLayoutData(element.x, element.y, element.scale, true)
+                HudLayoutData(element.x, element.y, element.scale, element.showBackground)
             }
             
             // Создаём директорию если её нет
@@ -146,6 +172,7 @@ object HudManager {
                 element.x = layout.x
                 element.y = layout.y
                 element.scale = layout.scale
+                element.showBackground = layout.showBackground
                 element.markAsInitialized()
             }
             logger.info("HUD позиции загружены из: $hudLayoutFile")
@@ -185,6 +212,6 @@ object HudManager {
         val x: Int,
         val y: Int,
         val scale: Float,
-        val enabled: Boolean = true
+        val showBackground: Boolean = true
     )
 }

@@ -104,9 +104,6 @@ object GhostNPCHandler {
         val player = mc.player ?: return
         if (currentDialogueIndex != -1) return
         
-        val hasTalked = StarredHeltix.feature.visuals.newYear.hasTalkedToPenguin
-        if (hasTalked) return
-
         val npcVec = net.minecraft.world.phys.Vec3(
             NPC_POS.x.toDouble() + 0.5,
             NPC_POS.y.toDouble() + 1.0,
@@ -165,7 +162,6 @@ object GhostNPCHandler {
     private fun finishDialogue() {
         isDialogueActive = false
         currentDialogueIndex = -1
-        StarredHeltix.feature.visuals.newYear.hasTalkedToPenguin = true
     }
 
     private fun startDialogue() {
@@ -187,30 +183,6 @@ object GhostNPCHandler {
         if (now - lastClickTime < 1000) return
         lastClickTime = now
         interactionCount++
-
-        if (StarredHeltix.feature.visuals.newYear.hasTalkedToPenguin) {
-            val achievements = mapOf(
-                10 to "§6§l[Достижение] §eЛюбитель сладкого! §f(10 кусочков тортика)",
-                20 to "§6§l[Достижение] §eЦенитель десертов! §f(§l20 кусочков тортика, ура!§f)",
-                50 to "§6§l[Достижение] §eТортовый магнат! §f(§c50 кусочков тортика, ты не думаешь, что это уже много?§f)",
-                100 to "§6§l[Достижение] §eСахарный король! §f(§c100 кусочков тортика, юху!!! ДИАБЕТ! §f)",
-                500 to "§6§l[Достижение] §eКондитерский мастер! §f(§c500 кусочков тортика, куда тебе столько???§f)",
-                1000 to "§6§l[Достижение] §eЛегендарный едок! §f(§c§l1000 кусочков тортика! ЗАЧЕМ ТЕБЕ СТОЛЬКО?§f)",
-                5000 to "§6§l[Достижение] §dТортовая аномалия! §f(§c§l5000 кусочков тортика! Вы уже накормили ВЕСЬ СЕРВЕР!)",
-                10000 to "§6§l[Достижение] §dСладкая бесконечность! §f(§4§l10000 кусочков тортика! Когда закончится запас тортиков?§f)",
-                50000 to "§6§l[Достижение] §bПовелитель сахара! §f(§4§l50000 кусочков тортика!!! Я СЕЙЧАС ЧУВСТВУЮ СЕБЯ ТОРТИКОМ!!! §f)",
-                100000 to "§6§l[Достижение] §5БОГ ТОРТИКОВ! §f(§4§l100000 кусочков тортика!!! 🍰 !!! ВЫ ОКОНЧАТЕЛЬНО СТАЛИ МАГНАТОМ КУСОЧКОВ ТОРТИКА !!!§f)"
-            )
-
-            mc.player?.displayClientMessage(Component.literal("§7[§cPenguin§7]§f: Мы ведь уже говорили! С юбилеем Скайблока! Вот тебе ещё кусочек тортика 🍰."), false)
-            mc.player?.displayClientMessage(Component.literal("§8[§7Статистика§8] §fВы получили уже §b$interactionCount §fкусочков тортика!"), false)
-            
-            achievements[interactionCount]?.let { achievementMsg ->
-                mc.player?.displayClientMessage(Component.literal(achievementMsg), false)
-                mc.player?.playSound(net.minecraft.sounds.SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f)
-            }
-            return
-        }
 
         isDialogueActive = true
         currentDialogueIndex = 0

@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
 import set.starlev.hud.HudElement
+import set.starlev.utils.ColorUtils
 import set.starlev.utils.detectors.ActionBarDetector
 import set.starlev.utils.detectors.EntityDeathDetector
 import set.starlev.utils.detectors.ScoreboardDetector
@@ -65,7 +66,13 @@ object SlayerHud : HudElement("SlayerHud") {
     fun init() {
     }
 
-    override fun getAccentColor(): Int = 0xFFAA00AA.toInt() // Пурпурный для Слеера
+    private fun getHudTextColor(): Int {
+        return 0xFFFFFFFF.toInt()
+    }
+
+    private fun parseColor(colorStr: String, default: Int): Int {
+        return ColorUtils.parseColor(colorStr, default)
+    }
 
     override fun render() {
         val config = StarredHeltix.feature.slayer.slayerHud
@@ -95,27 +102,23 @@ object SlayerHud : HudElement("SlayerHud") {
         val finalWidth = maxOf(contentWidth, 100) // Минимальная ширина для полоски прогресса
         
         val rowHeight = mc.font.lineHeight + 2
-        val totalHeight = rowHeight * (lines.size + 2) // +1 для заголовка, +1 для прогресс-бара
+        val totalHeight = rowHeight * (lines.size + 1) // +1 для заголовка
+        
+        // Синхронизируем состояние фона с конфигом
+        this.showBackground = config.showBackground
         
         drawBackground(finalWidth, totalHeight, padding)
         
         var currentY = y
+        val textColor = getHudTextColor()
+
         // 1. Заголовок
-        cachedGraphics?.drawString(mc.font, "§d§lSLAYER §7($title)", x, currentY, 0xFFFFFFFF.toInt())
+        cachedGraphics?.drawString(mc.font, "§d§lSLAYER §7($title)", x, currentY, textColor, true)
         currentY += rowHeight
         
-        // 2. Полоска прогресса
-        drawProgressBar(x, currentY + 2, finalWidth, 4, progressValue, 0xFFAA00AA.toInt())
-        if (progressText.isNotEmpty()) {
-            val tw = mc.font.width(progressText)
-            // Опустил надпись на 2 пикселя ниже (8 -> 10)
-            cachedGraphics?.drawString(mc.font, "§7$progressText", x + finalWidth - tw, currentY + 10, 0xFFFFFFFF.toInt())
-        }
-        currentY += rowHeight + 4
-        
-        // 3. Остальные строки (мобы, таймер и т.д.)
+        // 2. Остальные строки (мобы, таймер и т.д.)
         lines.forEach { line ->
-            cachedGraphics?.drawString(mc.font, line, x, currentY, 0xFFFFFFFF.toInt())
+            cachedGraphics?.drawString(mc.font, line, x, currentY, textColor, true)
             currentY += rowHeight
         }
     }
@@ -139,7 +142,7 @@ object SlayerHud : HudElement("SlayerHud") {
         val scoreboard = ScoreboardDetector.getScoreboardText()
         val result = mutableListOf<String>()
         
-        val slayerTypes = listOf("Мститель", "Тарантула", "Свен", "Revenant", "Tarantula", "Sven")
+        val slayerTypes = listOf("Мститель", "Тарантул", "Свен", "Revenant", "Tarantula", "Sven", "Voidgloom", "Inferno", "Riftstalker")
         
         var foundSlayer = false
         var slayerType = ""
@@ -169,6 +172,9 @@ object SlayerHud : HudElement("SlayerHud") {
             isFirstKill = true
             progressValue = 0f
             progressText = ""
+            isBossTimerRunning = false
+            slayerInfo = emptyList() // Явно очищаем
+            return
         }    
 
         val config = StarredHeltix.feature.slayer.slayerHud
@@ -183,14 +189,17 @@ object SlayerHud : HudElement("SlayerHud") {
                 handleBossKill()
                 isBossTimerRunning = false
             } else if (!hasKillBossMsg && !hasBossKilledMsg && isBossTimerRunning) {
-                isBossTimerRunning = false
+                // Если нет сообщения об убийстве или активном боссе, но таймер идет - проверяем, есть ли вообще слеер
+                if (!foundSlayer) {
+                    isBossTimerRunning = false
+                }
             }
             
             if (isBossTimerRunning) {
                 val dur = (System.currentTimeMillis() - bossStartTime) / 1000.0
                 val pb = PersonalBestManager.getPB(currentSlayerType, currentSlayerTier)
                 val pbText = if (pb != null) " §7(PB: §6${String.format(Locale.US, "%.3f", pb)}s§7)" else ""
-                result.add("§fТаймер: §b${String.format(Locale.US, "%.3f", dur)}s$pbText")
+                result.add("§cТаймер: §c${String.format(Locale.US, "%.3f", dur)}s$pbText")
             }
         }
 
@@ -210,7 +219,7 @@ object SlayerHud : HudElement("SlayerHud") {
                 val remaining = targetXp - currentXp
                 if (remaining > 0) {
                     val mobs = ceil(remaining / lastCombatXpPerMob).toInt()
-                    result.add("§fМоб: §b~$mobs §7(по §e${lastCombatXpPerMob.toInt()}§7)")
+                    result.add("§cМоб: §c~$mobs §7(по §e${lastCombatXpPerMob.toInt()}§7)")
                     
                     if (mobs in 1..4 && mobs != lastWarningMobs) {
                         sendBossWarning(mobs)
@@ -227,6 +236,7 @@ object SlayerHud : HudElement("SlayerHud") {
             progressValue = 1f
         }
         
+        // Если остался только заголовок, значит полезной инфы нет - скрываем худ
         slayerInfo = if (result.size > 1) result else emptyList()
     }
 
@@ -289,6 +299,7 @@ object SlayerHud : HudElement("SlayerHud") {
         return (mc.font.lineHeight + 2) * (lines.size + 2) + 4
     }
 
-    override fun getDefaultX(): Int = 10
-    override fun getDefaultY(): Int = 150
+    override fun getDefaultScale(): Float = 1.5000001f
+    override fun getDefaultX(): Int = 150
+    override fun getDefaultY(): Int = 181
 }

@@ -12,8 +12,8 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
-import set.starlev.config.BindsGui
-import set.starlev.config.FilterGui
+import set.starlev.render.BindsGui
+import set.starlev.render.FilterGui
 import set.starlev.config.ConfigGuiManager
 import set.starlev.config.Features
 import set.starlev.features.chat.MessageFilterManager
@@ -43,7 +43,6 @@ object ConfigCommand {
     private fun buildMainCommand(name: String = "sh") = literal(name)
         .executes { ConfigGuiManager.openConfigGui(); 1 }
         .then(literal("reset")
-            .then(literal("voting").executes(::resetVoting))
             .then(literal("config").executes(::resetConfig))
         )
         .then(literal("filter")
@@ -71,6 +70,7 @@ object ConfigCommand {
                 .executes(::listFilters)
             )
         )
+    
         // Утилиты
         .then(literal("rotation")
             .executes { ctx ->
@@ -97,6 +97,18 @@ object ConfigCommand {
             .then(literal("editor").executes { ctx ->
                 ConfigUtils.openHudEditor()
                 ctx.source.sendFeedback(Component.literal("§aОкрыт редактор HUD элементов"))
+                1
+            })
+            .then(literal("reset").executes { ctx ->
+                set.starlev.hud.HudManager.resetAllPositions()
+                ctx.source.sendFeedback(Component.literal("§aРасположение HUD элементов сброшено"))
+                1
+            })
+        )
+        // Мега-ящики дебаг
+        .then(literal("megabox")
+            .then(literal("spawn").executes { ctx ->
+                set.starlev.features.visual.MegaChestNPCHandler.spawnDebugChest()
                 1
             })
         )
@@ -155,37 +167,29 @@ object ConfigCommand {
         )
         // Обновление
         .then(literal("update")
-            .executes { ctx ->
-                set.starlev.utils.ModUpdater.checkUpdate()
-                1
-            }
-            .then(literal("install").executes { ctx ->
-                set.starlev.utils.ModUpdater.installUpdate()
-                1
-            })
+            .then(literal("check").executes { set.starlev.utils.ModUpdater.checkUpdate(); 1 })
+            .then(literal("install").executes { set.starlev.utils.ModUpdater.installUpdate(); 1 })
         )
         // Секретный код
         .then(literal("code")
-            .then(literal("starl")
-                .then(argument("code", StringArgumentType.word())
-                    .executes { ctx ->
-                        val code = StringArgumentType.getString(ctx, "code")
-                        val cleanCode = code.trim()
-                        
-                        if (cleanCode == set.starlev.secret.features.ai.AiConfig.AI_SECRET) {
-                            if (!set.starlev.secret.config.SecretMenuManager.secretConfig.funCategory.isAiUnlocked) {
-                                set.starlev.secret.config.SecretMenuManager.secretConfig.funCategory.isAiUnlocked = true
-                                set.starlev.secret.config.SecretMenuManager.save()
-                                ctx.source.sendFeedback(Component.literal("§d§l[Secret] §fСистема ИИ §aразблокирована§f!"))
-                            } else {
-                                ctx.source.sendFeedback(Component.literal("§d§l[Secret] §eСистема ИИ уже разблокирована!"))
-                            }
+            .then(argument("code", StringArgumentType.word())
+                .executes { ctx ->
+                    val code = StringArgumentType.getString(ctx, "code")
+                    val cleanCode = code.trim()
+                    
+                    if (cleanCode == set.starlev.secret.features.ai.AiConfig.AI_SECRET) {
+                        if (!set.starlev.secret.config.SecretMenuManager.secretConfig.chatBot.isAiUnlocked) {
+                            set.starlev.secret.config.SecretMenuManager.secretConfig.chatBot.isAiUnlocked = true
+                            set.starlev.secret.config.SecretMenuManager.save()
+                            ctx.source.sendFeedback(Component.literal("§d§l[Secret] §fСистема ИИ §aразблокирована§f!"))
                         } else {
-                            ctx.source.sendError(Component.literal("§d§l[Secret] §cНеверный код активации!"))
+                            ctx.source.sendFeedback(Component.literal("§d§l[Secret] §eСистема ИИ уже разблокирована!"))
                         }
-                        1
+                    } else {
+                        ctx.source.sendError(Component.literal("§d§l[Secret] §cНеверный код активации!"))
                     }
-                )
+                    1
+                }
             )
         )
         .then(literal("coords").executes(::showCoords))
@@ -197,6 +201,22 @@ object ConfigCommand {
         )
 
     private fun registerSimpleCommands(dispatcher: CommandDispatcher<FabricClientCommandSource>) {
+        // /d и /в - алиасы для /dh (голосование или утилиты)
+        dispatcher.register(
+            literal("d")
+                .executes { ctx ->
+                    Minecraft.getInstance().player?.connection?.sendCommand("dh")
+                    1
+                }
+        )
+        dispatcher.register(
+            literal("в")
+                .executes { ctx ->
+                    Minecraft.getInstance().player?.connection?.sendCommand("dh")
+                    1
+                }
+        )
+
         // /вход - быстрый вход
         dispatcher.register(
             literal("вход")
@@ -226,17 +246,6 @@ object ConfigCommand {
                     1
                 }
         )
-
-        // /d и /в - быстрый /dh
-        dispatcher.register(literal("d").executes { Minecraft.getInstance().player?.connection?.sendCommand("dh"); 1 })
-        dispatcher.register(literal("в").executes { Minecraft.getInstance().player?.connection?.sendCommand("dh"); 1 })
-    }
-
-    private fun resetVoting(ctx: CommandContext<FabricClientCommandSource>): Int {
-        StarredHeltix.feature.misc.hasShownReminderToday = false
-        StarredHeltix.configManager.saveConfig("reset-voting-reminder")
-        ctx.source.sendFeedback(Component.literal("§aНапоминание о голосовании сброшено"))
-        return 1
     }
 
     private fun resetConfig(ctx: CommandContext<FabricClientCommandSource>): Int {

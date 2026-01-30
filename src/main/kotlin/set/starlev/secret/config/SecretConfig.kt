@@ -36,8 +36,12 @@ class SecretConfig : Config() {
     var funCategory = FunCategory()
 
     @Expose
-    @Category(name = "§b§lLM Studio", desc = "· Интеграция с локальными языковыми моделями.")
-    var lmStudio = LmStudioCategory()
+    @Category(name = "§6§lИнтерфейс", desc = "· Настройка элементов интерфейса.")
+    var interfaceCategory = InterfaceCategory()
+
+    @Expose
+    @Category(name = "§b§lЧат-бот", desc = "· Настройки автоответчика и ИИ.")
+    var chatBot = ChatBotCategory()
 
     class MainCategory {
         @Expose
@@ -51,11 +55,74 @@ class SecretConfig : Config() {
         }
     }
 
-    class LmStudioCategory {
+    class ChatBotCategory {
+        @Expose
+        @ConfigOption(name = "§lБот АвтоОтветчик", desc = "Включает бота, который отвечает на сообщения в чате.")
+        @ConfigEditorBoolean
+        var autoResponderEnabled: Boolean = false
+
+        @Expose
+        @ConfigOption(name = "Авто-приветствия/прощания", desc = "Бот автоматически здоровается и прощается с игроками.")
+        @ConfigEditorBoolean
+        var greetingsEnabled: Boolean = false
+
+        @Expose
+        @ConfigOption(name = "Режим §cПО ПОЛНОЙ!", desc = "Бот отвечает на ВСЕ вопросы в чате (с знаком ?), даже если они не адресованы ему.")
+        @ConfigEditorBoolean
+        var fullModeEnabled: Boolean = false
+
+        @Expose
+        @ConfigOption(name = "Уведомления бота", desc = "Отправлять сообщения в чат при включении/выключении бота и его режима (outdated)")
+        @ConfigEditorBoolean
+        var sendStateMessages: Boolean = false
+
+        @Expose
+        @ConfigOption(name = "§cМини-ИИ", desc = "Включает запоминание контекста и предпочтений игроков.")
+        @ConfigEditorBoolean
+        var aiEnabled: Boolean = false
+
+        @Expose
+        @ConfigOption(name = "Активация ИИ", desc = "Введите для разблокировки систем ИИ и LM Studio.")
+        @ConfigEditorText
+        var aiActivationCode: String = ""
+
+        @ConfigOption(name = "Разблокировать", desc = "или /sh code starl <code>")
+        @ConfigEditorButton(buttonText = "Ввод")
+        val activateAi: Runnable = Runnable {
+            val h = aiActivationCode.trim().lowercase().hashCode()
+            if ((h xor 4919) == -1643579854) {
+                if (!isAiUnlocked) {
+                    isAiUnlocked = true
+                    SecretMenuManager.save()
+                    Minecraft.getInstance().player?.displayClientMessage(
+                        Component.literal("§d§l[Secret] §fСистема ИИ §aразблокирована§f!"),
+                        false
+                    )
+                }
+                aiActivationCode = ""
+            } else {
+                Minecraft.getInstance().player?.displayClientMessage(
+                    Component.literal("§d§l[Secret] §cНеверный код активации!"),
+                    false
+                )
+            }
+        }
+
+        @Expose
+        var isAiUnlocked: Boolean = false
+
+        @Expose
+        @ConfigOption(name = "§aЛичность ИИ", desc = "Меняет характер и манеру общения бота.")
+        @ConfigEditorDropdown
+        var aiPersona: AiPersona = AiPersona.HELPFUL
+
+        @ConfigEditorInfoText
+        var lmStudioHeader: String = "§b§lLM Studio §7(Локальный ИИ)"
+
         @Expose
         @ConfigOption(name = "Использовать LM Studio", desc = "Включает использование локальной нейросети вместо встроенных алгоритмов.")
         @ConfigEditorBoolean
-        var enabled: Boolean = false
+        var lmStudioEnabled: Boolean = false
 
         @Expose
         @ConfigOption(name = "API URL", desc = "Адрес сервера LM Studio (обычно http://localhost:1234/v1).")
@@ -121,69 +188,49 @@ class SecretConfig : Config() {
 
     class FunCategory {
         @Expose
-        @ConfigOption(name = "§lБот АвтоОтветчик", desc = "Включает бота, который отвечает на сообщения в чате.")
+        @ConfigOption(name = "§6Переворот на 180°", desc = "Переворачивает игроков вверх ногами (визуально).")
         @ConfigEditorBoolean
-        var autoResponderEnabled: Boolean = false
+        var flipPlayer: Boolean = false
 
         @Expose
-        @ConfigOption(name = "Авто-приветствия/прощания", desc = "Бот автоматически здоровается и прощается с игроками.")
+        @ConfigOption(name = "§bСвоя погода", desc = "Позволяет установить фиксированную погоду (визуально).")
         @ConfigEditorBoolean
-        var greetingsEnabled: Boolean = false
+        var customWeather: Boolean = false
 
         @Expose
-        @ConfigOption(name = "Режим §cПО ПОЛНОЙ!", desc = "Бот отвечает на ВСЕ вопросы в чате (с знаком ?), даже если они не адресованы ему.")
-        @ConfigEditorBoolean
-        var fullModeEnabled: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "Уведомления бота", desc = "Отправлять сообщения в чат при включении/выключении бота и его режима (outdated)")
-        @ConfigEditorBoolean
-        var sendStateMessages: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "§cМини-ИИ", desc = "Включает запоминание контекста и предпочтений игроков.")
-        @ConfigEditorBoolean
-        var aiEnabled: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "Активация ИИ", desc = "Введите для разблокировки систем ИИ и LM Studio.")
-        @ConfigEditorText
-        var aiActivationCode: String = ""
-
-        @ConfigOption(name = "Разблокировать", desc = "или /sh code starl <code>")
-        @ConfigEditorButton(buttonText = "Ввод")
-        val activateAi: Runnable = Runnable {
-            val h = aiActivationCode.trim().lowercase().hashCode()
-            if ((h xor 4919) == -1643579854) {
-                if (!isAiUnlocked) {
-                    isAiUnlocked = true
-                    SecretMenuManager.save()
-                    Minecraft.getInstance().player?.displayClientMessage(
-                        Component.literal("§d§l[Secret] §fСистема ИИ §aразблокирована§f!"),
-                        false
-                    )
-                }
-                aiActivationCode = ""
-            } else {
-                Minecraft.getInstance().player?.displayClientMessage(
-                    Component.literal("§d§l[Secret] §cНеверный код активации!"),
-                    false
-                )
-            }
-        }
-
-        @Expose
-        var isAiUnlocked: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "§aЛичность ИИ", desc = "Меняет характер и манеру общения бота.")
+        @ConfigOption(name = "§bТип погоды", desc = "Выберите желаемую погоду.")
         @ConfigEditorDropdown
-        var aiPersona: AiPersona = AiPersona.HELPFUL
+        var weatherType: WeatherMode = WeatherMode.CLEAR
+
+        @Expose
+        @ConfigOption(name = "§fСнег везде", desc = "Заменяет дождь на снег во всех биомах (визуально).")
+        @ConfigEditorBoolean
+        var snowEverywhere: Boolean = false
+
+        @Expose
+        @ConfigOption(name = "§dРадужно-волновой Starlev", desc = "Включает секретный эффект для ника или слова Starlev.")
+        @ConfigEditorBoolean
+        var starlevNameEffect: Boolean = true
+
+        @Expose
+        @ConfigOption(name = "§4Fade+Shake MegaChromeX", desc = "Включает темно-красный Fade+Shake эффект для ника или слова MegaChromeX.")
+        @ConfigEditorBoolean
+        var megaChromeXEffect: Boolean = true
 
         @Expose
         @ConfigOption(name = "Пасхалка #1", desc = "Что-то секретное... §lТы л")
         @ConfigEditorInfoText
         var easterEgg: String = "§kSECRET_DATA"
+    }
+
+    class InterfaceCategory {
+    }
+
+    enum class WeatherMode(val displayName: String) {
+        CLEAR("Ясно"),
+        RAIN("Дождь"),
+        THUNDER("Гроза");
+        override fun toString(): String = displayName
     }
 
     // Вспомогательный флаг для динамического скрытия (управляется через SecretMenuManager)

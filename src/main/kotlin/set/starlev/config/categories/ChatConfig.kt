@@ -29,11 +29,6 @@ class ChatConfig {
     class GeneralChatConfig {
         @Accordion
         @Expose
-        @ConfigOption(name = "Копирование чата", desc = "Позволяет копировать сообщения из чата при нажатии Shift.")
-        var chatCopy = ChatCopyConfig()
-
-        @Accordion
-        @Expose
         @ConfigOption(name = "Фильтр сообщений", desc = "Скрывает сообщения, содержащие определенные слова.")
         var messageFilter = MessageFilterConfig()
     }
@@ -47,7 +42,7 @@ class ChatConfig {
         @ConfigOption(name = "Открыть меню биндов", desc = "Настроить пользовательские клавиши через удобное меню.")
         @ConfigEditorButton(buttonText = "Открыть")
         val openBindsMenu = Runnable {
-            set.starlev.StarredHeltix.screenToOpen = set.starlev.config.BindsGui(null)
+            set.starlev.StarredHeltix.screenToOpen = set.starlev.render.BindsGui(null)
         }
 
         @Expose
@@ -64,23 +59,6 @@ class ChatConfig {
         var partyCommands = PartyCommandsConfig()
     }
 
-    class ChatCopyConfig {
-        @Expose
-        @ConfigOption(name = "Включить", desc = "Включает функционал копирования.")
-        @ConfigEditorBoolean
-        var enabled = false
-
-        @Expose
-        @ConfigOption(name = "Цвет выделения", desc = "Цвет, которым подсвечивается копируемое сообщение.")
-        @ConfigEditorColour
-        var highlightColor = "0:255:255:255:255"
-
-        @Expose
-        @ConfigOption(name = "Инфо", desc = "Наведите на сообщение с Shift")
-        @ConfigEditorText
-        var info = "Наведите на сообщение с Shift"
-    }
-
     class MessageFilterConfig {
         @Expose
         @ConfigOption(name = "Включить", desc = "Включает фильтрацию сообщений. /sh filter")
@@ -90,7 +68,7 @@ class ChatConfig {
         @ConfigOption(name = "Открыть меню фильтров", desc = "Настроить слова для фильтрации через удобное меню.")
         @ConfigEditorButton(buttonText = "Открыть")
         val openFilterMenu = Runnable {
-            net.minecraft.client.Minecraft.getInstance().setScreen(set.starlev.config.FilterGui())
+            net.minecraft.client.Minecraft.getInstance().setScreen(set.starlev.render.FilterGui(null))
         }
 
         @Expose

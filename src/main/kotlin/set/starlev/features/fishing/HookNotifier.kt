@@ -28,9 +28,8 @@ object FishingNotifier : HudElement("FishingNotifier") {
             if (now < notificationEndTime || isEditing) {
                 val text = "§c§lТЯНИ!"
                 cachedGraphics?.let { graphics ->
-                    // Рисуем текст по центру элемента. 
-                    // HudElement.renderWithGraphics уже применил масштабирование и перемещение к (x, y).
-                    // Поэтому мы рисуем в (x, y).
+                    this.showBackground = StarredHeltix.feature.fishing.notifications.showBackground
+                    drawBackground(getWidth(), getHeight())
                     graphics.drawString(mc.font, net.minecraft.network.chat.Component.literal(text), x, y, 0xFFFFFFFF.toInt(), true)
                 }
             } else {
@@ -42,15 +41,9 @@ object FishingNotifier : HudElement("FishingNotifier") {
     override fun getWidth() = mc.font.width("ТЯНИ!")
     override fun getHeight() = mc.font.lineHeight
     
-    override fun getDefaultScale(): Float = 2.0f
+    override fun getDefaultScale(): Float = 2.1f
     
-    override fun getDefaultX(): Int {
-        val window = mc.window
-        return (window.guiScaledWidth / 2) - (getScaledWidth() / 2)
-    }
+    override fun getDefaultX(): Int = 457
     
-    override fun getDefaultY(): Int {
-        val window = mc.window
-        return (window.guiScaledHeight / 2) - 60
-    }
+    override fun getDefaultY(): Int = 210
 }

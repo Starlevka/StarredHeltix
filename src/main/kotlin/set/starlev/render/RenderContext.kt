@@ -28,71 +28,127 @@ data class RenderContext(
         
         val box = aabb.move(-aabb.minX, -aabb.minY, -aabb.minZ)
         
-        // Используем специальный RenderType, который всегда рисует поверх (DEBUG_FILLED_BOX / DEBUG_LINE_STRIP)
-        // В 1.21.10 для просвечивания сквозь блоки лучше всего подходит debugQuads или custom
-        val renderType = if (fill) {
-            net.minecraft.client.renderer.RenderType.debugQuads()
-        } else {
-            net.minecraft.client.renderer.RenderType.lines()
-        }
+        // Используем специальный RenderType, который хорошо работает с шейдерами и просвечивает сквозь блоки
+        // lightning() — один из самых совместимых типов для этих целей в Minecraft 1.21.1+
+        val renderType = net.minecraft.client.renderer.RenderType.lightning()
         
         val buffer = vertexConsumers.getBuffer(renderType)
         val m = matrices.last().pose()
         
         if (fill) {
-            // Рисуем 6 граней вручную для максимального контроля
-            val x1 = box.minX.toFloat()
-            val y1 = box.minY.toFloat()
-            val z1 = box.minZ.toFloat()
-            val x2 = box.maxX.toFloat()
-            val y2 = box.maxY.toFloat()
-            val z2 = box.maxZ.toFloat()
-
-            // Нижняя
-            addQuad(buffer, m, x1, y1, z1, x2, y1, z1, x2, y1, z2, x1, y1, z2, r, g, b, a)
-            // Верхняя
-            addQuad(buffer, m, x1, y2, z1, x1, y2, z2, x2, y2, z2, x2, y2, z1, r, g, b, a)
-            // Северная
-            addQuad(buffer, m, x1, y1, z1, x1, y2, z1, x2, y2, z1, x2, y1, z1, r, g, b, a)
-            // Южная
-            addQuad(buffer, m, x1, y1, z2, x2, y1, z2, x2, y2, z2, x1, y2, z2, r, g, b, a)
-            // Западная
-            addQuad(buffer, m, x1, y1, z1, x1, y1, z2, x1, y2, z2, x1, y2, z1, r, g, b, a)
-            // Восточная
-            addQuad(buffer, m, x2, y1, z1, x2, y2, z1, x2, y2, z2, x2, y1, z2, r, g, b, a)
+            drawBoxFilled(buffer, m, box, r, g, b, a)
         } else {
-            val x1 = box.minX.toFloat()
-            val y1 = box.minY.toFloat()
-            val z1 = box.minZ.toFloat()
-            val x2 = box.maxX.toFloat()
-            val y2 = box.maxY.toFloat()
-            val z2 = box.maxZ.toFloat()
-
-            // Линии с нормалью вверх для корректного освещения/видимости
-            addLine(buffer, m, x1, y1, z1, x2, y1, z1, r, g, b, a)
-            addLine(buffer, m, x2, y1, z1, x2, y1, z2, r, g, b, a)
-            addLine(buffer, m, x2, y1, z2, x1, y1, z2, r, g, b, a)
-            addLine(buffer, m, x1, y1, z2, x1, y1, z1, r, g, b, a)
-
-            addLine(buffer, m, x1, y2, z1, x2, y2, z1, r, g, b, a)
-            addLine(buffer, m, x2, y2, z1, x2, y2, z2, r, g, b, a)
-            addLine(buffer, m, x2, y2, z2, x1, y2, z2, r, g, b, a)
-            addLine(buffer, m, x1, y2, z2, x1, y2, z1, r, g, b, a)
-
-            addLine(buffer, m, x1, y1, z1, x1, y2, z1, r, g, b, a)
-            addLine(buffer, m, x2, y1, z1, x2, y2, z1, r, g, b, a)
-            addLine(buffer, m, x2, y1, z2, x2, y2, z2, r, g, b, a)
-            addLine(buffer, m, x1, y1, z2, x1, y2, z2, r, g, b, a)
+            // Рисуем обводку через тонкие кватдраты (lightning не поддерживает линии напрямую)
+            // Это гарантирует видимость даже с включенными шейдерами
+            drawBoxLinesAsQuads(buffer, m, box, r, g, b, a)
         }
         
         matrices.popPose()
     }
 
+    private fun drawBoxFilled(buffer: com.mojang.blaze3d.vertex.VertexConsumer, m: org.joml.Matrix4f, box: AABB, r: Float, g: Float, b: Float, a: Float) {
+        val x1 = box.minX.toFloat()
+        val y1 = box.minY.toFloat()
+        val z1 = box.minZ.toFloat()
+        val x2 = box.maxX.toFloat()
+        val y2 = box.maxY.toFloat()
+        val z2 = box.maxZ.toFloat()
+
+        // Нижняя
+        addQuad(buffer, m, x1, y1, z1, x2, y1, z1, x2, y1, z2, x1, y1, z2, r, g, b, a)
+        // Верхняя
+        addQuad(buffer, m, x1, y2, z1, x1, y2, z2, x2, y2, z2, x2, y2, z1, r, g, b, a)
+        // Северная
+        addQuad(buffer, m, x1, y1, z1, x1, y2, z1, x2, y2, z1, x2, y1, z1, r, g, b, a)
+        // Южная
+        addQuad(buffer, m, x1, y1, z2, x2, y1, z2, x2, y2, z2, x1, y2, z2, r, g, b, a)
+        // Западная
+        addQuad(buffer, m, x1, y1, z1, x1, y1, z2, x1, y2, z2, x1, y2, z1, r, g, b, a)
+        // Восточная
+        addQuad(buffer, m, x2, y1, z1, x2, y2, z1, x2, y2, z2, x2, y1, z2, r, g, b, a)
+    }
+
+    private fun drawBoxLinesAsQuads(buffer: com.mojang.blaze3d.vertex.VertexConsumer, m: org.joml.Matrix4f, box: AABB, r: Float, g: Float, b: Float, a: Float) {
+        val x1 = box.minX.toFloat()
+        val y1 = box.minY.toFloat()
+        val z1 = box.minZ.toFloat()
+        val x2 = box.maxX.toFloat()
+        val y2 = box.maxY.toFloat()
+        val z2 = box.maxZ.toFloat()
+        
+        val t = 0.01f // Толщина линии
+        
+        // Рисуем каждую линию как два перпендикулярных кватадрата для видимости со всех сторон
+        
+        // Горизонтальные по X (нижние)
+        drawThickLine(buffer, m, x1, y1, z1, x2, y1, z1, r, g, b, a, t)
+        drawThickLine(buffer, m, x1, y1, z2, x2, y1, z2, r, g, b, a, t)
+        // Горизонтальные по X (верхние)
+        drawThickLine(buffer, m, x1, y2, z1, x2, y2, z1, r, g, b, a, t)
+        drawThickLine(buffer, m, x1, y2, z2, x2, y2, z2, r, g, b, a, t)
+        
+        // Горизонтальные по Z (нижние)
+        drawThickLine(buffer, m, x1, y1, z1, x1, y1, z2, r, g, b, a, t)
+        drawThickLine(buffer, m, x2, y1, z1, x2, y1, z2, r, g, b, a, t)
+        // Горизонтальные по Z (верхние)
+        drawThickLine(buffer, m, x1, y2, z1, x1, y2, z2, r, g, b, a, t)
+        drawThickLine(buffer, m, x2, y2, z1, x2, y2, z2, r, g, b, a, t)
+        
+        // Вертикальные по Y
+        drawThickLine(buffer, m, x1, y1, z1, x1, y2, z1, r, g, b, a, t)
+        drawThickLine(buffer, m, x2, y1, z1, x2, y2, z1, r, g, b, a, t)
+        drawThickLine(buffer, m, x1, y1, z2, x1, y2, z2, r, g, b, a, t)
+        drawThickLine(buffer, m, x2, y1, z2, x2, y2, z2, r, g, b, a, t)
+    }
+
+    private fun drawThickLine(buffer: com.mojang.blaze3d.vertex.VertexConsumer, m: org.joml.Matrix4f, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, r: Float, g: Float, b: Float, a: Float, t: Float) {
+        val dx = x2 - x1
+        val dy = y2 - y1
+        val dz = z2 - z1
+        
+        // Выбираем перпендикулярные векторы в зависимости от направления линии
+        if (Math.abs(dx) > 0.001f) { // Линия вдоль X
+            addQuad(buffer, m, x1, y1-t, z1, x2, y1-t, z1, x2, y1+t, z1, x1, y1+t, z1, r, g, b, a)
+            addQuad(buffer, m, x1, y1, z1-t, x2, y1, z1-t, x2, y1, z1+t, x1, y1, z1+t, r, g, b, a)
+        } else if (Math.abs(dy) > 0.001f) { // Линия вдоль Y
+            addQuad(buffer, m, x1-t, y1, z1, x1+t, y1, z1, x1+t, y2, z1, x1-t, y2, z1, r, g, b, a)
+            addQuad(buffer, m, x1, y1, z1-t, x1, y1, z1+t, x1, y2, z1+t, x1, y2, z1-t, r, g, b, a)
+        } else { // Линия вдоль Z
+            addQuad(buffer, m, x1-t, y1, z1, x1+t, y1, z1, x1+t, y1, z2, x1-t, y1, z2, r, g, b, a)
+            addQuad(buffer, m, x1, y1-t, z1, x1, y1+t, z1, x1, y1+t, z2, x1, y1-t, z2, r, g, b, a)
+        }
+    }
+
+    private fun drawBoxLines(buffer: com.mojang.blaze3d.vertex.VertexConsumer, m: org.joml.Matrix4f, box: AABB, r: Float, g: Float, b: Float, a: Float) {
+        val x1 = box.minX.toFloat()
+        val y1 = box.minY.toFloat()
+        val z1 = box.minZ.toFloat()
+        val x2 = box.maxX.toFloat()
+        val y2 = box.maxY.toFloat()
+        val z2 = box.maxZ.toFloat()
+
+        // Линии с нормалью вверх для корректного освещения/видимости
+        addLine(buffer, m, x1, y1, z1, x2, y1, z1, r, g, b, a)
+        addLine(buffer, m, x2, y1, z1, x2, y1, z2, r, g, b, a)
+        addLine(buffer, m, x2, y1, z2, x1, y1, z2, r, g, b, a)
+        addLine(buffer, m, x1, y1, z2, x1, y1, z1, r, g, b, a)
+
+        addLine(buffer, m, x1, y2, z1, x2, y2, z1, r, g, b, a)
+        addLine(buffer, m, x2, y2, z1, x2, y2, z2, r, g, b, a)
+        addLine(buffer, m, x2, y2, z2, x1, y2, z2, r, g, b, a)
+        addLine(buffer, m, x1, y2, z2, x1, y2, z1, r, g, b, a)
+
+        addLine(buffer, m, x1, y1, z1, x1, y2, z1, r, g, b, a)
+        addLine(buffer, m, x2, y1, z1, x2, y2, z1, r, g, b, a)
+        addLine(buffer, m, x2, y1, z2, x2, y2, z2, r, g, b, a)
+        addLine(buffer, m, x1, y1, z2, x1, y2, z2, r, g, b, a)
+    }
+
     private fun addQuad(buffer: com.mojang.blaze3d.vertex.VertexConsumer, m: org.joml.Matrix4f, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, x3: Float, y3: Float, z3: Float, x4: Float, y4: Float, z4: Float, r: Float, g: Float, b: Float, a: Float) {
-        buffer.addVertex(m, x1, y1, z1).setColor(r, g, b, a).setLight(15728880)
-        buffer.addVertex(m, x2, y2, z2).setColor(r, g, b, a).setLight(15728880)
-        buffer.addVertex(m, x3, y3, z3).setColor(r, g, b, a).setLight(15728880)
-        buffer.addVertex(m, x4, y4, z4).setColor(r, g, b, a).setLight(15728880)
+        buffer.addVertex(m, x1, y1, z1).setColor(r, g, b, a)
+        buffer.addVertex(m, x2, y2, z2).setColor(r, g, b, a)
+        buffer.addVertex(m, x3, y3, z3).setColor(r, g, b, a)
+        buffer.addVertex(m, x4, y4, z4).setColor(r, g, b, a)
     }
 
     private fun addLine(buffer: com.mojang.blaze3d.vertex.VertexConsumer, matrix: org.joml.Matrix4f, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, r: Float, g: Float, b: Float, a: Float) {
@@ -142,11 +198,64 @@ data class RenderContext(
         val pos = camera.position
         matrices.translate(-pos.x, -pos.y, -pos.z)
         
-        val buf = vertexConsumers.getBuffer(net.minecraft.client.renderer.RenderType.lines())
+        // Используем lightning для совместимости с шейдерами
+        val buf = vertexConsumers.getBuffer(net.minecraft.client.renderer.RenderType.lightning())
         val m = matrices.last().pose()
         
-        buf.addVertex(m, start.x.toFloat(), start.y.toFloat(), start.z.toFloat()).setColor(color).setNormal(0f, 1f, 0f)
-        buf.addVertex(m, end.x.toFloat(), end.y.toFloat(), end.z.toFloat()).setColor(color).setNormal(0f, 1f, 0f)
+        val r = (color shr 16 and 0xFF) / 255f
+        val g = (color shr 8 and 0xFF) / 255f
+        val b = (color and 0xFF) / 255f
+        val a = (color shr 24 and 0xFF) / 255f
+        
+        val t = 0.01f * thickness // Толщина
+        
+        // Рисуем линию как очень вытянутый бокс (квадрат)
+        val dir = end.subtract(start).normalize()
+        val up = if (Math.abs(dir.y) < 0.9) net.minecraft.world.phys.Vec3(0.0, 1.0, 0.0) else net.minecraft.world.phys.Vec3(1.0, 0.0, 0.0)
+        val side = dir.cross(up).normalize().scale(t.toDouble())
+        val perpendicular = dir.cross(side).normalize().scale(t.toDouble())
+        
+        val p1 = start.add(side).add(perpendicular)
+        val p2 = start.subtract(side).add(perpendicular)
+        val p3 = end.subtract(side).add(perpendicular)
+        val p4 = end.add(side).add(perpendicular)
+        
+        val p5 = start.add(side).subtract(perpendicular)
+        val p6 = start.subtract(side).subtract(perpendicular)
+        val p7 = end.subtract(side).subtract(perpendicular)
+        val p8 = end.add(side).subtract(perpendicular)
+        
+        // Рисуем два перпендикулярных кватдрата для видимости со всех сторон
+        addQuad(buf, m, p1.x.toFloat(), p1.y.toFloat(), p1.z.toFloat(), 
+                       p2.x.toFloat(), p2.y.toFloat(), p2.z.toFloat(), 
+                       p3.x.toFloat(), p3.y.toFloat(), p3.z.toFloat(), 
+                       p4.x.toFloat(), p4.y.toFloat(), p4.z.toFloat(), r, g, b, a)
+        
+        addQuad(buf, m, p5.x.toFloat(), p5.y.toFloat(), p5.z.toFloat(), 
+                       p6.x.toFloat(), p6.y.toFloat(), p6.z.toFloat(), 
+                       p7.x.toFloat(), p7.y.toFloat(), p7.z.toFloat(), 
+                       p8.x.toFloat(), p8.y.toFloat(), p8.z.toFloat(), r, g, b, a)
+        
+        // Дополнительные плоскости для "объема"
+        val p1_2 = start.add(side).add(perpendicular)
+        val p4_2 = end.add(side).add(perpendicular)
+        val p8_2 = end.add(side).subtract(perpendicular)
+        val p5_2 = start.add(side).subtract(perpendicular)
+        
+        addQuad(buf, m, p1_2.x.toFloat(), p1_2.y.toFloat(), p1_2.z.toFloat(), 
+                       p4_2.x.toFloat(), p4_2.y.toFloat(), p4_2.z.toFloat(), 
+                       p8_2.x.toFloat(), p8_2.y.toFloat(), p8_2.z.toFloat(), 
+                       p5_2.x.toFloat(), p5_2.y.toFloat(), p5_2.z.toFloat(), r, g, b, a)
+
+        val p2_2 = start.subtract(side).add(perpendicular)
+        val p3_2 = end.subtract(side).add(perpendicular)
+        val p7_2 = end.subtract(side).subtract(perpendicular)
+        val p6_2 = start.subtract(side).subtract(perpendicular)
+
+        addQuad(buf, m, p2_2.x.toFloat(), p2_2.y.toFloat(), p2_2.z.toFloat(), 
+                       p3_2.x.toFloat(), p3_2.y.toFloat(), p3_2.z.toFloat(), 
+                       p7_2.x.toFloat(), p7_2.y.toFloat(), p7_2.z.toFloat(), 
+                       p6_2.x.toFloat(), p6_2.y.toFloat(), p6_2.z.toFloat(), r, g, b, a)
         
         matrices.popPose()
     }
@@ -319,9 +428,8 @@ data class RenderContext(
         matrices.pushPose()
         matrices.translate(x - pos.x, y - pos.y, z - pos.z)
         
-        // В 1.21.10 для просвечивания сквозь блоки лучше всего подходит debugQuads или custom
-        // lightning() тоже хорош, но попробуем debugQuads для надежности
-        val buffer = vertexConsumers.getBuffer(net.minecraft.client.renderer.RenderType.debugQuads())
+        // В 1.21.10 для просвечивания сквозь блоки и совместимости с шейдерами лучше всего подходит lightning()
+        val buffer = vertexConsumers.getBuffer(net.minecraft.client.renderer.RenderType.lightning())
         
         val r = (color shr 16 and 0xFF) / 255f
         val g = (color shr 8 and 0xFF) / 255f
@@ -343,7 +451,7 @@ data class RenderContext(
         
         // Форсируем отрисовку луча
         if (vertexConsumers is net.minecraft.client.renderer.MultiBufferSource.BufferSource) {
-            vertexConsumers.endBatch(net.minecraft.client.renderer.RenderType.debugQuads())
+            vertexConsumers.endBatch(net.minecraft.client.renderer.RenderType.lightning())
         }
         
         matrices.popPose()

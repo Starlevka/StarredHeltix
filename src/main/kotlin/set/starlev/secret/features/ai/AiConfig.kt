@@ -1,5 +1,7 @@
 package set.starlev.secret.features.ai
 
+import java.util.Base64
+
 object AiConfig {
     /**
      * The secret activation code loaded from ai_config.properties (injected by Gradle from libs.versions.toml).
@@ -8,10 +10,20 @@ object AiConfig {
     val AI_SECRET: String by lazy {
         try {
             val properties = java.util.Properties()
-            AiConfig::class.java.classLoader.getResourceAsStream("ai_config.properties")?.use {
+            AiConfig::class.java.classLoader.getResourceAsStream("assets/starredheltix/internal/data.bin")?.use {
                 properties.load(it)
             }
-            properties.getProperty("ai_secret", "unknown")
+            val rawSecret = properties.getProperty("s", "unknown")
+            if (rawSecret == "unknown") return@lazy "unknown"
+            
+            // XOR дешифровка
+            val key = "StarredHeltixAIKey"
+            val decoded = Base64.getDecoder().decode(rawSecret)
+            val result = ByteArray(decoded.size)
+            for (i in decoded.indices) {
+                result[i] = (decoded[i].toInt() xor key[i % key.length].code).toByte()
+            }
+            String(result)
         } catch (e: Exception) {
             "unknown"
         }

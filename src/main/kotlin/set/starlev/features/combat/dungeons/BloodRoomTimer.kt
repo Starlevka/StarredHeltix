@@ -152,12 +152,15 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
         }
         
         // HUD теперь красного цвета (0xFFFF5555)
+        this.showBackground = StarredHeltix.feature.dungeons.bloodRoom.showBackground
+        drawBackground(getWidth(), getHeight())
         cachedGraphics?.drawString(MC.font, message, x, y, 0xFFFF5555.toInt())
     }
 
     override fun getWidth(): Int = MC.font.width("Кровавая комната: 9999.0с")
     override fun getHeight(): Int = MC.font.lineHeight
 
-    override fun getDefaultX(): Int = 10
-    override fun getDefaultY(): Int = 10
+    override fun getDefaultScale(): Float = 1.0f
+    override fun getDefaultX(): Int = 14
+    override fun getDefaultY(): Int = 149
 }

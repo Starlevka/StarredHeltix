@@ -3,6 +3,7 @@ package set.starlev.config.categories
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class SlayerConfig {
@@ -12,7 +13,7 @@ class SlayerConfig {
     var general = GeneralConfig()
 
     @Expose
-    @ConfigOption(name = "Слеер", desc = "Отображение текущего квеста Слеера.")
+    @ConfigOption(name = "HUD Слеера", desc = "Отображение текущего квеста Слеера.")
     @Accordion
     var slayerHud = SlayerHudConfig()
 
@@ -23,16 +24,21 @@ class SlayerConfig {
         var autoSlayer = false
 
         @Expose
-        @ConfigOption(name = "Показывать уведомление", desc = "Показывает большой текст на экране для использования телефона.")
+        @ConfigOption(name = "А-С уведомление", desc = "Показывает большой текст на экране для использования телефона.")
         @ConfigEditorBoolean
         var showTitle = true
     }
 
     class SlayerHudConfig {
         @Expose
-        @ConfigOption(name = "Включить", desc = "Включает отображение HUD Слеера.")
+        @ConfigOption(name = "Включить?", desc = "Включает отображение текущего Слеера через HUD.")
         @ConfigEditorBoolean
         var enabled = true
+
+        @Expose
+        @ConfigOption(name = "Фон HUD", desc = "Отображает фон позади у HUD Слеера.")
+        @ConfigEditorBoolean
+        var showBackground = true
 
         @Expose
         @ConfigOption(name = "Таймер убийства", desc = "Засекает время убийства босса и пишет в чат.")
@@ -43,5 +49,10 @@ class SlayerConfig {
         @ConfigOption(name = "Личные рекорды", desc = "Отслеживает и сохраняет лучшие результаты убийства боссов.")
         @ConfigEditorBoolean
         var personalBests = true
+
+        @Expose
+        @ConfigOption(name = "Слеер в Scoreboard", desc = "Интегрирует Слеер HUD в Scoreboard. §cНужно ВЫКЛ HUD Слеера.")
+        @ConfigEditorBoolean
+        var slayerScoreboardHud = true
     }
 }

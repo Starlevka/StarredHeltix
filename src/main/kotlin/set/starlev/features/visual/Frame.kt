@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import set.starlev.StarredHeltix
 import set.starlev.render.RenderEvents
 
 /**
@@ -28,7 +29,6 @@ object GhostFrameFeature {
     fun init() {
         RenderEvents.register { context ->
             val level = mc.level ?: return@register
-            val config = set.starlev.StarredHeltix.feature.visuals.newYear
             
             val currentDimId = level.dimension().location().toString()
             val isOverworld = currentDimId == OVERWORLD_DIM_ID || 
@@ -37,12 +37,12 @@ object GhostFrameFeature {
                              mc.currentServer?.ip?.contains("heltix") == true
 
             // Отрисовка первой рамки
-            if (config.secretFrame && isOverworld) {
+            if (isOverworld && StarredHeltix.feature.visuals.ghostFrames.image1Enabled) {
                 renderFrame(context, TARGET_POS_1, IMAGE_TEXTURE_1, 0f)
             }
 
             // Отрисовка второй рамки
-            if (config.secretFrame2 && currentDimId == TARGET_DIM_ID) {
+            if (currentDimId == TARGET_DIM_ID && StarredHeltix.feature.visuals.ghostFrames.image2Enabled) {
                 renderFrame(context, TARGET_POS_2, IMAGE_TEXTURE_2, 180f)
             }
         }
