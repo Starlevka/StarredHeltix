@@ -60,11 +60,6 @@ object SkillXpHud : HudElement("SkillXpHud") {
         }
     }
 
-    override fun getAccentColor(): Int {
-        val colorStr = StarredHeltix.feature.skyblock.skills.barColorV2
-        return ColorUtils.parseColor(colorStr, 0xFF00FFFF.toInt())
-    }
-
     private fun getHudTextColor(): Int {
         val config = StarredHeltix.feature.skyblock.skills
         return ColorUtils.parseColor(config.textColor, 0xFFFFFFFF.toInt())

@@ -24,12 +24,12 @@ class SkyblockConfig {
     var pet = PetConfig()
 
     @Expose
-    @ConfigOption(name = "NPC Диалоги", desc = "Настройки оверлея диалогов с NPC.")
+    @ConfigOption(name = "Диалоги с Персонажами", desc = "Настройки оверлея диалогов с NPC.")
     @Accordion
     var npcDialogue = NpcDialogueConfig()
 
     @Expose
-    @ConfigOption(name = "Плавный AOTE / Эндерперлы", desc = "Настройки плавной телепортации (Аспект Энда, Бездны, Гиперион).")
+    @ConfigOption(name = "Плавный Аспект Энда", desc = "Настройки плавной телепортации (Аспект Энда).")
     @Accordion
     var smoothAote = SmoothAoteConfig()
 
@@ -88,7 +88,7 @@ class SkyblockConfig {
 
     class SmoothAoteConfig {
         @Expose
-        @ConfigOption(name = "Включить?", desc = "Включает плавную анимацию при использовании Аспекта Энда, AOTV и других телепортов.")
+        @ConfigOption(name = "Включить?", desc = "Включает плавную анимацию телепортации Аспекта Энда. Присутсвует прикол с другими телепортами")
         @ConfigEditorBoolean
         var enabled = false
 
@@ -171,54 +171,49 @@ class SkyblockConfig {
         var showBackground = true
 
         @Expose
-        @ConfigOption(name = "Бой (Combat)", desc = "Показывать опыт навыка Бой.")
+        @ConfigOption(name = "Бой", desc = "Показывать опыт навыка Боя.")
         @ConfigEditorBoolean
         var showCombat = true
 
         @Expose
-        @ConfigOption(name = "Шахтерство (Mining)", desc = "Показывать опыт навыка Шахтерство.")
+        @ConfigOption(name = "Шахтерство", desc = "Показывать опыт навыка Шахтерства.")
         @ConfigEditorBoolean
         var showMining = true
 
         @Expose
-        @ConfigOption(name = "Фермерство (Farming)", desc = "Показывать опыт навыка Фермерство.")
+        @ConfigOption(name = "Фермерство", desc = "Показывать опыт навыка Фермерства.")
         @ConfigEditorBoolean
         var showFarming = true
 
         @Expose
-        @ConfigOption(name = "Добыча (Foraging)", desc = "Показывать опыт навыка Добыча.")
+        @ConfigOption(name = "Добыча", desc = "Показывать опыт навыка Добыча.")
         @ConfigEditorBoolean
         var showForaging = true
 
         @Expose
-        @ConfigOption(name = "Рыбалка (Fishing)", desc = "Показывать опыт навыка Рыбалка.")
+        @ConfigOption(name = "Рыболовство", desc = "Показывать опыт навыка Рыболовства.")
         @ConfigEditorBoolean
         var showFishing = true
 
         @Expose
-        @ConfigOption(name = "Зачарование (Enchanting)", desc = "Показывать опыт навыка Зачарование.")
+        @ConfigOption(name = "Чародейство", desc = "Показывать опыт навыка Чародейства.")
         @ConfigEditorBoolean
         var showEnchanting = true
 
         @Expose
-        @ConfigOption(name = "Алхимия (Alchemy)", desc = "Показывать опыт навыка Алхимия.")
+        @ConfigOption(name = "Алхимия", desc = "Показывать опыт навыка Алхимии.")
         @ConfigEditorBoolean
         var showAlchemy = true
 
         @Expose
-        @ConfigOption(name = "Приручение (Taming)", desc = "Показывать опыт навыка Приручение.")
+        @ConfigOption(name = "Приручение", desc = "Показывать опыт навыка Приручение.")
         @ConfigEditorBoolean
         var showTaming = true
 
         @Expose
-        @ConfigOption(name = "Подземелья (Dungeons)", desc = "Показывать опыт навыка Подземелья.")
+        @ConfigOption(name = "Подземелья", desc = "Показывать опыт навыка Подземелий (мб не работает).")
         @ConfigEditorBoolean
         var showDungeons = true
-
-        @Expose
-        @ConfigOption(name = "Цвет полосы", desc = "Цвет полосы прогресса (если используется).")
-        @ConfigEditorColour
-        var barColorV2 = "0:255:0:255"
 
         @Expose
         @ConfigOption(name = "Цвет текста", desc = "Цвет текста навыков.")
