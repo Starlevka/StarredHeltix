@@ -4,7 +4,6 @@ import io.github.notenoughupdates.moulconfig.gui.MoulConfigEditor
 import io.github.notenoughupdates.moulconfig.processor.BuiltinMoulConfigGuis
 import io.github.notenoughupdates.moulconfig.processor.ConfigProcessorDriver
 import io.github.notenoughupdates.moulconfig.processor.MoulConfigProcessor
-import org.slf4j.LoggerFactory
 import set.starlev.StarredHeltix
 import set.starlev.utils.ConfigUtils
 import set.starlev.config.ConfigManager
@@ -13,7 +12,6 @@ import java.io.*
 import java.nio.charset.StandardCharsets
 
 object SecretMenuManager {
-    private val logger = LoggerFactory.getLogger("StarredHeltixSecret")
     private val secretFile = File("config/starredheltix/others/secret.json")
     lateinit var secretConfig: SecretConfig
     val isConfigInitialized: Boolean
@@ -25,9 +23,8 @@ object SecretMenuManager {
             try {
                 val reader = BufferedReader(InputStreamReader(FileInputStream(secretFile), StandardCharsets.UTF_8))
                 secretConfig = ConfigManager.gson.fromJson(reader.readText(), SecretConfig::class.java)
-                logger.info("Secret config loaded")
             } catch (e: Exception) {
-                logger.error("Failed to load secret config", e)
+                e.printStackTrace()
             }
         }
 
@@ -49,9 +46,10 @@ object SecretMenuManager {
             secretFile.parentFile.mkdirs()
             val writer = BufferedWriter(OutputStreamWriter(FileOutputStream(secretFile), StandardCharsets.UTF_8))
             writer.use { it.write(ConfigManager.gson.toJson(secretConfig)) }
-            logger.info("Secret config saved")
+            // Очищаем кэш эффектов текста, чтобы применить изменения
+            set.starlev.utils.CacheManager.clearAll()
         } catch (e: Exception) {
-            logger.error("Failed to save secret config", e)
+            e.printStackTrace()
         }
     }
 

@@ -14,6 +14,7 @@ object ScoreCounter : HudElement("ScoreCounter") {
     
     private var currentScore = 0
     private var notified = false
+    private var titleNotified = false
     private var lastUpdate = 0L
 
     fun init() {
@@ -24,6 +25,8 @@ object ScoreCounter : HudElement("ScoreCounter") {
         if (!DungeonDetector.isInDungeon()) {
             currentScore = 0
             notified = false
+            titleNotified = false
+            BloodRoomTimer.isBloodReady = false // Сбрасываем статус блада при выходе из данжа
             return
         }
 
@@ -50,6 +53,18 @@ object ScoreCounter : HudElement("ScoreCounter") {
             MC.player?.connection?.sendCommand("pc ${config.message}")
         } else if (currentScore < 270) {
             notified = false // Сбрасываем, если очки упали (новое подземелье)
+            titleNotified = false
+        }
+        
+        // Логика уведомления Title (270+ и Блад готов)
+        if (config.enabled && config.title270AndBlood && !titleNotified) {
+            if (currentScore >= 270 && BloodRoomTimer.isBloodReady) {
+                titleNotified = true
+                MC.gui.setTitle(Component.literal("§a270+ Очков & Блад готов!"))
+                MC.gui.setSubtitle(Component.literal("§eМожно идти к боссу"))
+                MC.gui.setTimes(10, 60, 20)
+                MC.soundManager.play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 1.0f))
+            }
         }
     }
 

@@ -3,8 +3,8 @@ package set.starlev.hud
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import net.minecraft.client.gui.GuiGraphics
-import org.slf4j.LoggerFactory
 import set.starlev.StarredHeltix
+import set.starlev.features.skyblock.HudScoreboard
 import set.starlev.render.RenderEngine
 import java.nio.file.Files
 import java.nio.file.Path
@@ -14,7 +14,6 @@ import java.nio.file.Paths
  * Менеджер HUD элементов
  */
 object HudManager {
-    private val logger = LoggerFactory.getLogger("StarredHeltix/HUD")
     private val elements = mutableMapOf<String, HudElement>()
     private val renderers = mutableMapOf<String, (GuiGraphics) -> Unit>()
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
@@ -39,12 +38,21 @@ object HudManager {
         registerElement(set.starlev.features.skyblock.PetOverlay)
         registerElement(set.starlev.features.combat.dungeons.BloodRoomTimer)
         registerElement(set.starlev.features.combat.dungeons.ScoreCounter)
+        registerElement(set.starlev.features.overlays.NpcDialogueOverlay)
         registerElement(set.starlev.features.misc.MouseLock)
-        registerElement(set.starlev.hud.HudScoreboard)
-        registerElement(set.starlev.features.visual.InventoryHistoryLog)
+        registerElement(set.starlev.features.skyblock.HudScoreboard)
+        registerElement(set.starlev.features.misc.InventoryHistoryLog)
+        
+        // Инфо HUDs
+        registerElement(set.starlev.features.misc.info.FpsHud)
+        registerElement(set.starlev.features.misc.info.PingHud)
+        registerElement(set.starlev.features.misc.info.CpsHud)
+        registerElement(set.starlev.features.misc.info.BpsHud)
         
         // Загружаем сохранённые позиции элементов
         loadAllLayouts()
+        HudScoreboard.CustomLinesLayoutStore.getAllLayouts()
+        HudScoreboard.ScoreboardLinesOrderStore.getOrder()
         
         // Создать и зарегистрировать HUD renderer
         val hudRenderer: RenderEngine.HudRenderer = object : RenderEngine.HudRenderer {
@@ -74,6 +82,7 @@ object HudManager {
         val inWorld = mc.player != null && mc.level != null
         val screen = mc.screen
         val inInventory = screen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>
+        val inScoreboardEditor = screen is ScoreboardEditorScreen
         
         for ((id, element) in elements) {
             element.isEditing = isEditMode
@@ -82,6 +91,8 @@ object HudManager {
             if (!isEditMode) {
                 // 1. Скрывать всё вне игры (главное меню и т.д.)
                 if (!inWorld) continue
+                
+                if (inScoreboardEditor && id == HudScoreboard.id) continue
                 
                 // 2. В инвентаре отображать ТОЛЬКО Музей
                 val isMuseum = id == "MuseumHud"
@@ -96,7 +107,7 @@ object HudManager {
             try {
                 element.renderWithGraphics(guiGraphics)
             } catch (e: Exception) {
-                logger.error("Ошибка при отрисовке HUD элемента: $id", e)
+                e.printStackTrace()
             }
 
             if (isEditMode && element.getScaledWidth() > 0 && element.getScaledHeight() > 0) {
@@ -138,7 +149,7 @@ object HudManager {
     fun saveAllLayouts() {
         try {
             val layoutData = elements.mapValues { (_, element) ->
-                HudLayoutData(element.x, element.y, element.scale, element.showBackground)
+                HudLayoutData(element.x, element.y, element.scale, element.showBackground, element.customWidth, element.customHeight)
             }
             
             // Создаём директорию если её нет
@@ -147,10 +158,11 @@ object HudManager {
             // Сохраняем в JSON файл
             val jsonString = gson.toJson(layoutData)
             Files.write(hudLayoutFile, jsonString.toByteArray())
-            logger.info("HUD позиции сохранены в: $hudLayoutFile")
         } catch (e: Exception) {
-            logger.error("Ошибка при сохранении HUD позиций в файл $hudLayoutFile", e)
+            e.printStackTrace()
         }
+        HudScoreboard.CustomLinesLayoutStore.save()
+        HudScoreboard.ScoreboardLinesOrderStore.save()
     }
 
     /**
@@ -159,7 +171,6 @@ object HudManager {
     private fun loadAllLayouts() {
         try {
             if (!Files.exists(hudLayoutFile)) {
-                logger.info("Файл HUD layouts не найден, используются значения по умолчанию")
                 return
             }
             
@@ -173,11 +184,12 @@ object HudManager {
                 element.y = layout.y
                 element.scale = layout.scale
                 element.showBackground = layout.showBackground
+                element.customWidth = layout.width
+                element.customHeight = layout.height
                 element.markAsInitialized()
             }
-            logger.info("HUD позиции загружены из: $hudLayoutFile")
         } catch (e: Exception) {
-            logger.error("Ошибка при загрузке HUD позиций", e)
+            e.printStackTrace()
         }
     }
 
@@ -201,6 +213,8 @@ object HudManager {
             element.x = element.getDefaultX()
             element.y = element.getDefaultY()
             element.scale = element.getDefaultScale()
+            element.customWidth = 0
+            element.customHeight = 0
         }
         saveAllLayouts()
     }
@@ -212,6 +226,8 @@ object HudManager {
         val x: Int,
         val y: Int,
         val scale: Float,
-        val showBackground: Boolean = true
+        val showBackground: Boolean = true,
+        val width: Int = 0,
+        val height: Int = 0
     )
 }

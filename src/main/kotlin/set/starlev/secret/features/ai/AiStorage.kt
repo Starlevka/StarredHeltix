@@ -2,13 +2,11 @@ package set.starlev.secret.features.ai
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import org.slf4j.LoggerFactory
 import set.starlev.config.ConfigManager
 import java.io.*
 import java.nio.charset.StandardCharsets
 
 object AiStorage {
-    private val logger = LoggerFactory.getLogger("AiStorage")
     private val storageFile = File("config/starredheltix/others/ai_memory.json")
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
@@ -40,9 +38,8 @@ object AiStorage {
             )
             val json = gson.toJson(data)
             writer.use { it.write(json) }
-            logger.info("AI memory saved to ${storageFile.absolutePath}")
         } catch (e: Exception) {
-            logger.error("Failed to save AI memory", e)
+            e.printStackTrace()
         }
     }
 
@@ -84,9 +81,8 @@ object AiStorage {
                 }
             }
             
-            logger.info("AI memory loaded (${AiContext.contextStore.size} users, ${AiContext.worldEntities.size} entities)")
         } catch (e: Exception) {
-            logger.error("Failed to load AI memory", e)
+            e.printStackTrace()
         }
     }
 }

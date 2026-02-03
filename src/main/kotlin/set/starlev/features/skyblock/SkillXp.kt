@@ -109,7 +109,7 @@ object SkillXpHud : HudElement("SkillXpHud") {
         
         val finalWidth = maxOf(textWidth + 20, 120) // 16 (icon) + 4 (padding)
         val rowHeight = mc.font.lineHeight + 2
-        val totalHeight = rowHeight * 4 + 10 // +2 для прогресс-бара
+        val totalHeight = rowHeight * 4 + 2 // Без прогресс-бара
         
         return finalWidth to totalHeight
     }
@@ -196,10 +196,10 @@ object SkillXpHud : HudElement("SkillXpHud") {
         
         // Опыт в час
         cachedGraphics?.drawString(mc.font, perHourText, x, currentY, textColor, true)
-        currentY += rowHeight + 2
+        // currentY += rowHeight + 2 // Убрали отступ для прогресс-бара
 
-        // Полоска прогресса
-        drawProgressBar(x, currentY, finalWidth, 4, progress, getAccentColor())
+        // Полоска прогресса (отключена по запросу)
+        // drawProgressBar(x, currentY, finalWidth, 4, progress, getAccentColor())
     }
 
     private fun formatXp(value: Double): String {

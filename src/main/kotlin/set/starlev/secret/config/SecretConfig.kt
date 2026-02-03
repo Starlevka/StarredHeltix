@@ -198,6 +198,16 @@ class SecretConfig : Config() {
         var customWeather: Boolean = false
 
         @Expose
+        @ConfigOption(name = "Эффект текста", desc = "Выберите визуальный эффект для указанного слова.")
+        @ConfigEditorDropdown
+        var customNameEffect: NameEffectType = NameEffectType.NONE
+
+        @Expose
+        @ConfigOption(name = "Слово для эффекта", desc = "Текст, к которому будет применяться эффект (например: Ivan).")
+        @ConfigEditorText
+        var customEffectTarget: String = ""
+
+        @Expose
         @ConfigOption(name = "§bТип погоды", desc = "Выберите желаемую погоду.")
         @ConfigEditorDropdown
         var weatherType: WeatherMode = WeatherMode.CLEAR
@@ -224,12 +234,33 @@ class SecretConfig : Config() {
     }
 
     class InterfaceCategory {
+        @Expose
+        @ConfigOption(name = "Мгновенные тайтлы", desc = "Убирает анимацию появления/затухания у крупных заголовков (Title).")
+        @ConfigEditorBoolean
+        var instantTitles: Boolean = true
     }
 
     enum class WeatherMode(val displayName: String) {
         CLEAR("Ясно"),
         RAIN("Дождь"),
         THUNDER("Гроза");
+        override fun toString(): String = displayName
+    }
+
+    enum class NameEffectType(val displayName: String, val colorValue: Int?) {
+        NONE("Нет", null),
+        RAINBOW("Радужный (Shader)", 0xFFFFFC), // ID 3 on White
+        WAVE("Волна (Shader)", 0xFFFFFD),    // ID 2 on White
+        SHAKE("Тряска (Shader)", 0xFFFFFE),   // ID 1 on White
+        BOUNCE("Прыжок (Shader)", 0xFFFFFB),  // ID 4 on White
+        PULSE("Пульс (Shader)", 0xFFFFF9),    // ID 6 on White
+        BLINK("Мигание (Shader)", 0xFFFFFA),  // ID 5 on White
+        STARLEV("Starlev (Special)", 0xFFFFF5), // ID 10
+        BLACK("Черный", 0x000000),
+        DARK_RED("Темно-красный", 0xAA0000),
+        GOLD("Золотой", 0xFFAA00),
+        AQUA("Голубой", 0x55FFFF);
+
         override fun toString(): String = displayName
     }
 

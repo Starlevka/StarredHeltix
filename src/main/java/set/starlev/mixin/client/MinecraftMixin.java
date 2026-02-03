@@ -24,6 +24,12 @@ public class MinecraftMixin {
         set.starlev.features.combat.dungeons.AutoReadyNotifier.INSTANCE.tick();
         set.starlev.features.misc.AutoSprint.INSTANCE.tick();
         set.starlev.features.chat.CustomBindManager.INSTANCE.tick();
-        set.starlev.features.visual.InventoryHistoryLog.INSTANCE.tick();
+        set.starlev.features.misc.info.StatsTracker.INSTANCE.tick();
+        set.starlev.features.misc.InventoryHistoryLog.INSTANCE.tick();
+    }
+
+    @Inject(method = "startUseItem", at = @At("HEAD"))
+    private void onStartUseItem(CallbackInfo ci) {
+        set.starlev.features.skyblock.SmoothAote.INSTANCE.onItemUse();
     }
 }

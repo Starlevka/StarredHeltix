@@ -28,6 +28,7 @@
 		"client.LocalPlayerMixin",
 		"client.EntityRendererMixin",
 		"client.SkyRendererMixin",
+		"client.BlockOverlayMixin",
 		"client.ScreenMixin",
 		"client.AbstractContainerScreenMixin",
 		"PlayerMixin",
@@ -45,7 +46,11 @@
 		"client.ChunkOptimizationMixin",
 		"client.RenderOptimizationMixin",
 		"client.gui.FontMixin",
-		"client.ArmorStandOptimizationMixin"
+		"client.ArmorStandOptimizationMixin",
+		"TitleAnimationMixin",
+		"MinecraftMixin",
+		"client.SmoothAoteMixin",
+		"client.CameraMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
@@ -56,6 +61,7 @@
 		"accessors.GuiAccessor",
 		"accessors.PlayerTabOverlayAccessor",
 		"accessors.TextColorAccessor",
-		"accessors.ContainerScreenAccessor"
+		"accessors.ContainerScreenAccessor",
+		"accessors.GuiFadeAccessor"
 	]
 }

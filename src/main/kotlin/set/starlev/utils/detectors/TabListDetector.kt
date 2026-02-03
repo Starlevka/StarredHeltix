@@ -269,4 +269,40 @@ object TabListDetector {
     private fun componentToString(component: Component?): String {
         return component?.getString() ?: ""
     }
+
+    /**
+     * Получить количество гемов из таб листа
+     */
+    fun getGems(): String? {
+        val lines = getAllTabListLines()
+        // Ищем строку с Гемами
+        val gemLine = lines.find { it.contains("Гемы:") || it.contains("Gems:") } ?: return null
+        return gemLine.replace("Гемы:", "").replace("Gems:", "").trim()
+    }
+
+    /**
+     * Получить полную строку с гемами (с форматированием)
+     */
+    fun getGemsLine(): String? {
+        val lines = getAllTabListLinesFormatted()
+        return lines.find { cleanLine(it).contains("Гемы:") || cleanLine(it).contains("Gems:") }
+    }
+
+    /**
+     * Получить количество денег в банке из таб листа
+     */
+    fun getBank(): String? {
+        val lines = getAllTabListLines()
+        // Ищем строку с Банком
+        val bankLine = lines.find { it.contains("Банк:") || it.contains("Bank:") } ?: return null
+        return bankLine.replace("Банк:", "").replace("Bank:", "").trim()
+    }
+
+    /**
+     * Получить полную строку с банком (с форматированием)
+     */
+    fun getBankLine(): String? {
+        val lines = getAllTabListLinesFormatted()
+        return lines.find { cleanLine(it).contains("Банк:") || cleanLine(it).contains("Bank:") }
+    }
 }

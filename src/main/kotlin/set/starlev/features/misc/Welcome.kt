@@ -14,9 +14,9 @@ object WelcomeMessage {
             // Всегда проверяем обновления при входе (тихий режим)
             set.starlev.utils.ModUpdater.checkUpdate(quiet = true)
 
-            if (!StarredHeltix.feature.misc.hasShownWelcome013) {
+            if (!StarredHeltix.feature.misc.hasShownWelcome014) {
                 sendWelcomeMessage()
-                StarredHeltix.feature.misc.hasShownWelcome013 = true
+                StarredHeltix.feature.misc.hasShownWelcome014 = true
                 StarredHeltix.configManager.saveConfig("welcome-message-shown")
             }
         }
@@ -24,19 +24,14 @@ object WelcomeMessage {
 
     private fun sendWelcomeMessage() {
         val messages = listOf(
-            Component.literal("§b§lДобро пожаловать в StarredHeltix! §f(версия 0.0.13)"),
+            Component.literal("§b§lДобро пожаловать в StarredHeltix! §f(версия 0.0.14)"),
             Component.literal("§d§lНовое в этой версии:"),
-            Component.literal("§b• SkillHUD §7(SkillXpHud) §e- отображение прогресса навыков и опыта"),
-            Component.literal("§b• PetOverlay §7(PetOverlay) §e- информация о текущем питомце"),
-            Component.literal("§b• Museum §7(Museum) §e- помощник по музею (статусы предметов)"),
-            Component.literal("§b• Оптимизации §e- улучшение производительности мода и игры"),
-            Component.literal("§b• Мега-ящики §7(MegaChestNPC) §e- новые визуальные элементы"),
-            Component.literal("§b• Scoreboard §7(SlayerScoreboard) §e- кастомный скорборд и слеер в нем"),
-            Component.literal("§b• Хайлайты §7(EntityHighlight) §e- подсветка Пауков и Зомби"),
-            Component.literal("§b• Dungeon Fixes §7(DeathCounter, ScoreCounter) §e- фикс детекта смертей и счётчик очков"),
-            Component.literal("§b• Логирование предметов §7(InventoryHistoryLog) §e- история получения вещей"),
-            Component.literal("§b• Совместимость §e- поддержка шейдеров и оптимизации рендеринга"),
-            Component.literal("§c• Удаление §e- убраны крестики-нолики (тяжело сделать пока-что)"),
+            Component.literal("§b• Диалоги §7(Dialogues) §e- красивые диалоги с персонажами"),
+            Component.literal("§b• Scoreboard §7(HudScoreboard) §e- кастомный и настраиваемый скорборд"),
+            Component.literal("§b• Smooth AOTE §7(SmoothAOTE) §e- плавное перемещение Аспектом Энда"),
+            Component.literal("§b• Block Overlay §7(BlockOverlay) §e- кастомная обводка блоков"),
+            Component.literal("§b• Waypoints §7(Метки) §f(не тестились)"),
+            Component.literal("§b• Исправления §e- фикс критических ошибок версии 0.0.13"),
             Component.literal("§e§lОсновные команды:"),
             Component.literal("§b/sh §eили §b/starredheltix §e- открыть меню настроек"),
             Component.literal("§b/sh update §e- проверить обновления, §b/sh update install §e- установить"),

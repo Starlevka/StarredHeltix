@@ -11,6 +11,13 @@ object FishingNotifier : HudElement("FishingNotifier") {
     private var notificationActive = false
     private var notificationEndTime = 0L
 
+    private fun isVisibleNow(now: Long = System.currentTimeMillis()): Boolean {
+        if (!StarredHeltix.feature.fishing.notifications.fishingNotifier) return false
+        if (!notificationActive) return false
+        if (now >= notificationEndTime) return false
+        return true
+    }
+
     fun onBite() {
         if (!StarredHeltix.feature.fishing.notifications.fishingNotifier) return
         
@@ -20,26 +27,22 @@ object FishingNotifier : HudElement("FishingNotifier") {
     }
 
     override fun render() {
-        if (!StarredHeltix.feature.fishing.notifications.fishingNotifier) return
-        
         val now = System.currentTimeMillis()
-        
-        if (notificationActive || isEditing) {
-            if (now < notificationEndTime || isEditing) {
-                val text = "§c§lТЯНИ!"
-                cachedGraphics?.let { graphics ->
-                    this.showBackground = StarredHeltix.feature.fishing.notifications.showBackground
-                    drawBackground(getWidth(), getHeight())
-                    graphics.drawString(mc.font, net.minecraft.network.chat.Component.literal(text), x, y, 0xFFFFFFFF.toInt(), true)
-                }
-            } else {
-                notificationActive = false
-            }
+        if (!isVisibleNow(now) && !isEditing) {
+            if (notificationActive && now >= notificationEndTime) notificationActive = false
+            return
+        }
+
+        val text = "§c§lТЯНИ!"
+        cachedGraphics?.let { graphics ->
+            this.showBackground = StarredHeltix.feature.fishing.notifications.showBackground
+            drawBackground(getWidth(), getHeight())
+            graphics.drawString(mc.font, net.minecraft.network.chat.Component.literal(text), x, y, 0xFFFFFFFF.toInt(), true)
         }
     }
 
-    override fun getWidth() = mc.font.width("ТЯНИ!")
-    override fun getHeight() = mc.font.lineHeight
+    override fun getWidth() = if (isVisibleNow() || isEditing) mc.font.width("ТЯНИ!") else 0
+    override fun getHeight() = if (isVisibleNow() || isEditing) mc.font.lineHeight else 0
     
     override fun getDefaultScale(): Float = 2.1f
     

@@ -41,6 +41,13 @@ object CacheManager {
         .maximumSize(2000)
         .expireAfterAccess(10, TimeUnit.MINUTES)
         .build<String, Int>()
+
+    // Кэш для обработанных эффектов текста (SecretFunFeatures)
+    // Ключ: Текст + Хэш стиля
+    private val textEffectCache = Caffeine.newBuilder()
+        .maximumSize(1000)
+        .expireAfterAccess(5, TimeUnit.MINUTES)
+        .build<String, net.minecraft.network.chat.Component>()
     
     /**
      * Получить скомпилированный Regex из кэша.
@@ -125,6 +132,23 @@ object CacheManager {
     }
 
     /**
+     * Получить кэшированный компонент с эффектами.
+     */
+    fun getCachedTextEffect(text: String, styleHash: Int): net.minecraft.network.chat.Component? {
+        // Используем ту же настройку cacheRegex для управления кэшированием текста
+        if (!StarredHeltix.feature.optimization.performance.cacheRegex) return null
+        return textEffectCache.getIfPresent("$text|$styleHash")
+    }
+
+    /**
+     * Сохранить компонент с эффектами в кэш.
+     */
+    fun cacheTextEffect(text: String, styleHash: Int, component: net.minecraft.network.chat.Component) {
+        if (!StarredHeltix.feature.optimization.performance.cacheRegex) return
+        textEffectCache.put("$text|$styleHash", component)
+    }
+
+    /**
      * Получить кэшированный лор предмета.
      */
     fun getCachedLore(hash: Int): List<String>? {
@@ -150,6 +174,7 @@ object CacheManager {
         itemLoreCache.invalidateAll()
         textWidthCache.invalidateAll()
         textLayoutCache.invalidateAll()
+        textEffectCache.invalidateAll()
         aiMathCache.clear()
     }
 }

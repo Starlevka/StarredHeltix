@@ -30,6 +30,8 @@ public class FontMixin {
         CacheManager.INSTANCE.cacheTextWidth(text, cir.getReturnValue());
     }
 
+    // Removed width(FormattedText) caching due to style loss in cache key causing rendering issues (e.g. centered text shifting)
+    /*
     @Inject(method = "width(Lnet/minecraft/network/chat/FormattedText;)I", at = @At("HEAD"), cancellable = true)
     private void onWidthFormatted(FormattedText text, CallbackInfoReturnable<Integer> cir) {
         if (text == null) return;
@@ -49,7 +51,10 @@ public class FontMixin {
         if (string.isEmpty()) return;
         CacheManager.INSTANCE.cacheTextWidth(string, cir.getReturnValue());
     }
+    */
 
+    // Removed split(FormattedText) caching due to style loss in cache key
+    /*
     @Inject(method = "split(Lnet/minecraft/network/chat/FormattedText;I)Ljava/util/List;", at = @At("HEAD"), cancellable = true)
     private void onSplit(FormattedText text, int maxWidth, CallbackInfoReturnable<List<FormattedCharSequence>> cir) {
         if (text == null) return;
@@ -65,4 +70,5 @@ public class FontMixin {
         if (text == null) return;
         CacheManager.INSTANCE.cacheLayout(text.getString(), maxWidth, cir.getReturnValue());
     }
+    */
 }

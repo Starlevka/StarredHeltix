@@ -17,6 +17,9 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
     private var active = false
     private var noteActive = false
     
+    // Публичный флаг готовности кровавой комнаты для других модулей (например, ScoreCounter)
+    var isBloodReady = false
+    
     private val BOSS_PATTERN = Pattern.compile(".*\\[БОСС] Наблюдатель: Поздравляю.*")
     // Улучшенные паттерны для поиска этажа
     private val FLOOR_PATTERNS = listOf(
@@ -74,6 +77,7 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
             }
             endTime = System.currentTimeMillis() + delay
             active = true
+            isBloodReady = false // Сбрасываем готовность при начале нового таймера
             
             StarredHeltix.LOGGER.info("BloodRoomTimer: [DEBUG] Chat trigger: $text")
             if (floor == -1) {
@@ -134,6 +138,7 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
             val remaining = endTime - currentTime
             if (remaining <= 0) {
                 active = false
+                isBloodReady = true // Помечаем, что блад готов
                 
                 // Отправляем сообщение в чат ПАРТИИ
                 val config = StarredHeltix.feature.dungeons.bloodRoom

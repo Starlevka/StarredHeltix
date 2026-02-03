@@ -1,4 +1,4 @@
-package set.starlev.features.visual
+package set.starlev.features.misc
 
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -14,6 +14,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
     private val mc = Minecraft.getInstance()
     private val history = CopyOnWriteArrayList<LogEntry>()
     private var lastInventory = mutableMapOf<String, Int>()
+    private var lastItemStacks = mutableMapOf<String, ItemStack>()
     private var isInitialized = false
 
     fun init() {
@@ -48,7 +49,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
     }
 
     override fun render() {
-        val config = StarredHeltix.feature.visuals.inventoryHistory
+        val config = StarredHeltix.feature.misc.general.inventoryHistory
         if (!config.enabled) return
 
         val now = System.currentTimeMillis()
@@ -104,7 +105,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
 
     fun tick() {
         val player = mc.player ?: return
-        val config = StarredHeltix.feature.visuals.inventoryHistory
+        val config = StarredHeltix.feature.misc.general.inventoryHistory
         if (!config.enabled) return
 
         val currentInventory = mutableMapOf<String, Int>()
@@ -128,6 +129,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
 
         if (!isInitialized) {
             lastInventory.putAll(currentInventory)
+            lastItemStacks.putAll(itemMap)
             isInitialized = true
             return
         }
@@ -140,7 +142,8 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
 
             if (lastCount != currentCount) {
                 val diff = currentCount - lastCount
-                val stack = itemMap[key] ?: ItemStack.EMPTY
+                // Пытаемся взять текущий стак, если его нет (предмет удален) - берем из сохраненных
+                val stack = itemMap[key] ?: lastItemStacks[key] ?: ItemStack.EMPTY
                 
                 if (!stack.isEmpty) {
                     addEntry(stack, diff)
@@ -150,6 +153,19 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
 
         lastInventory.clear()
         lastInventory.putAll(currentInventory)
+        
+        // Обновляем кэш стаков: берем старые и заменяем новыми, если они есть
+        // Если предмета больше нет в инвентаре, оставляем старый образец на случай, если он вернется или для логирования
+        // Но лучше хранить только актуальные + те, что только что исчезли?
+        // Проще: храним все, что видели, но очищаем иногда? Нет, просто обновляем.
+        itemMap.forEach { (k, v) -> lastItemStacks[k] = v }
+        // Удаляем те, которых совсем нет? Нет, иначе не сможем залогировать удаление в следующем тике если логика изменится.
+        // Но сейчас мы уже залогировали.
+        // Очистим lastItemStacks и заполним itemMap, чтобы не хранить мусор.
+        // Но если предмет удален, нам нужен его стак ТОЛЬКО в этот тик.
+        // В следующем тике lastCount=0, currentCount=0 -> diff=0. Стак не нужен.
+        lastItemStacks.clear()
+        lastItemStacks.putAll(itemMap)
     }
 
     private fun addEntry(stack: ItemStack, amount: Int) {
@@ -157,16 +173,43 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
         val isAdded = amount > 0
         
         // Пытаемся найти существующую недавнюю запись того же типа для стаканья по названию
-        val key = stack.hoverName.string
+        val key = net.minecraft.ChatFormatting.stripFormatting(stack.hoverName.string) ?: stack.hoverName.string
         val existing = history.findLast { 
+            val itKey = net.minecraft.ChatFormatting.stripFormatting(it.itemStack.hoverName.string) ?: it.itemStack.hoverName.string
             it.isAdded == isAdded && 
-            it.itemStack.hoverName.string == key && 
-            now - it.timestamp < 1000 
+            itKey == key && 
+            now - it.timestamp < 3000 // Увеличили тайм-аут до 3 секунд
         }
 
         if (existing != null) {
-            history.remove(existing)
-            history.add(LogEntry(stack, existing.amount + amount, isAdded, now, 0))
+            // Обновляем существующую запись, сохраняя её позицию, но обновляя время
+            val index = history.indexOf(existing)
+            if (index != -1) {
+                val newAmount = existing.amount + amount
+                // Если сумма стала 0, удаляем запись? Обычно логируем изменения, так что 0 странно.
+                // Но если +1 и -1, то это разные записи (isAdded разный).
+                // Тут мы мержим только + с + и - с -.
+                
+                // Создаем новую запись
+                val mergedEntry = LogEntry(stack, newAmount, isAdded, now, 0)
+                
+                // Заменяем старую запись на новую (обновляем кол-во и время)
+                history[index] = mergedEntry
+                
+                // Вариант 2: Переместить в конец (как было раньше)
+                // history.removeAt(index)
+                // history.add(mergedEntry)
+                // Оставим вариант с обновлением на месте, чтобы не прыгало, или лучше прыгать?
+                // Пользователь жаловался на дубли. Обновление на месте выглядит чище.
+                // НО: Если прошло 2 секунды, и мы обновляем старую запись, она "моргнет" или просто изменит цифру.
+                // Если переместить вниз, она появится как новая.
+                // Давайте переместим вниз, чтобы было видно "активность".
+                history.removeAt(index)
+                history.add(mergedEntry)
+            } else {
+                // Если вдруг не нашли по индексу (конкуренция?), добавляем новую
+                history.add(LogEntry(stack.copy(), amount, isAdded, now, 0))
+            }
         } else {
             history.add(LogEntry(stack.copy(), amount, isAdded, now, 0))
         }
@@ -178,7 +221,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
     }
 
     override fun getWidth(): Int {
-        val config = StarredHeltix.feature.visuals.inventoryHistory
+        val config = StarredHeltix.feature.misc.general.inventoryHistory
         return 100 // Упрощенно, реальный размер в render
     }
     

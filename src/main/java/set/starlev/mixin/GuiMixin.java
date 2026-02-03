@@ -12,11 +12,8 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import set.starlev.StarredHeltix;
 
-import set.starlev.hud.HudScoreboard;
-
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.Font;
-import set.starlev.features.combat.slayer.SlayerScoreboard;
 import set.starlev.secret.features.SecretFunFeatures;
 import set.starlev.secret.config.SecretMenuManager;
 import net.minecraft.world.scores.Scoreboard;
@@ -47,11 +44,25 @@ public class GuiMixin {
         }
     }
 
+    @Inject(
+        method = "displayScoreboardSidebar(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/scores/Objective;)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void onDisplayScoreboardSidebar(GuiGraphics guiGraphics, net.minecraft.world.scores.Objective objective, CallbackInfo ci) {
+        if (StarredHeltix.Companion.getFeature().getSkyblock().getScoreboard().getEnabled()) {
+            ci.cancel();
+        }
+    }
+
     @ModifyArgs(
         method = "displayScoreboardSidebar(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/scores/Objective;)V",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;fill(IIIII)V")
     )
     private void onDrawScoreboardBackground(Args args) {
+        if (!StarredHeltix.Companion.getFeature().getSkyblock().getScoreboard().getEnabled()) {
+            return;
+        }
         // Всегда скрываем стандартную тень майнкрафта
         args.set(4, 0);
     }
@@ -61,6 +72,8 @@ public class GuiMixin {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V")
     )
     private void onDrawScoreboardString(Args args, GuiGraphics guiGraphics, net.minecraft.world.scores.Objective objective) {
+        // Разрешаем выполнение для ванильного скорборда, чтобы работали эффекты
+        
         Font font = args.get(0);
         Component component = args.get(1);
         int x = args.get(2);
@@ -72,8 +85,8 @@ public class GuiMixin {
             boolean megaChromeEnabled = SecretMenuManager.INSTANCE.getSecretConfig().getFunCategory().getMegaChromeXEffect();
             
             if (component != null && (starlevEnabled || megaChromeEnabled)) {
-                // Применяем эффекты только если это форсировано (для скорборда обычно НЕ форсируем глобально)
-                component = SecretFunFeatures.processComponent(component, false);
+                // Применяем эффекты принудительно для scoreboard (чтобы работало всегда, как просил пользователь)
+                component = SecretFunFeatures.processComponent(component, true);
                 args.set(1, component);
             }
         }
@@ -105,103 +118,17 @@ public class GuiMixin {
     @Inject(method = "displayScoreboardSidebar", at = @At("HEAD"), cancellable = true)
     private void onDisplayScoreboardSidebarHead(GuiGraphics guiGraphics, net.minecraft.world.scores.Objective objective, CallbackInfo ci) {
         didPushScoreboardMatrix = false;
-        if (set.starlev.StarredHeltix.Companion.getFeature().getVisuals().getScoreboard().getEnabled()) {
+        if (StarredHeltix.Companion.getFeature().getSkyblock().getScoreboard().getEnabled()) {
             ci.cancel();
             return;
         }
-        
-        // Если кастомный скорборд выключен, сбрасываем смещения для стандартного
+
+        // Кастомный скорборд выключен: используем ванильный скорборд без инъекций (slayer/stats/позиции/масштабов)
         slayerYOffset = 0;
         slayerExtraLines = null;
         currentScoreboardWidth = 0;
         totalExtraHeight = 0;
-
-        // Вычисляем текущую ширину скорборда
-        Font font = Minecraft.getInstance().font;
-        currentScoreboardWidth = font.width(objective.getDisplayName());
-        net.minecraft.world.scores.Scoreboard scoreboard = objective.getScoreboard();
-        
-        // В 1.21.10 используем listPlayerScores или аналогичный метод
-        // Для простоты и надежности возьмем логику из ScoreboardDetector
-        Collection<PlayerScoreEntry> scores = scoreboard.listPlayerScores(objective);
-        for (PlayerScoreEntry score : scores) {
-            String owner = score.owner();
-            net.minecraft.world.scores.PlayerTeam team = scoreboard.getPlayersTeam(owner);
-            Component lineComponent = score.display();
-            if (lineComponent == null) {
-                if (team != null) {
-                    lineComponent = net.minecraft.world.scores.PlayerTeam.formatNameForTeam(team, Component.literal(owner));
-                } else {
-                    lineComponent = Component.literal(owner);
-                }
-            }
-            currentScoreboardWidth = Math.max(currentScoreboardWidth, font.width(lineComponent));
-        }
-
-        // Учитываем ширину наших доп. строк сразу при расчете ширины скорборда
-        if (StarredHeltix.Companion.getFeature().getSlayer().getSlayerHud().getSlayerScoreboardHud()) {
-            slayerExtraLines = SlayerScoreboard.INSTANCE.getExtraLines();
-            if (slayerExtraLines != null && !slayerExtraLines.isEmpty()) {
-                totalExtraHeight = slayerExtraLines.size() * 9;
-                for (Component extraLine : slayerExtraLines) {
-                    currentScoreboardWidth = Math.max(currentScoreboardWidth, font.width(extraLine));
-                }
-            }
-        }
-        
-        if (SecretMenuManager.INSTANCE.isConfigInitialized()) {
-            if (StarredHeltix.Companion.getFeature().getSlayer().getSlayerHud().getSlayerScoreboardHud()) {
-                slayerExtraLines = SlayerScoreboard.INSTANCE.getExtraLines();
-            }
-            
-            float scale = HudScoreboard.INSTANCE.getScale();
-            // Вычисляем смещение относительно дефолтной позиции
-            float offsetX = HudScoreboard.INSTANCE.getAdjustedX() - HudScoreboard.INSTANCE.getDefaultX();
-            float offsetY = HudScoreboard.INSTANCE.getAdjustedY() - HudScoreboard.INSTANCE.getDefaultY();
-            
-            lastScoreboardX = offsetX;
-            lastScoreboardY = offsetY;
-            lastScoreboardScale = scale;
-            
-            if (offsetX != 0 || offsetY != 0 || scale != 1.0f) {
-                guiGraphics.pose().pushMatrix();
-                didPushScoreboardMatrix = true;
-                
-                if (scale != 1.0f) {
-                    // Масштабируем относительно верхнего левого угла элемента
-                    float pivotX = HudScoreboard.INSTANCE.getAdjustedX();
-                    float pivotY = HudScoreboard.INSTANCE.getAdjustedY();
-                    
-                    guiGraphics.pose().translate(pivotX, pivotY);
-                    guiGraphics.pose().scale(scale, scale);
-                    guiGraphics.pose().translate(-pivotX, -pivotY);
-                }
-                
-                if (offsetX != 0 || offsetY != 0) {
-                    guiGraphics.pose().translate(offsetX, offsetY);
-                }
-
-                // Отрисовка единой кастомной тени скорборда
-                if (true) { // Кастомная тень фона скорборда (можно добавить отдельную настройку если нужно)
-                    int guiWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
-                    int guiHeight = Minecraft.getInstance().getWindow().getGuiScaledHeight();
-                    
-                    int linesCount = scores.size();
-                    int totalHeight = (linesCount + 1) * 9; // +1 для заголовка
-                    int startY = guiHeight / 2 + totalHeight / 3;
-                    
-                    // Согласуем с расчетами в HudScoreboard.calculateSize
-                    int padding = 4;
-                    
-                    int x1 = guiWidth - 3 - currentScoreboardWidth - padding;
-                    int y1 = startY - totalHeight - padding;
-                    int x2 = guiWidth - 3 + padding;
-                    int y2 = startY + totalExtraHeight + padding;
-                    
-                    guiGraphics.fill(x1, y1, x2, y2, 0x70000000); // Используем 0x70000000 для консистентности
-                }
-            }
-        }
+        return;
     }
 
     @Inject(method = "displayScoreboardSidebar", at = @At("RETURN"))

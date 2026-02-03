@@ -4,6 +4,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -12,6 +13,15 @@ import set.starlev.secret.features.SecretFunFeatures;
 
 @Mixin(GuiGraphics.class)
 public class GuiGraphicsMixin {
+    private static boolean starredheltix$isSecretMenuOpen() {
+        try {
+            Object screen = Minecraft.getInstance().screen;
+            if (screen == null) return false;
+            return screen.getClass().getName().equals("io.github.notenoughupdates.moulconfig.platform.MoulConfigScreenComponent");
+        } catch (Exception e) {
+            return false;
+        }
+    }
     
     @ModifyVariable(
         method = "drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V",
@@ -22,8 +32,8 @@ public class GuiGraphicsMixin {
         if (component == null) return null;
         if (!SecretMenuManager.INSTANCE.isConfigInitialized()) return component;
         
-        // В GuiGraphics эффекты применяются только если они форсированы точечно в коде мода
-        return SecretFunFeatures.processComponent(component, false);
+        boolean force = starredheltix$isSecretMenuOpen();
+        return SecretFunFeatures.processComponent(component, force);
     }
 
     @ModifyVariable(
@@ -36,8 +46,8 @@ public class GuiGraphicsMixin {
         if (!SecretMenuManager.INSTANCE.isConfigInitialized()) return text;
         
         Component component = Component.literal(text);
-        // В GuiGraphics эффекты применяются только если они форсированы точечно в коде мода
-        Component processed = SecretFunFeatures.processComponent(component, false);
+        boolean force = starredheltix$isSecretMenuOpen();
+        Component processed = SecretFunFeatures.processComponent(component, force);
         
         if (processed != component) {
             return set.starlev.utils.detectors.TabListDetector.componentToFormattedString(processed);
@@ -55,9 +65,9 @@ public class GuiGraphicsMixin {
         if (lines == null || !SecretMenuManager.INSTANCE.isConfigInitialized()) return lines;
         
         java.util.List<net.minecraft.network.chat.Component> processed = new java.util.ArrayList<>(lines.size());
+        boolean force = starredheltix$isSecretMenuOpen();
         for (net.minecraft.network.chat.Component line : lines) {
-            // В GuiGraphics эффекты применяются только если они форсированы точечно в коде мода
-            processed.add(SecretFunFeatures.processComponent(line, false));
+            processed.add(SecretFunFeatures.processComponent(line, force));
         }
         return processed;
     }

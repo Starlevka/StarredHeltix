@@ -54,6 +54,10 @@ object AutoResponder {
         
         AiLeksikon.initEntities()
         AiStorage.load()
+
+        set.starlev.features.chat.ChatEventsManager.registerIncoming { message ->
+            onChatMessage(message)
+        }
         
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             if (client.player == null) return@EndTick

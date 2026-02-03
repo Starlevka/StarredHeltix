@@ -42,7 +42,6 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.features.combat.dungeons.DeathCounter.init()
         set.starlev.features.chat.CustomBindManager.init()
         set.starlev.features.misc.MouseLock.init()
-        set.starlev.features.combat.slayer.AutoSlayer.init()
         set.starlev.features.combat.slayer.SlayerHud.init()
         set.starlev.features.combat.slayer.SlayerScoreboard.init()
         WelcomeMessage.init()
@@ -50,7 +49,8 @@ class StarredHeltix : ClientModInitializer {
         // set.starlev.features.visual.GhostNPCHandler.init() - Удалено из меню
         set.starlev.features.visual.MegaChestNPCHandler.init()
         set.starlev.features.visual.Fullbright.init()
-        set.starlev.features.visual.InventoryHistoryLog.init()
+        set.starlev.features.misc.InventoryHistoryLog.init()
+        set.starlev.features.misc.Waypoints.init()
         set.starlev.secret.features.SecretFunFeatures.init()
         set.starlev.features.chat.mod.MacroCheck.init()
         set.starlev.features.mining.DwarvenWaypoints.init()
@@ -59,22 +59,8 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.utils.detectors.ActionBarDetector
         set.starlev.utils.detectors.MuseumDetector.init()
         set.starlev.features.skyblock.Museum.init()
-
-        // Register chat listeners
-        set.starlev.features.chat.ChatEventsManager.registerIncoming { message ->
-            // AutoResponder
-            set.starlev.secret.features.AutoResponder.onChatMessage(message)
-
-            // Detect mining ability usage using patterns
-            val pickaxePattern = Regex(".*Вы использовали Киркобулус!.*")
-            val speedPattern = Regex(".*Вы использовали Увеличение скорости копания!.*")
-
-            if (pickaxePattern.matches(message)) {
-                set.starlev.features.mining.PickaxeCooldownHud.onPickaxeBoostUsed()
-            } else if (speedPattern.matches(message)) {
-                set.starlev.features.mining.SpeedBoostCooldownHud.onSpeedBoostUsed()
-            }
-        }
+        set.starlev.features.mining.PickaxeCooldownHud.init()
+        set.starlev.features.mining.SpeedBoostCooldownHud.init()
         
         // Инициализировать event listener для TreeCapCooldown (регистрирует TreeCapBlockBreakMixin с проверкой логов)
         set.starlev.features.foraging.TreeCapCooldown

@@ -31,7 +31,7 @@ class Features : Config() {
     }
 
     private fun buildTitle(): String {
-        return "§6§lStarredHeltix §e§lv0.0.13"
+        return "§6§lStarredHeltix §e§lv0.0.14"
     }
 
     @Expose

@@ -16,7 +16,7 @@ object DeathCounter {
     private var lastTitle = ""
     private var lastActionBar = ""
 
-    private val DEATH_PATTERN = java.util.regex.Pattern.compile("^☠\\s*([a-zA-Z0-9_]{3,16})\\s+был убит")
+    private val DEATH_PATTERN = java.util.regex.Pattern.compile("^☠\\s+(?:.*\\s+)?([a-zA-Z0-9_]{3,16})\\s+[а-яА-ЯёЁ]")
 
     fun init() {
         ChatEventsManager.registerIncoming { message ->

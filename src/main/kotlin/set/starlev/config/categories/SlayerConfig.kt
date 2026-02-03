@@ -7,27 +7,11 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class SlayerConfig {
-    @Expose
-    @ConfigOption(name = "Слеерство", desc = "Функции для автоматизации и помощи в прохождении слееров.")
-    @Accordion
-    var general = GeneralConfig()
 
     @Expose
     @ConfigOption(name = "HUD Слеера", desc = "Отображение текущего квеста Слеера.")
     @Accordion
     var slayerHud = SlayerHudConfig()
-
-    class GeneralConfig {
-        @Expose
-        @ConfigOption(name = "Авто-слеер", desc = "Автоматически предлагает позвонить Маддоксу с телефоном в хотбаре.")
-        @ConfigEditorBoolean
-        var autoSlayer = false
-
-        @Expose
-        @ConfigOption(name = "А-С уведомление", desc = "Показывает большой текст на экране для использования телефона.")
-        @ConfigEditorBoolean
-        var showTitle = true
-    }
 
     class SlayerHudConfig {
         @Expose

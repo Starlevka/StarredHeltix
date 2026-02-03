@@ -28,7 +28,7 @@ public class ChatComponentMixin {
         if (component == null) return null;
         
         Component processed = component;
-        if (SecretMenuManager.INSTANCE.isConfigInitialized() && SecretMenuManager.INSTANCE.getSecretConfig().getFunCategory().getStarlevNameEffect()) {
+        if (SecretMenuManager.INSTANCE.isConfigInitialized()) {
             // В чате эффекты применяются всегда (force=true), если включены в конфиге
             processed = SecretFunFeatures.processComponent(processed, true);
         }

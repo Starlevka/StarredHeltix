@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import set.starlev.StarredHeltix;
-import set.starlev.features.visual.DisableGlowing;
 import set.starlev.features.visual.SwingAnimation;
 
 @Mixin(LivingEntity.class)
@@ -31,7 +30,7 @@ public abstract class LivingEntityMixin extends Entity {
 
     @Inject(method = "isCurrentlyGlowing", at = @At("HEAD"), cancellable = true)
     private void onIsGlowing(CallbackInfoReturnable<Boolean> cir) {
-        if (DisableGlowing.INSTANCE.shouldDisable()) {
+        if (StarredHeltix.Companion.getFeature().getOptimization().getVisualOptimizations().getDisableGlowing()) {
             cir.setReturnValue(false);
         }
     }

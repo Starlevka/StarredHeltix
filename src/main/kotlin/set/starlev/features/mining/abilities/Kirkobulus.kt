@@ -9,6 +9,14 @@ object PickaxeCooldownHud : HudElement("PickaxeCooldownHud") {
 
     private var lastPickaxeBoostTime = 0L
 
+    fun init() {
+        set.starlev.features.chat.ChatEventsManager.registerIncoming { message ->
+            if (Regex(".*Вы использовали Киркобулус!.*").matches(message)) {
+                onPickaxeBoostUsed()
+            }
+        }
+    }
+
     private val cooldownMs: Long
         get() = (StarredHeltix.feature.mining.abilities.abilityCooldown.pickaxeBoostCooldown.toIntOrNull() ?: 60) * 1000L
 

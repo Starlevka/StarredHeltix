@@ -9,6 +9,8 @@ abstract class HudElement(
     var y: Int = 0
     var scale: Float = 1.0f
     var showBackground: Boolean = true
+    var customWidth: Int = 0
+    var customHeight: Int = 0
     var isEditing = false
     protected var cachedGraphics: net.minecraft.client.gui.GuiGraphics? = null
     private var initialized = false
@@ -28,7 +30,7 @@ abstract class HudElement(
         }
     }
 
-    fun renderWithGraphics(graphics: GuiGraphics) {
+    open fun renderWithGraphics(graphics: GuiGraphics) {
         ensureInitialized()
         cachedGraphics = graphics
         
@@ -112,8 +114,11 @@ abstract class HudElement(
     open fun getDefaultScale(): Float = 1.0f
 
     fun isHovered(mouseX: Int, mouseY: Int): Boolean {
-        return mouseX >= x && mouseX <= x + getScaledWidth() &&
-               mouseY >= y && mouseY <= y + getScaledHeight()
+        val w = getScaledWidth()
+        val h = getScaledHeight()
+        if (w <= 0 || h <= 0) return false
+        return mouseX >= x && mouseX <= x + w &&
+               mouseY >= y && mouseY <= y + h
     }
     
     /**

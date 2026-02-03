@@ -6,6 +6,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 
 class VisualsConfig {
 
@@ -13,6 +14,11 @@ class VisualsConfig {
     @ConfigOption(name = "Анимации", desc = "Кастомные анимации для игрока и предметов.")
     @Accordion
     var animations = AnimationsConfig()
+
+    @Expose
+    @ConfigOption(name = "Оверлей блока", desc = "Настройки выделения блоков.")
+    @Accordion
+    var blockOverlay = BlockOverlayConfig()
 
     @Expose
     @ConfigOption(name = "Призрачные рамки", desc = "Настройки отображения призрачных рамок с картинками.")
@@ -37,13 +43,6 @@ class VisualsConfig {
     var megaChests = MegaChestsConfig()
 
     @Expose
-    @ConfigOption(name = "Scoreboard", desc = "Визуальные настройки скорборда.")
-    @Accordion
-    var scoreboard = ScoreboardConfig()
-
-    @Expose
-    @ConfigOption(name = "Лог предметов", desc = "Отображает историю изменения предметов в инвентаре.")
-    @Accordion
     var inventoryHistory = InventoryHistoryConfig()
 
     class InventoryHistoryConfig {
@@ -71,19 +70,6 @@ class VisualsConfig {
         @ConfigOption(name = "Игнорировать экипировку", desc = "Не отображать изменения брони и предметов в руках. §cЛучше оставить ВКЛ.")
         @ConfigEditorBoolean
         var ignoreEquipped = true
-    }
-
-    class ScoreboardConfig {
-        @Expose
-        @ConfigOption(name = "Кастомный?", desc = "Включает кастомизируемый scoreboard.")
-        @ConfigEditorBoolean
-        var enabled = true
-
-        @Expose
-        @ConfigOption(name = "Фон Scoreboard", desc = "Отображает фон у Scoreboard.")
-        @ConfigEditorBoolean
-        var showBackground = true
-
     }
 
     class MegaChestsConfig {
@@ -150,5 +136,17 @@ class VisualsConfig {
         @ConfigOption(name = "Множитель Swing Z", desc = "Множитель анимации удара по Z.")
         @ConfigEditorSlider(minValue = -2.0f, maxValue = 2.0f, minStep = 0.05f)
         var swingZ = 1.0
+    }
+
+    class BlockOverlayConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Включает кастомное выделение блоков.")
+        @ConfigEditorBoolean
+        var enabled = false
+
+        @Expose
+        @ConfigOption(name = "Цвет заливки", desc = "Цвет заливки блока.")
+        @ConfigEditorColour
+        var fillColor = "0:0:255:0:80"
     }
 }

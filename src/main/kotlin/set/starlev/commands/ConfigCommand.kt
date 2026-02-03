@@ -10,14 +10,17 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.client.Minecraft
+import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
 import set.starlev.render.BindsGui
 import set.starlev.render.FilterGui
+import set.starlev.render.WaypointsGui
 import set.starlev.config.ConfigGuiManager
 import set.starlev.config.Features
 import set.starlev.features.chat.MessageFilterManager
 import set.starlev.features.chat.CustomBindManager
+import set.starlev.features.misc.Waypoints
 import set.starlev.features.misc.MouseLock
 import set.starlev.utils.ConfigUtils
 
@@ -111,6 +114,41 @@ object ConfigCommand {
                 set.starlev.features.visual.MegaChestNPCHandler.spawnDebugChest()
                 1
             })
+        )
+        .then(literal("waypoints")
+            .executes {
+                StarredHeltix.screenToOpen = WaypointsGui(null)
+                1
+            }
+        )
+        .then(literal("waypoint")
+            .then(literal("apply")
+                .then(argument("x", IntegerArgumentType.integer(-30_000_000, 30_000_000))
+                    .then(argument("y", IntegerArgumentType.integer(-2_048, 2_048))
+                        .then(argument("z", IntegerArgumentType.integer(-30_000_000, 30_000_000))
+                            .executes { ctx ->
+                                val x = IntegerArgumentType.getInteger(ctx, "x")
+                                val y = IntegerArgumentType.getInteger(ctx, "y")
+                                val z = IntegerArgumentType.getInteger(ctx, "z")
+                                Waypoints.addTemporary("Waypoint", BlockPos(x, y, z), 16_000)
+                                ctx.source.sendFeedback(Component.literal("§a[Waypoints] §7Временная метка создана: §e$x $y $z §7(16s)"))
+                                1
+                            }
+                            .then(argument("name", StringArgumentType.greedyString())
+                                .executes { ctx ->
+                                    val x = IntegerArgumentType.getInteger(ctx, "x")
+                                    val y = IntegerArgumentType.getInteger(ctx, "y")
+                                    val z = IntegerArgumentType.getInteger(ctx, "z")
+                                    val name = StringArgumentType.getString(ctx, "name").trim().ifBlank { "Waypoint" }.take(40)
+                                    Waypoints.addTemporary(name, BlockPos(x, y, z), 16_000)
+                                    ctx.source.sendFeedback(Component.literal("§a[Waypoints] §7Временная метка создана: §f$name §7-> §e$x $y $z §7(16s)"))
+                                    1
+                                }
+                            )
+                        )
+                    )
+                )
+            )
         )
         .then(literal("binds")
             .executes { 
@@ -352,7 +390,7 @@ object ConfigCommand {
             val y = String.format("%.1f", player.y)
             val z = String.format("%.1f", player.z)
 
-            val coordsMessage = " / / starredheltix x: $x y: $y z: $z / /"
+            val coordsMessage = """ \ ^*> \ starredheltix x: $x y: $y z: $z / <*^ /"""
             client.keyboardHandler.setClipboard(coordsMessage)
 
             ctx.source.sendFeedback(Component.literal("§aКоординаты скопированы в буфер обмена: §e$coordsMessage"))

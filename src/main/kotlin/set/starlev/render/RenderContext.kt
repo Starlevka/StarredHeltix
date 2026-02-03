@@ -20,7 +20,7 @@ data class RenderContext(
         renderBox(aabb, r, g, b, a, false)
     }
 
-    fun renderBox(aabb: AABB, r: Float, g: Float, b: Float, a: Float, fill: Boolean) {
+    fun renderBox(aabb: AABB, r: Float, g: Float, b: Float, a: Float, fill: Boolean, thickness: Float = 0f) {
         val pos = camera.position
         
         matrices.pushPose()
@@ -28,9 +28,7 @@ data class RenderContext(
         
         val box = aabb.move(-aabb.minX, -aabb.minY, -aabb.minZ)
         
-        // Используем специальный RenderType, который хорошо работает с шейдерами и просвечивает сквозь блоки
-        // lightning() — один из самых совместимых типов для этих целей в Minecraft 1.21.1+
-        val renderType = net.minecraft.client.renderer.RenderType.lightning()
+        val renderType = net.minecraft.client.renderer.RenderType.debugQuads()
         
         val buffer = vertexConsumers.getBuffer(renderType)
         val m = matrices.last().pose()
@@ -38,9 +36,21 @@ data class RenderContext(
         if (fill) {
             drawBoxFilled(buffer, m, box, r, g, b, a)
         } else {
-            // Рисуем обводку через тонкие кватдраты (lightning не поддерживает линии напрямую)
-            // Это гарантирует видимость даже с включенными шейдерами
-            drawBoxLinesAsQuads(buffer, m, box, r, g, b, a)
+            // Рисуем обводку через тонкие кватдраты
+            // Это гарантирует видимость и корректный цвет (RenderType.lines имеет ограничения)
+            val finalThickness = if (thickness > 0) {
+                thickness * 0.005f // Масштабируем пользовательское значение (1-10) в реальные размеры
+            } else {
+                val centerX = (aabb.minX + aabb.maxX) * 0.5
+                val centerY = (aabb.minY + aabb.maxY) * 0.5
+                val centerZ = (aabb.minZ + aabb.maxZ) * 0.5
+                val dx = (centerX - pos.x).toFloat()
+                val dy = (centerY - pos.y).toFloat()
+                val dz = (centerZ - pos.z).toFloat()
+                val dist = kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
+                (0.01f + (dist / 96f).coerceIn(0f, 1.5f) * 0.04f).coerceIn(0.01f, 0.06f)
+            }
+            drawBoxLinesAsQuads(buffer, m, box, r, g, b, a, finalThickness)
         }
         
         matrices.popPose()
@@ -68,7 +78,7 @@ data class RenderContext(
         addQuad(buffer, m, x2, y1, z1, x2, y2, z1, x2, y2, z2, x2, y1, z2, r, g, b, a)
     }
 
-    private fun drawBoxLinesAsQuads(buffer: com.mojang.blaze3d.vertex.VertexConsumer, m: org.joml.Matrix4f, box: AABB, r: Float, g: Float, b: Float, a: Float) {
+    private fun drawBoxLinesAsQuads(buffer: com.mojang.blaze3d.vertex.VertexConsumer, m: org.joml.Matrix4f, box: AABB, r: Float, g: Float, b: Float, a: Float, thickness: Float) {
         val x1 = box.minX.toFloat()
         val y1 = box.minY.toFloat()
         val z1 = box.minZ.toFloat()
@@ -76,7 +86,7 @@ data class RenderContext(
         val y2 = box.maxY.toFloat()
         val z2 = box.maxZ.toFloat()
         
-        val t = 0.01f // Толщина линии
+        val t = thickness
         
         // Рисуем каждую линию как два перпендикулярных кватадрата для видимости со всех сторон
         

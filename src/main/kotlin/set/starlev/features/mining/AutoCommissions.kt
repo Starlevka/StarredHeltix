@@ -51,7 +51,7 @@ object AutoCommissions {
                             mc.gameMode?.useItem(mc.player!!, InteractionHand.MAIN_HAND)
                             
                             // Optional: switch back to original slot after a short delay
-                            // For now, we keep it simple like AutoSlayer
+                            // For now, we keep it simple
                             
                             isWaitingForClick = false
                             // Clear titles

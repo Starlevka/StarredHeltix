@@ -1,6 +1,7 @@
 package set.starlev.mixin;
 
 import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,7 +14,8 @@ import set.starlev.render.RenderEngine;
 public class HudRenderMixin {
     @Inject(method = "render", at = @At("RETURN"))
     private void onRenderHud(GuiGraphics graphics, DeltaTracker delta, CallbackInfo ci) {
-        if (net.minecraft.client.Minecraft.getInstance().screen == null) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == null && !mc.options.hideGui) {
             RenderEngine.renderHud(graphics, delta.getGameTimeDeltaPartialTick(false));
         }
     }

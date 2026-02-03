@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
 import set.starlev.hud.HudElement
+import set.starlev.hud.ScoreboardEditorScreen
 import set.starlev.utils.detectors.TabListDetector
 import java.util.regex.Pattern
 
@@ -73,6 +74,7 @@ object PetOverlay : HudElement("PetOverlay") {
     }
 
     override fun render() {
+        if (mc.screen is ScoreboardEditorScreen) return
         val config = StarredHeltix.feature.skyblock.pet
         if (!config.enabled) return
 

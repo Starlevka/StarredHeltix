@@ -62,4 +62,26 @@ object ScoreboardDetector {
         val objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return ""
         return objective.displayName.string.replace(CacheManager.getRegex(COLOR_PATTERN), "").trim()
     }
+
+    /**
+     * Получить статус Магического печенья
+     */
+    fun getCookieStatus(): String {
+        val lines = getScoreboardText()
+        for (i in lines.indices) {
+            val line = lines[i]
+            if (line.contains("Магическое печенье") || line.contains("Cookie Buff")) {
+                // Берем следующую строку (визуально под ней, значит следующий индекс в отсортированном списке)
+                if (i + 1 < lines.size) {
+                    val nextLine = lines[i + 1]
+                    // Проверяем наличие цифр
+                    if (nextLine.any { it.isDigit() }) {
+                        return nextLine
+                    }
+                }
+                return "Не активно!"
+            }
+        }
+        return "Не активно!"
+    }
 }

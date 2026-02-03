@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.TextColor
 import set.starlev.secret.config.SecretConfig
 import set.starlev.secret.config.SecretMenuManager
+import set.starlev.utils.CacheManager
 import java.util.ArrayList
 import java.util.UUID
 
@@ -15,16 +16,14 @@ import net.minecraft.network.chat.contents.PlainTextContents
 import net.minecraft.network.chat.contents.TranslatableContents
 import java.util.regex.Pattern
 
-import java.util.WeakHashMap
-import java.util.Collections
-
 object SecretFunFeatures {
     private val starlevPattern = Pattern.compile("(?i)starlev")
     private val megaChromeXPattern = Pattern.compile("(?i)MegaChromeX")
     
+    private var cachedCustomPattern: Pair<String, Pattern>? = null
+    
     private val isProcessing = ThreadLocal.withInitial { false }
     private val isForceEnabled = ThreadLocal.withInitial { false }
-    private val componentCache = Collections.synchronizedMap(WeakHashMap<Component, Component>())
 
     private val STARLEV_COLOR = 0xFFFFF5 // Trigger ID 10
     private val MEGACHROME_COLOR = 0xAA00F3 // Dark Red (&4) + Fade+Shake (ID 12)
@@ -61,12 +60,16 @@ object SecretFunFeatures {
         // 2. ИЛИ если передан параметр force=true (для таба/тайтлов, если нужно)
         val isStarlevEnabled = isStarlevNameEffectEnabled() && (isForceEnabled.get() || force)
         val isMegaChromeEnabled = isMegaChromeXEffectEnabled() && (isForceEnabled.get() || force)
+        val isCustomEnabled = isCustomNameEffectEnabled() && (isForceEnabled.get() || force)
         
-        if (!isStarlevEnabled && !isMegaChromeEnabled) return component
+        if (!isStarlevEnabled && !isMegaChromeEnabled && !isCustomEnabled) return component
         
         // Проверяем кэш (только если не форсируем)
+        val fullText = component.getString()
+        val styleHash = component.style.hashCode()
+        
         if (!force) {
-            val cached = componentCache[component]
+            val cached = CacheManager.getCachedTextEffect(fullText, styleHash)
             if (cached != null) return cached
         }
         
@@ -79,17 +82,25 @@ object SecretFunFeatures {
         try {
             isProcessing.set(true)
             
-            val fullText = component.getString()
             val hasStarlev = isStarlevEnabled && fullText.contains("Starlev", ignoreCase = true)
             val hasMegaChrome = isMegaChromeEnabled && fullText.contains("MegaChromeX", ignoreCase = true)
             
-            if (!hasStarlev && !hasMegaChrome) {
-                if (!force) componentCache[component] = component
+            // Check for custom effect target presence
+            var hasCustom = false
+            if (isCustomEnabled) {
+                val target = getCustomEffectTarget()
+                if (target.isNotEmpty() && fullText.contains(target, ignoreCase = true)) {
+                    hasCustom = true
+                }
+            }
+            
+            if (!hasStarlev && !hasMegaChrome && !hasCustom) {
+                if (!force) CacheManager.cacheTextEffect(fullText, styleHash, component)
                 return component
             }
             
             val modified = modifyComponent(component)
-            if (!force) componentCache[component] = modified
+            if (!force) CacheManager.cacheTextEffect(fullText, styleHash, modified)
             return modified
         } catch (e: Exception) {
             return component
@@ -170,7 +181,24 @@ object SecretFunFeatures {
         val isStarlevEnabled = isStarlevNameEffectEnabled()
         val isMegaChromeEnabled = isMegaChromeXEffectEnabled()
 
-        // Создаем список всех вхождений обоих паттернов
+        // Custom Effect Logic
+        val customEffect = getCustomNameEffect()
+        val customTarget = getCustomEffectTarget()
+        
+        // Restriction: Starlev and MegaChromeX cannot use custom effects
+        // But we are targeting a specific word now, not necessarily the player name.
+        // Let's keep the restriction if the target IS the player name and they are restricted,
+        // OR if the target word itself is "Starlev" or "MegaChromeX" (reserved).
+        val currentPlayer = try { Minecraft.getInstance().user.name } catch (e: Exception) { "" }
+        
+        val isRestrictedTarget = customTarget.equals("Starlev", ignoreCase = true) || 
+                                 customTarget.equals("MegaChromeX", ignoreCase = true)
+                               
+        val isCustomEnabled = !isRestrictedTarget && 
+                              customEffect != SecretConfig.NameEffectType.NONE && 
+                              customTarget.isNotEmpty()
+
+        // Создаем список всех вхождений
         val matches = mutableListOf<MatchResult>()
         
         if (isStarlevEnabled) {
@@ -184,6 +212,25 @@ object SecretFunFeatures {
             val matcher = megaChromeXPattern.matcher(input)
             while (matcher.find()) {
                 matches.add(MatchResult(matcher.start(), matcher.end(), matcher.group(), MEGACHROME_COLOR))
+            }
+        }
+        
+        if (isCustomEnabled) {
+            val pattern = getCustomPattern(customTarget)
+            val matcher = pattern.matcher(input)
+            val color = customEffect.colorValue ?: 0xFFFFFF
+            
+            while (matcher.find()) {
+                // Avoid overlapping with existing matches (priority to original names)
+                val start = matcher.start()
+                val end = matcher.end()
+                val overlaps = matches.any { m -> 
+                    (start >= m.start && start < m.end) || (end > m.start && end <= m.end) 
+                }
+                
+                if (!overlaps) {
+                    matches.add(MatchResult(start, end, matcher.group(), color))
+                }
             }
         }
         
@@ -244,5 +291,32 @@ object SecretFunFeatures {
     private fun isMegaChromeXEffectEnabled(): Boolean {
         if (!SecretMenuManager.isConfigInitialized) return false
         return SecretMenuManager.secretConfig.funCategory.megaChromeXEffect
+    }
+    
+    private fun isCustomNameEffectEnabled(): Boolean {
+        if (!SecretMenuManager.isConfigInitialized) return false
+        val effect = SecretMenuManager.secretConfig.funCategory.customNameEffect
+        val target = SecretMenuManager.secretConfig.funCategory.customEffectTarget
+        return effect != SecretConfig.NameEffectType.NONE && target.isNotEmpty()
+    }
+
+    private fun getCustomNameEffect(): SecretConfig.NameEffectType {
+        if (!SecretMenuManager.isConfigInitialized) return SecretConfig.NameEffectType.NONE
+        return SecretMenuManager.secretConfig.funCategory.customNameEffect
+    }
+
+    private fun getCustomEffectTarget(): String {
+        if (!SecretMenuManager.isConfigInitialized) return ""
+        return SecretMenuManager.secretConfig.funCategory.customEffectTarget
+    }
+    
+    private fun getCustomPattern(target: String): Pattern {
+        val cached = cachedCustomPattern
+        if (cached != null && cached.first == target) {
+            return cached.second
+        }
+        val pattern = Pattern.compile(Pattern.quote(target), Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
+        cachedCustomPattern = target to pattern
+        return pattern
     }
 }

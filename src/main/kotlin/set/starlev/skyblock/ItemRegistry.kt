@@ -4,6 +4,7 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.component.CustomData
 import net.minecraft.nbt.CompoundTag
+import set.starlev.utils.*
 import java.util.Optional
 
 /**
@@ -14,7 +15,9 @@ object ItemRegistry {
     enum class SkyblockItem(val id: String, val displayName: String) {
         JUNGLE_AXE("JUNGLE_AXE", "Джунглевый топор"),
         TREECAPITATOR("TREECAPITATOR", "Древоточец"),
-        // Можно добавлять другие предметы по мере необходимости
+        ASPECT_OF_THE_END("ASPECT_OF_THE_END", "Аспект Энда"),
+        ASPECT_OF_THE_VOID("ASPECT_OF_THE_VOID", "Аспект Бездны"),
+        HYPERION("HYPERION", "Гиперион"),
         UNKNOWN("UNKNOWN", "Неизвестно")
     }
 
@@ -27,15 +30,24 @@ object ItemRegistry {
 
         // 1. Попытка получить через ExtraAttributes (стандарт Hypixel/Heltix)
         try {
-            val customData = stack.get(DataComponents.CUSTOM_DATA) ?: return null
-            val nbt = customData.copyTag()
-            val extraAttributes = nbt.get("ExtraAttributes") as? CompoundTag ?: return null
-            val idTag = extraAttributes.get("id") ?: return null
-            
-            val idResult = idTag.asString()
-            return (idResult as? Optional<*>)?.orElse(null) as? String
+            val customData: CustomData = stack.get(DataComponents.CUSTOM_DATA) ?: return null
+            val nbt: CompoundTag = customData.copyTag()
+            if (nbt.contains("ExtraAttributes")) {
+                // В этой версии маппингов getCompound возвращает Optional
+                val extraAttributesOpt = nbt.getCompound("ExtraAttributes")
+                if (extraAttributesOpt is java.util.Optional<*> && extraAttributesOpt.isPresent) {
+                    val extraAttributes = extraAttributesOpt.get() as CompoundTag
+                    if (extraAttributes.contains("id")) {
+                        // getString тоже может возвращать Optional
+                        val idOpt = extraAttributes.getString("id")
+                        if (idOpt is java.util.Optional<*> && idOpt.isPresent) {
+                            return idOpt.get() as String
+                        }
+                    }
+                }
+            }
         } catch (e: Exception) {
-            // Игнорируем ошибки доступа к NBT
+            // Игнорируем ошибки парсинга NBT
         }
 
         return null

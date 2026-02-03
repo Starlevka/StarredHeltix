@@ -12,6 +12,13 @@ object LegendaryFishingNotifier : HudElement("LegendaryFishingNotifier") {
     private var legendaryActive = false
     private var legendaryEndTime = 0L
 
+    private fun isVisibleNow(now: Long = System.currentTimeMillis()): Boolean {
+        if (!StarredHeltix.feature.fishing.notifications.legendaryFishingNotifier) return false
+        if (!legendaryActive) return false
+        if (now >= legendaryEndTime) return false
+        return true
+    }
+
     fun init() {
         ChatEventsManager.registerIncoming { message ->
             if (message.contains("Водяная Гидра пришла испытать Вашу силу.")) {
@@ -29,26 +36,22 @@ object LegendaryFishingNotifier : HudElement("LegendaryFishingNotifier") {
     }
 
     override fun render() {
-        if (!StarredHeltix.feature.fishing.notifications.legendaryFishingNotifier) return
-        
         val now = System.currentTimeMillis()
-        
-        if (legendaryActive || isEditing) {
-            if (now < legendaryEndTime || isEditing) {
-                val text = "§3§lВодяная Гидра!"
-                cachedGraphics?.let { graphics ->
-                    this.showBackground = StarredHeltix.feature.fishing.notifications.showBackground
-                    drawBackground(getWidth(), getHeight())
-                    graphics.drawString(mc.font, net.minecraft.network.chat.Component.literal(text), x, y, 0xFFFFFFFF.toInt(), true)
-                }
-            } else {
-                legendaryActive = false
-            }
+        if (!isVisibleNow(now) && !isEditing) {
+            if (legendaryActive && now >= legendaryEndTime) legendaryActive = false
+            return
+        }
+
+        val text = "§3§lВодяная Гидра!"
+        cachedGraphics?.let { graphics ->
+            this.showBackground = StarredHeltix.feature.fishing.notifications.showBackground
+            drawBackground(getWidth(), getHeight())
+            graphics.drawString(mc.font, net.minecraft.network.chat.Component.literal(text), x, y, 0xFFFFFFFF.toInt(), true)
         }
     }
 
-    override fun getWidth() = mc.font.width("ЛЕГЕНДАРНОЕ СУЩЕСТВО!")
-    override fun getHeight() = mc.font.lineHeight
+    override fun getWidth() = if (isVisibleNow() || isEditing) mc.font.width("ЛЕГЕНДАРНОЕ СУЩЕСТВО!") else 0
+    override fun getHeight() = if (isVisibleNow() || isEditing) mc.font.lineHeight else 0
     
     override fun getDefaultScale(): Float = 1.7f
     

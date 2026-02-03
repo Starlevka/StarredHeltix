@@ -117,6 +117,11 @@ class DungeonsConfig {
         @ConfigOption(name = "Фон HUD", desc = "Показывать темный фон позади текста.")
         @ConfigEditorBoolean
         var showBackground = true
+
+        @Expose
+        @ConfigOption(name = "Уведомление 270+Блад", desc = "Показывает Title на экране, когда есть 270 очков и Кровавая комната готова.")
+        @ConfigEditorBoolean
+        var title270AndBlood = true
     }
 }
 

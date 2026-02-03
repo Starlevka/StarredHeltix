@@ -5,7 +5,6 @@ import io.github.notenoughupdates.moulconfig.observer.PropertyTypeAdapterFactory
 import io.github.notenoughupdates.moulconfig.processor.BuiltinMoulConfigGuis
 import io.github.notenoughupdates.moulconfig.processor.ConfigProcessorDriver
 import io.github.notenoughupdates.moulconfig.processor.MoulConfigProcessor
-import org.slf4j.LoggerFactory
 import set.starlev.StarredHeltix
 import java.io.*
 import java.nio.charset.StandardCharsets
@@ -14,7 +13,6 @@ import java.nio.file.StandardCopyOption
 import kotlin.concurrent.fixedRateTimer
 
 object ConfigManager {
-    private val logger = LoggerFactory.getLogger("StarredHeltix")
     val gson = GsonBuilder().setPrettyPrinting()
         .excludeFieldsWithoutExposeAnnotation()
         .serializeSpecialFloatingPointValues()
@@ -31,26 +29,34 @@ object ConfigManager {
     fun firstLoad() {
         configDirectory.mkdirs()
         configFile = File(configDirectory, "config.json")
-        logger.info("Загрузка конфига из {}", configFile)
 
         if (configFile!!.exists()) {
             try {
                 val inputStreamReader = InputStreamReader(FileInputStream(configFile!!), StandardCharsets.UTF_8)
                 val bufferedReader = BufferedReader(inputStreamReader)
                 features = gson.fromJson(bufferedReader.readText(), Features::class.java)
-                logger.info("Конфиг загружен")
             } catch (e: Exception) {
-                logger.error("Ошибка при чтении конфига $configFile", e)
+                e.printStackTrace()
             }
         }
 
         if (!this::features.isInitialized) {
-            logger.info("Создание нового конфига")
             features = Features()
             saveConfig("blank config")
         }
 
-        logger.info("Инициализация MoulConfig")
+        if (!features.misc.general.migratedInventoryHistoryToMisc) {
+            val old = features.visuals.inventoryHistory
+            val target = features.misc.general.inventoryHistory
+            target.enabled = old.enabled
+            target.duration = old.duration
+            target.maxEntries = old.maxEntries
+            target.showBackground = old.showBackground
+            target.ignoreEquipped = old.ignoreEquipped
+            features.misc.general.migratedInventoryHistoryToMisc = true
+            saveConfig("migrate-inventory-history-to-misc")
+        }
+
         processor = MoulConfigProcessor(StarredHeltix.feature)
         BuiltinMoulConfigGuis.addProcessors(processor)
         val driver = ConfigProcessorDriver(processor)
@@ -60,9 +66,8 @@ object ConfigManager {
         fixedRateTimer(name = "starredheltix-config-auto-save", period = 600_000L, initialDelay = 600_000L) {
             try {
                 saveConfig("auto-save-600s")
-                logger.debug("Автосохранение конфига")
             } catch (e: Throwable) {
-                logger.error("Ошибка автосохранения конфига!", e)
+                e.printStackTrace()
             }
         }
     }
@@ -74,9 +79,8 @@ object ConfigManager {
             BufferedWriter(OutputStreamWriter(FileOutputStream(file), StandardCharsets.UTF_8)).use { writer ->
                 writer.write(gson.toJson(StarredHeltix.feature))
             }
-            logger.info("Конфиг сохранён: $reason")
         } catch (e: Exception) {
-            logger.error("Не удалось сохранить конфиг в $file", e)
+            e.printStackTrace()
         }
     }
 }

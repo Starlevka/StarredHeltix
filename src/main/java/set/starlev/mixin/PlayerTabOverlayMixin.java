@@ -22,13 +22,6 @@ public class PlayerTabOverlayMixin {
     private void onGetNameForDisplay(PlayerInfo playerInfo, CallbackInfoReturnable<Component> cir) {
         if (!SecretMenuManager.INSTANCE.isConfigInitialized()) return;
         
-        boolean starlevEnabled = SecretMenuManager.INSTANCE.getSecretConfig().getFunCategory().getStarlevNameEffect();
-        boolean megaChromeEnabled = SecretMenuManager.INSTANCE.getSecretConfig().getFunCategory().getMegaChromeXEffect();
-        
-        if (!starlevEnabled && !megaChromeEnabled) {
-            return;
-        }
-
         Component original = cir.getReturnValue();
         if (original == null) return;
 

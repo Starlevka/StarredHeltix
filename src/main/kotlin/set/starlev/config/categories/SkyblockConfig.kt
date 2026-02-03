@@ -4,6 +4,7 @@ import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class SkyblockConfig {
@@ -21,6 +22,118 @@ class SkyblockConfig {
     @ConfigOption(name = "Оверлей Питомца", desc = "Настройки отображения информации о питомце.")
     @Accordion
     var pet = PetConfig()
+
+    @Expose
+    @ConfigOption(name = "NPC Диалоги", desc = "Настройки оверлея диалогов с NPC.")
+    @Accordion
+    var npcDialogue = NpcDialogueConfig()
+
+    @Expose
+    @ConfigOption(name = "Плавный AOTE / Эндерперлы", desc = "Настройки плавной телепортации (Аспект Энда, Бездны, Гиперион).")
+    @Accordion
+    var smoothAote = SmoothAoteConfig()
+
+    @Expose
+    @ConfigOption(name = "Scoreboard", desc = "Визуальные настройки скорборда.")
+    @Accordion
+    var scoreboard = ScoreboardConfig()
+
+    class ScoreboardConfig {
+        @Expose
+        @ConfigOption(name = "Кастомный?", desc = "Включает кастомизируемый scoreboard.")
+        @ConfigEditorBoolean
+        var enabled = true
+
+        @Expose
+        @ConfigOption(name = "Фон Scoreboard", desc = "Отображает фон у Scoreboard.")
+        @ConfigEditorBoolean
+        var showBackground = true
+
+        @Expose
+        @ConfigOption(name = "Гемы (Tab)", desc = "Настройки отображения Гемов (парсинг из Tab).")
+        @Accordion
+        var gems = GemsConfig()
+
+        @Expose
+        @ConfigOption(name = "Банк (Tab)", desc = "Настройки отображения Банка (парсинг из Tab).")
+        @Accordion
+        var bank = BankConfig()
+
+        @Expose
+        @ConfigOption(name = "Печенье (Tab)", desc = "Настройки отображения статуса Магического Печенья (парсинг из Tab).")
+        @Accordion
+        var cookie = CookieConfig()
+
+        class GemsConfig {
+            @Expose
+            @ConfigOption(name = "Scoreboard", desc = "Добавлять Гемы в кастомный Scoreboard.")
+            @ConfigEditorBoolean
+            var scoreboard = true
+        }
+
+        class BankConfig {
+            @Expose
+            @ConfigOption(name = "Scoreboard", desc = "Добавлять Банк в кастомный Scoreboard.")
+            @ConfigEditorBoolean
+            var scoreboard = true
+        }
+
+        class CookieConfig {
+            @Expose
+            @ConfigOption(name = "Scoreboard", desc = "Добавлять статус Печенья в кастомный Scoreboard.")
+            @ConfigEditorBoolean
+            var scoreboard = true
+        }
+    }
+
+    class SmoothAoteConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Включает плавную анимацию при использовании Аспекта Энда, AOTV и других телепортов.")
+        @ConfigEditorBoolean
+        var enabled = false
+
+        @Expose
+        @ConfigOption(name = "Время анимации (мс)", desc = "Длительность анимации перемещения.")
+        @ConfigEditorSlider(minValue = 50f, maxValue = 500f, minStep = 10f)
+        var time = 150f
+    }
+
+    class NpcDialogueConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Включает оверлей диалогов с NPC.")
+        @ConfigEditorBoolean
+        var enabled = true
+
+        @Expose
+        @ConfigOption(name = "Скрывать сообщения", desc = "Скрывает сообщения NPC в чате при активном оверлее.")
+        @ConfigEditorBoolean
+        var hideMessages = true
+
+        @Expose
+        @ConfigOption(name = "Фон", desc = "Отображать фон диалогового окна.")
+        @ConfigEditorBoolean
+        var showBackground = true
+
+        @Expose
+        @ConfigOption(name = "Показывать опции", desc = "Отображать список вариантов ответов в оверлее.")
+        @ConfigEditorBoolean
+        var showOptions = true
+
+        @Expose
+        @ConfigOption(name = "Компактный режим", desc = "Уменьшает отступы и размеры окна для экономии места.")
+        @ConfigEditorBoolean
+        var compactMode = true
+
+        @Expose
+        @ConfigOption(name = "Закрывать на ESC", desc = "Закрывает диалог при нажатии клавиши ESC.")
+        @ConfigEditorBoolean
+        var closeOnEsc = true
+
+        @Expose
+        @ConfigOption(name = "Тайм-аут (сек)", desc = "Время в секундах, через которое диалог исчезнет автоматически.")
+        @ConfigEditorSlider(minValue = 1f, maxValue = 60f, minStep = 1f)
+        var timeoutSeconds = 30f
+    }
 
     class PetConfig {
         @Expose
@@ -41,80 +154,80 @@ class SkyblockConfig {
         var enabled = true
 
         @Expose
-        @ConfigOption(name = "Фон HUD", desc = "Отображает фон в помощнике Музея.")
+        @ConfigOption(name = "Фон", desc = "Отображать фон для списка предметов.")
         @ConfigEditorBoolean
         var showBackground = true
     }
 
     class SkillsXpConfig {
         @Expose
-        @ConfigOption(name = "Включить?", desc = "Показывает HUD с прогрессом навыка при получении опыта.")
+        @ConfigOption(name = "Включить?", desc = "Показывает прогресс опыта навыков на экране.")
         @ConfigEditorBoolean
         var enabled = true
 
         @Expose
-        @ConfigOption(name = "Цвет прогресс-бара", desc = "Цвет полоски прогресса в HUD навыков.")
-        @ConfigEditorColour
-        var barColorV2 = "0:255:85:255:85"
+        @ConfigOption(name = "Фон", desc = "Отображать фон HUD.")
+        @ConfigEditorBoolean
+        var showBackground = true
 
         @Expose
-        @ConfigOption(name = "Цвет текста", desc = "Цвет основного текста в HUD навыков.")
-        @ConfigEditorColour
-        var textColor = "0:255:255:255:255"
-
-        @Expose
-        @ConfigOption(name = "Цвет значений", desc = "Цвет числовых значений и процентов.")
-        @ConfigEditorColour
-        var valuesColor = "0:255:255:85:255"
-
-        @Expose
-        @ConfigOption(name = "Отслеживать Бой", desc = "Показывать HUD для навыка Боя.")
+        @ConfigOption(name = "Бой (Combat)", desc = "Показывать опыт навыка Бой.")
         @ConfigEditorBoolean
         var showCombat = true
 
         @Expose
-        @ConfigOption(name = "Отслеживать Шахтёрство", desc = "Показывать HUD для навыка Шахтёрства.")
+        @ConfigOption(name = "Шахтерство (Mining)", desc = "Показывать опыт навыка Шахтерство.")
         @ConfigEditorBoolean
         var showMining = true
 
         @Expose
-        @ConfigOption(name = "Отслеживать Фермерство", desc = "Показывать HUD для навыка Фермерства.")
+        @ConfigOption(name = "Фермерство (Farming)", desc = "Показывать опыт навыка Фермерство.")
         @ConfigEditorBoolean
         var showFarming = true
 
         @Expose
-        @ConfigOption(name = "Отслеживать Лесничество", desc = "Показывать HUD для навыка Лесничества.")
+        @ConfigOption(name = "Добыча (Foraging)", desc = "Показывать опыт навыка Добыча.")
         @ConfigEditorBoolean
         var showForaging = true
 
         @Expose
-        @ConfigOption(name = "Отслеживать Рыболовство", desc = "Показывать HUD для навыка Рыболовства.")
+        @ConfigOption(name = "Рыбалка (Fishing)", desc = "Показывать опыт навыка Рыбалка.")
         @ConfigEditorBoolean
         var showFishing = true
 
         @Expose
-        @ConfigOption(name = "Отслеживать Чародейство", desc = "Показывать HUD для навыка Чародейства.")
+        @ConfigOption(name = "Зачарование (Enchanting)", desc = "Показывать опыт навыка Зачарование.")
         @ConfigEditorBoolean
         var showEnchanting = true
 
         @Expose
-        @ConfigOption(name = "Отслеживать Алхимию", desc = "Показывать HUD для навыка Алхимии.")
+        @ConfigOption(name = "Алхимия (Alchemy)", desc = "Показывать опыт навыка Алхимия.")
         @ConfigEditorBoolean
         var showAlchemy = true
 
         @Expose
-        @ConfigOption(name = "Отслеживать Приручение", desc = "Показывать HUD для навыка Приручения.")
+        @ConfigOption(name = "Приручение (Taming)", desc = "Показывать опыт навыка Приручение.")
         @ConfigEditorBoolean
         var showTaming = true
 
         @Expose
-        @ConfigOption(name = "Отслеживать Подземелья", desc = "Показывать HUD для навыка Подземелий.")
+        @ConfigOption(name = "Подземелья (Dungeons)", desc = "Показывать опыт навыка Подземелья.")
         @ConfigEditorBoolean
         var showDungeons = true
 
         @Expose
-        @ConfigOption(name = "Фон HUD", desc = "Отображает фон в HUD навыков.")
-        @ConfigEditorBoolean
-        var showBackground = true
+        @ConfigOption(name = "Цвет полосы", desc = "Цвет полосы прогресса (если используется).")
+        @ConfigEditorColour
+        var barColorV2 = "0:255:0:255"
+
+        @Expose
+        @ConfigOption(name = "Цвет текста", desc = "Цвет текста навыков.")
+        @ConfigEditorColour
+        var textColor = "255:255:255:255"
+
+        @Expose
+        @ConfigOption(name = "Цвет значений", desc = "Цвет цифр опыта.")
+        @ConfigEditorColour
+        var valuesColor = "255:255:255:255"
     }
 }
