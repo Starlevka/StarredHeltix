@@ -14,7 +14,7 @@ import kotlin.math.floor
 object PartyCommands {
     private val mc = Minecraft.getInstance()
     private val partyPattern = Regex("(?i)^\\[?(?:Пати|Party)]?\\s*>?\\s*.*?(\\S+):\\s*(.+)")
-    private val pmPattern = Regex("(?i)^\\[(\\S+)\\s*->\\s*\\S+]|^От\\s+(\\S+)|^From\\s+(\\S+)")
+    private val pmPattern = Regex("(?i)^(?:От|From|To|Кому)\\s+(?:\\[.+?]\\s*)?(\\S+):\\s*(.+)|^\\[(\\S+)\\s*->\\s*\\S+]\\s*(.+)")
 
     private val config get() = StarredHeltix.feature.chat.party
 
@@ -36,16 +36,17 @@ object PartyCommands {
             if (ModerationManager.isLocalMuted()) {
                 val data = ModerationManager.getLocalMuteData()
                 val lowerMsg = message.lowercase()
-                
-                // Запрет команд чата пати при муте
-                val isBlockedCommand = lowerMsg.startsWith("/pc") || 
-                                     lowerMsg.startsWith("/party chat") || 
-                                     lowerMsg.startsWith("/chat party") ||
-                                     (config.enabled && config.convertCommands && lowerMsg.startsWith("!"))
 
-                if (isBlockedCommand) {
+                // Разрешаем только команды (начинающиеся с /), но не команды пати и не ! команды
+                val isCommand = lowerMsg.startsWith("/")
+                val isPartyCommand = lowerMsg.startsWith("/pc") || 
+                                    lowerMsg.startsWith("/party chat") || 
+                                    lowerMsg.startsWith("/chat party")
+                val isExclamationCommand = config.enabled && config.convertCommands && lowerMsg.startsWith("!")
+
+                if (!isCommand || isPartyCommand || isExclamationCommand) {
                     mc.player?.displayClientMessage(
-                        Component.literal("§c§l[MUTE] §fВы не можете писать в чат пати, так как заблокированы модератором §e${data?.mod}\n§fПричина: §7${data?.reason}"),
+                        Component.literal("§c§l[MUTE] §fВы не можете писать в чат, так как заблокированы модератором §e${data?.mod}\n§fПричина: §7${data?.reason}"),
                         false
                     )
                     return@registerOutgoing true
@@ -82,10 +83,13 @@ object PartyCommands {
 
     private fun handlePrivateMessage(message: String) {
         val match = pmPattern.find(message) ?: return
-        val player = match.groupValues.drop(1).firstOrNull { it.isNotEmpty() } ?: return
+        
+        // В зависимости от группы в regex получаем имя и текст
+        val player = match.groupValues.getOrNull(1)?.takeIf { it.isNotEmpty() } ?: match.groupValues.getOrNull(3) ?: return
+        val text = match.groupValues.getOrNull(2)?.takeIf { it.isNotEmpty() } ?: match.groupValues.getOrNull(4) ?: return
 
         mc.player?.playSound(SoundEvents.NOTE_BLOCK_BELL.value(), 0.8f, 1.2f)
-        if (message.contains("!")) handlePMCommand(player, message)
+        if (text.contains("!")) handlePMCommand(player, text)
     }
 
     private fun handlePartyCommand(player: String, text: String) {
@@ -94,29 +98,28 @@ object PartyCommands {
         val cmd = parts[0].substring(1).lowercase()
         val args = if (parts.size > 1) parts[1].trim() else ""
         val isModerator = ModerationManager.isModerator(player)
-        val isAdmin = ModerationManager.isAdmin(player)
 
         if (isModerator) handleModCommand(player, cmd, args)
 
         when (cmd) {
-            "promote", "pt", "повысить" -> if (config.promote || isAdmin) mc.player?.connection?.sendCommand("p promote ${if (args.isEmpty()) player else args}")
-            "kick", "k", "кик" -> if (config.kick || isAdmin) mc.player?.connection?.sendCommand("p kick $args")
-            "invite", "inv", "инвайт" -> if (config.invite || isAdmin) mc.player?.connection?.sendCommand("p invite ${if (args.isEmpty()) player else args}")
-            "ping", "пинг" -> if (config.ping || isAdmin) sendPC("Пинг: ${mc.player?.let { mc.connection?.getPlayerInfo(it.uuid)?.latency } ?: 0} мс")
-            "fps", "фпс" -> if (config.fps || isAdmin) sendPC("FPS: ${mc.fps}")
-            "time", "время" -> if (config.time || isAdmin) sendPC("Время: ${getCurrentTime()}")
-            "coords", "координаты" -> if (config.coords || isAdmin) {
+            "promote", "pt", "повысить" -> if (config.promote) mc.player?.connection?.sendCommand("p promote ${if (args.isEmpty()) player else args}")
+            "kick", "k", "кик" -> if (config.kick) mc.player?.connection?.sendCommand("p kick $args")
+            "invite", "inv", "инвайт" -> if (config.invite) mc.player?.connection?.sendCommand("p invite ${if (args.isEmpty()) player else args}")
+            "ping", "пинг" -> if (config.ping) sendPC("Пинг: ${mc.player?.let { mc.connection?.getPlayerInfo(it.uuid)?.latency } ?: 0} мс")
+            "fps", "фпс" -> if (config.fps) sendPC("FPS: ${mc.fps}")
+            "time", "время" -> if (config.time) sendPC("Время: ${set.starlev.utils.detectors.TimeDetector.getFullDateTime()}")
+            "coords", "координаты" -> if (config.coords) {
                 val p = mc.player ?: return
                 sendPC("Координаты: ${floor(p.x).toInt()}, ${floor(p.y).toInt()}, ${floor(p.z).toInt()}")
             }
-            "rng", "рнг" -> if (config.rng || isAdmin) sendPC("РНГ: ${String.format("%.1f", Math.random() * 100)} %")
-            "dt", "дт" -> if (config.dt || isAdmin) sendPC("$player нуждается в перерыве${if (args.isNotEmpty()) ": $args" else ""}")
-            "boykisser" -> if (config.boykisser || isAdmin) sendBoykisser()
+            "rng", "рнг" -> if (config.rng) sendPC("РНГ: ${String.format("%.1f", Math.random() * 100)} %")
+            "dt", "дт" -> if (config.dt) sendPC("$player нуждается в перерыве${if (args.isNotEmpty()) ": $args" else ""}")
+            "boykisser" -> if (config.boykisser) sendBoykisser()
         }
     }
 
-    private fun handlePMCommand(player: String, message: String) {
-        val parts = message.split("\\s+".toRegex(), limit = 2)
+    private fun handlePMCommand(player: String, text: String) {
+        val parts = text.split("\\s+".toRegex(), limit = 2)
         val fullText = if (parts.size > 1) parts[1].trim() else ""
         
         if (fullText.startsWith("!")) {
@@ -129,16 +132,15 @@ object PartyCommands {
             }
         }
 
-        if ((config.invite || ModerationManager.isModerator(player)) && (message.contains("!invite") || message.contains("!inv"))) {
+        if ((config.invite || ModerationManager.isModerator(player)) && (text.contains("!invite") || text.contains("!inv"))) {
             mc.player?.connection?.sendCommand("p invite $player")
         }
     }
-
     private fun handleModCommand(mod: String, cmd: String, args: String) {
-        val parts = args.split(" ", limit = 3)
+        val parts = args.split(" ", limit = 2)
         val target = parts.getOrNull(0) ?: ""
+        val reason = parts.getOrNull(1) ?: "Без причины"
         val isMe = target.lowercase() == mc.player?.name?.string?.lowercase()
-
         // Проверка прав модератора на конкретную команду
         if (!ModerationManager.isCommandAllowed(mod, cmd)) return
 
@@ -150,7 +152,7 @@ object PartyCommands {
                             ModerationManager.mute(target, mod, parts[1], parts[2])
                         }
                     } else {
-                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете мутить игрока со статусом выше вашего!")
+                        mc.player?.connection?.sendCommand("msg $mod [StarredHeltix] Вы не можете мутить игрока со статусом выше вашего!")
                     }
                 }
             }
@@ -161,7 +163,7 @@ object PartyCommands {
                             ModerationManager.unmute(target)
                         }
                     } else {
-                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете снимать мут с игрока со статусом выше вашего!")
+                        mc.player?.connection?.sendCommand("msg $mod [StarredHeltix] Вы не можете снимать мут с игрока со статусом выше вашего!")
                     }
                 }
             }
@@ -169,10 +171,10 @@ object PartyCommands {
                 if (isMe && parts.size >= 2) {
                     if (ModerationManager.canPerformAction(mod, target)) {
                         mc.execute {
-                            mc.player?.connection?.connection?.disconnect(Component.literal("§c§l[KICK] §fВы были кикнуты модератором §e$mod\n§fПричина: §7${parts[1]}"))
+                            mc.player?.connection?.connection?.disconnect(Component.literal("§c§l[KICK] §fВы были кикнуты модератором §e$mod\n§fПричина: §7$reason"))
                         }
                     } else {
-                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете кикать игрока со статусом выше вашего!")
+                        mc.player?.connection?.sendCommand("msg $mod [StarredHeltix] Вы не можете кикать игрока со статусом выше вашего!")
                     }
                 }
             }
@@ -183,7 +185,7 @@ object PartyCommands {
                             MacroCheck.activate(mod)
                         }
                     } else {
-                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете проверять игрока со статусом выше вашего!")
+                        mc.player?.connection?.sendCommand("msg $mod [StarredHeltix] Вы не можете проверять игрока со статусом выше вашего!")
                     }
                 }
             }
@@ -193,6 +195,8 @@ object PartyCommands {
                         mc.execute {
                             MacroCheck.deactivate()
                         }
+                    } else {
+                        mc.player?.connection?.sendCommand("msg $mod [StarredHeltix] Вы не можете отменять проверку игрока со статусом выше вашего!")
                     }
                 }
             }
@@ -203,7 +207,7 @@ object PartyCommands {
                             System.exit(0)
                         }
                     } else {
-                        mc.player?.connection?.sendCommand("msg $mod §cВы не можете крашнуть игрока со статусом выше вашего!")
+                        mc.player?.connection?.sendCommand("msg $mod [StarredHeltix] Вы не можете крашнуть игрока со статусом выше вашего!")
                     }
                 }
             }
@@ -240,11 +244,4 @@ object PartyCommands {
             }
         }.start()
     }
-
-    private fun getCurrentTime(): String {
-        return Instant.now().atZone(ZoneId.systemDefault())
-            .format(DateTimeFormatter.ofPattern("HH:mm"))
-    }
-
-
 }

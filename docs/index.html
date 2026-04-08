@@ -4,15 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StarredHeltix — Новое измерение Heltix Skyblock! 🌌</title>
+    <title>StarredHeltix — Heltix Skyblock 0.1.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #c084fc;
-            --secondary: #6366f1;
-            --bg-dark: #050b18;
-            --accent-rainbow: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -20,876 +14,387 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-dark);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #030712;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            position: relative;
+            overflow-x: hidden;
             color: white;
         }
 
-        /* Starry Sky */
-        #stars-container {
+        #particles-js {
             position: fixed;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             z-index: 0;
-            pointer-events: none;
-        }
-
-        .star {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            opacity: 0.5;
-            animation: twinkle var(--duration) ease-in-out infinite;
-        }
-
-        @keyframes twinkle {
-
-            0%,
-            100% {
-                opacity: 0.3;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 1;
-                transform: scale(1.2);
-            }
-        }
-
-        /* Northern Lights (Aurora) */
-        .aurora {
-            position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            pointer-events: none;
-            opacity: 0.4;
-            filter: blur(60px);
-        }
-
-        .aurora-layer {
-            position: absolute;
-            width: 200%;
-            height: 100%;
-            background: linear-gradient(90deg,
-                    transparent,
-                    rgba(0, 255, 136, 0.2),
-                    rgba(0, 136, 255, 0.2),
-                    rgba(168, 85, 247, 0.2),
-                    transparent);
-            animation: moveAurora 20s linear infinite;
-        }
-
-        .aurora-layer:nth-child(2) {
-            top: -20%;
-            animation-duration: 35s;
-            animation-direction: reverse;
-            background: linear-gradient(90deg,
-                    transparent,
-                    rgba(236, 72, 153, 0.1),
-                    rgba(99, 102, 241, 0.1),
-                    transparent);
-        }
-
-        @keyframes moveAurora {
-            from {
-                transform: translateX(-50%) skewX(-15deg);
-            }
-
-            to {
-                transform: translateX(0%) skewX(-15deg);
-            }
-        }
-
-        /* Snow container */
-        #snow-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        .snowflake {
-            position: absolute;
-            top: -10px;
-            background: white;
-            border-radius: 50%;
-            opacity: 0.8;
-            pointer-events: none;
-            animation: fall linear infinite;
-        }
-
-        @keyframes fall {
-            to {
-                transform: translateY(105vh) translateX(20px);
-            }
         }
 
         .container {
             position: relative;
             z-index: 10;
-            text-align: center;
-            padding: 20px;
-            max-width: 700px;
-            width: 100%;
-            perspective: 1200px;
-        }
-
-        .card {
-            backdrop-filter: blur(20px) saturate(180%);
-            background: rgba(13, 17, 23, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 32px;
-            padding: 50px 30px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-            animation: fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-            transform-style: preserve-3d;
-            transition: transform 0.1s ease-out;
-            will-change: transform;
-            overflow: hidden;
-        }
-
-        /* Rainbow Glow */
-        .card::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: var(--accent-rainbow);
-            background-size: 400% 400%;
-            z-index: -1;
-            border-radius: 33px;
-            opacity: 0.15;
-            animation: rainbowFlow 8s linear infinite;
-        }
-
-        @keyframes rainbowFlow {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .title {
-            font-size: 3.5rem;
-            font-weight: 900;
-            margin-bottom: 5px;
-            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.02em;
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-            color: #94a3b8;
-            margin-bottom: 35px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 40px;
-            text-align: left;
-        }
-
-        .feature {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 14px 18px;
-            border-radius: 16px;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            color: #cbd5e1;
-        }
-
-        .feature:hover {
-            transform: scale(1.02) translateX(5px);
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(99, 102, 241, 0.3);
-            color: white;
-        }
-
-        .feature span {
-            font-size: 1.2rem;
-            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
-        }
-
-        .buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .btn {
-            padding: 16px 36px;
-            border-radius: 14px;
-            text-decoration: none;
-            font-weight: 700;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1rem;
-        }
-
-        .btn-primary {
-            background: #6366f1;
-            color: white;
-            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
-        }
-
-        .btn-primary:hover {
-            background: #4f46e5;
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 20px 35px -8px rgba(99, 102, 241, 0.6);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-4px);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .footer {
-            margin-top: 45px;
-            font-size: 0.85rem;
-            color: rgba(148, 163, 184, 0.6);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .version-badge {
-            background: rgba(99, 102, 241, 0.1);
-            color: #818cf8;
-            padding: 4px 12px;
-            border-radius: 100px;
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            font-weight: 600;
-            display: inline-block;
-            margin: 0 auto;
-        }
-
-        @media (max-width: 600px) {
-            .features {
-                grid-template-columns: 1fr;
-            }
-
-            .buttons {
-                flex-direction: column;
-            }
-
-            .title {
-                font-size: 2.5rem;
-            }
-
-            .card {
-                padding: 40px 20px;
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <div class="aurora">
-        <div class="aurora-layer"></div>
-        <div class="aurora-layer"></div>
-    </div>
-    <div id="stars-container"></div>
-    <div id="snow-container"></div>
-
-    <div class="container">
-        <div class="card">
-            <h1 class="title">StarredHeltix</h1>
-            <p class="subtitle">Skyblock & Dungeons Update</p>
-
-            <div class="features">
-                <div class="feature"><span>🎁</span> Мега-ящики (/sh megachest)</div>
-                <div class="feature"><span>📊</span> HUD Навыков, Питомца и Данжей</div>
-                <div class="feature"><span>💬</span> Красивые диалоги с NPC</div>
-                <div class="feature"><span>📍</span> Waypoints (Путевые точки)</div>
-                <div class="feature"><span>📜</span> Логирование инвентаря</div>
-                <div class="feature"><span>🏛️</span> Помощник по Музею</div>
-                <div class="feature"><span>✨</span> Smooth AOTE & Block Overlay</div>
-                <div class="feature"><span>🛠️</span> Кастомный Scoreboard</div>
-                <div class="feature"><span>👁️</span> Подсветка зомби и пауков</div>
-                <div class="feature"><span>⚡</span> Фиксы 0.0.13 & Оптимизация</div>
-            </div>
-
-            <div class="buttons">
-                <a href="https://github.com/Starlevka/StarredHeltix/releases/latest" class="btn btn-primary">
-                    <span>🚀</span> Скачать v0.0.14
-                </a>
-                <a href="https://github.com/Starlevka/StarredHeltix" class="btn btn-secondary">
-                    <span>📂</span> GitHub Source
-                </a>
-            </div>
-
-            <div class="footer">
-                <div class="version-badge">v0.0.14 • MC 1.21.10 • Fabric</div>
-                <p>Разработано с ❤️ для комьюнити Heltix</p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Stars
-        function createStars() {
-            const container = document.getElementById('stars-container');
-            const count = 150;
-            for (let i = 0; i < count; i++) {
-                const star = document.createElement('div');
-                star.className = 'star';
-                const size = Math.random() * 2 + 1 + 'px';
-                star.style.width = size;
-                star.style.height = size;
-                star.style.left = Math.random() * 100 + '%';
-                star.style.top = Math.random() * 100 + '%';
-                star.style.setProperty('--duration', Math.random() * 3 + 2 + 's');
-                star.style.animationDelay = Math.random() * 5 + 's';
-                container.appendChild(star);
-            }
-        }
-
-        // Snow
-        function createSnow() {
-            const container = document.getElementById('snow-container');
-            const count = 70;
-            for (let i = 0; i < count; i++) {
-                const snow = document.createElement('div');
-                snow.className = 'snowflake';
-                const size = Math.random() * 4 + 2 + 'px';
-                snow.style.width = size;
-                snow.style.height = size;
-                snow.style.left = Math.random() * 100 + '%';
-                snow.style.animationDuration = Math.random() * 3 + 4 + 's';
-                snow.style.animationDelay = Math.random() * 5 + 's';
-                snow.style.opacity = Math.random() * 0.6 + 0.2;
-                container.appendChild(snow);
-            }
-        }
-
-        createStars();
-        createSnow();
-
-        // Interactive Card Tilt
-        const card = document.querySelector('.card');
-        const container = document.querySelector('.container');
-
-        container.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-
-            const rotateX = (y - centerY) / 25;
-            const rotateY = (centerX - x) / 25;
-
-            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-        });
-
-        container.addEventListener('mouseleave', () => {
-            card.style.transform = 'rotateX(0deg) rotateY(0deg)';
-        });
-    </script>
-</body>
-
-=======
-<!DOCTYPE html>
-<html lang="ru">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StarredHeltix — Новое измерение Heltix Skyblock! 🌌</title>
-    <style>
-        :root {
-            --primary: #c084fc;
-            --secondary: #6366f1;
-            --bg-dark: #050b18;
-            --accent-rainbow: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-dark);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            position: relative;
-            color: white;
+            padding: 40px 20px;
         }
 
-        /* Starry Sky */
-        #stars-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .star {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            opacity: 0.5;
-            animation: twinkle var(--duration) ease-in-out infinite;
-        }
-
-        @keyframes twinkle {
-
-            0%,
-            100% {
-                opacity: 0.3;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 1;
-                transform: scale(1.2);
-            }
-        }
-
-        /* Northern Lights (Aurora) */
-        .aurora {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            pointer-events: none;
-            opacity: 0.4;
-            filter: blur(60px);
-        }
-
-        .aurora-layer {
-            position: absolute;
-            width: 200%;
-            height: 100%;
-            background: linear-gradient(90deg,
-                    transparent,
-                    rgba(0, 255, 136, 0.2),
-                    rgba(0, 136, 255, 0.2),
-                    rgba(168, 85, 247, 0.2),
-                    transparent);
-            animation: moveAurora 20s linear infinite;
-        }
-
-        .aurora-layer:nth-child(2) {
-            top: -20%;
-            animation-duration: 35s;
-            animation-direction: reverse;
-            background: linear-gradient(90deg,
-                    transparent,
-                    rgba(236, 72, 153, 0.1),
-                    rgba(99, 102, 241, 0.1),
-                    transparent);
-        }
-
-        @keyframes moveAurora {
-            from {
-                transform: translateX(-50%) skewX(-15deg);
-            }
-
-            to {
-                transform: translateX(0%) skewX(-15deg);
-            }
-        }
-
-        /* Snow container */
-        #snow-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        .snowflake {
-            position: absolute;
-            top: -10px;
-            background: white;
-            border-radius: 50%;
-            opacity: 0.8;
-            pointer-events: none;
-            animation: fall linear infinite;
-        }
-
-        @keyframes fall {
-            to {
-                transform: translateY(105vh) translateX(20px);
-            }
-        }
-
-        .container {
-            position: relative;
-            z-index: 10;
+        .hero {
             text-align: center;
-            padding: 20px;
-            max-width: 700px;
-            width: 100%;
-            perspective: 1200px;
+            margin-bottom: 60px;
+            animation: float 6s ease-in-out infinite;
         }
 
-        .card {
-            backdrop-filter: blur(20px) saturate(180%);
-            background: rgba(13, 17, 23, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 32px;
-            padding: 50px 30px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-            animation: fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-            transform-style: preserve-3d;
-            transition: transform 0.1s ease-out;
-            will-change: transform;
-            overflow: hidden;
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
         }
 
-        /* Rainbow Glow */
-        .card::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: var(--accent-rainbow);
-            background-size: 400% 400%;
-            z-index: -1;
-            border-radius: 33px;
-            opacity: 0.15;
-            animation: rainbowFlow 8s linear infinite;
-        }
-
-        @keyframes rainbowFlow {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .title {
-            font-size: 3.5rem;
+        .logo {
+            font-size: 4.5rem;
             font-weight: 900;
-            margin-bottom: 5px;
-            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -0.02em;
+            background-clip: text;
+            text-shadow: 0 0 60px rgba(192, 132, 252, 0.5);
+            margin-bottom: 10px;
+            letter-spacing: -0.03em;
         }
 
-        .subtitle {
-            font-size: 1.2rem;
+        .tagline {
+            font-size: 1.4rem;
             color: #94a3b8;
-            margin-bottom: 35px;
             font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.05em;
         }
 
-        .features {
+        .version-tag {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 24px;
+            background: linear-gradient(135deg, rgba(129, 140, 248, 0.2), rgba(192, 132, 252, 0.2));
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            border-radius: 100px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #a5b4fc;
+            backdrop-filter: blur(10px);
+        }
+
+        .features-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+            margin-bottom: 50px;
+        }
+
+        .feature-card {
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 28px 24px;
             text-align: left;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
 
-        .feature {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 14px 18px;
-            border-radius: 16px;
-            font-size: 0.95rem;
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transition: left 0.5s;
+        }
+
+        .feature-card:hover::before {
+            left: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(192, 132, 252, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(192, 132, 252, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 2.2rem;
+            margin-bottom: 16px;
+            display: block;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+        }
+
+        .feature-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .cta-section {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            color: #cbd5e1;
-        }
-
-        .feature:hover {
-            transform: scale(1.02) translateX(5px);
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(99, 102, 241, 0.3);
-            color: white;
-        }
-
-        .feature span {
-            font-size: 1.2rem;
-            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
-        }
-
-        .buttons {
-            display: flex;
-            gap: 15px;
+            gap: 20px;
+            flex-wrap: wrap;
             justify-content: center;
+            margin-bottom: 50px;
         }
 
         .btn {
-            padding: 16px 36px;
-            border-radius: 14px;
+            padding: 18px 40px;
+            border-radius: 16px;
             text-decoration: none;
             font-weight: 700;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 1rem;
+            gap: 12px;
+            border: none;
+            cursor: pointer;
         }
 
         .btn-primary {
-            background: #6366f1;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
-            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
         }
 
         .btn-primary:hover {
-            background: #4f46e5;
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 20px 35px -8px rgba(99, 102, 241, 0.6);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.5);
         }
 
         .btn-secondary {
             background: rgba(255, 255, 255, 0.05);
-            color: white;
+            color: #e2e8f0;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-4px);
-            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
         }
 
         .footer {
-            margin-top: 45px;
+            text-align: center;
+            color: #475569;
             font-size: 0.85rem;
-            color: rgba(148, 163, 184, 0.6);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+            max-width: 600px;
         }
 
-        .version-badge {
-            background: rgba(99, 102, 241, 0.1);
+        .footer a {
             color: #818cf8;
-            padding: 4px 12px;
-            border-radius: 100px;
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            font-weight: 600;
-            display: inline-block;
-            margin: 0 auto;
+            text-decoration: none;
         }
 
-        @media (max-width: 600px) {
-            .features {
-                grid-template-columns: 1fr;
-            }
+        .glitch {
+            position: relative;
+            animation: glitch 3s infinite;
+        }
 
-            .buttons {
-                flex-direction: column;
-            }
+        @keyframes glitch {
+            0%, 90%, 100% { transform: none; }
+            92% { transform: skewX(-2deg); }
+            94% { transform: skewX(2deg); }
+            96% { transform: none; }
+            98% { transform: skewX(-1deg); }
+        }
 
-            .title {
-                font-size: 2.5rem;
-            }
-
-            .card {
-                padding: 40px 20px;
-            }
+        @media (max-width: 768px) {
+            .logo { font-size: 3rem; }
+            .tagline { font-size: 1.1rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .cta-section { flex-direction: column; align-items: center; }
+            .btn { width: 100%; max-width: 300px; justify-content: center; }
         }
     </style>
 </head>
 
 <body>
-    <div class="aurora">
-        <div class="aurora-layer"></div>
-        <div class="aurora-layer"></div>
-    </div>
-    <div id="stars-container"></div>
-    <div id="snow-container"></div>
+    <canvas id="particles-js"></canvas>
 
     <div class="container">
-        <div class="card">
-            <h1 class="title">StarredHeltix</h1>
-            <p class="subtitle">Skyblock & Dungeons Update</p>
+        <div class="hero">
+            <h1 class="logo glitch">StarredHeltix</h1>
+            <p class="tagline">Мод для Heltix Skyblock</p>
+            <span class="version-tag">Версия 0.1.0 • Minecraft 1.21.10</span>
+        </div>
 
-            <div class="features">
-                <div class="feature"><span>🎁</span> Мега-ящики (/sh megachest)</div>
-                <div class="feature"><span>📊</span> HUD Навыков, Питомца и Данжей</div>
-                <div class="feature"><span>🎨</span> Полная кастомизация HUD</div>
-                <div class="feature"><span>✨</span> Совместимость с шейдерами</div>
-                <div class="feature"><span>📜</span> Логирование инвентаря</div>
-                <div class="feature"><span>🏛️</span> Помощник по Музею</div>
-                <div class="feature"><span>👁️</span> Подсветка зомби и пауков</div>
-                <div class="feature"><span>🛠️</span> Scoreboard Редактор + Slayer</div>
-                <div class="feature"><span>⚡</span> Beta-оптимизация игры</div>
-                <div class="feature"><span>🌲</span> Новые текстуры подземелий</div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <span class="feature-icon">&#127925;</span>
+                <h3 class="feature-title">Музыкальная система</h3>
+                <p class="feature-desc">Разная музыка в зависимости от локации игрока. Полноценный движок с категориями.</p>
             </div>
-
-            <div class="buttons">
-                <a href="https://github.com/Starlevka/StarredHeltix/releases/latest" class="btn btn-primary">
-                    <span>🚀</span> Скачать v0.0.13
-                </a>
-                <a href="https://github.com/Starlevka/StarredHeltix" class="btn btn-secondary">
-                    <span>📂</span> GitHub Source
-                </a>
+            <div class="feature-card">
+                <span class="feature-icon">&#128208;</span>
+                <h3 class="feature-title">Кастомные кнопки инвентаря</h3>
+                <p class="feature-desc">Настраиваемые кнопки в инвентаре и оверлей экипировки для удобного управления.</p>
             </div>
-
-            <div class="footer">
-                <div class="version-badge">v0.0.13 • MC 1.21.10 • Fabric</div>
-                <p>Разработано с ❤️ для комьюнити Heltix</p>
+            <div class="feature-card">
+                <span class="feature-icon">&#128736;</span>
+                <h3 class="feature-title">Фичи для подземелий</h3>
+                <p class="feature-desc">Решатель этажа 4, крестиков-ноликов, таймеры и счётчики для данжей.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">&#128170;</span>
+                <h3 class="feature-title">HUD скорости</h3>
+                <p class="feature-desc">HUD Rancher Boots для отображения скорости передвижения скилла.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">&#10024;</span>
+                <h3 class="feature-title">HUD прогресса зачарований</h3>
+                <p class="feature-desc">Отслеживание прогресса зачарований прямо на экране.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">&#128202;</span>
+                <h3 class="feature-title">Кастомный Scoreboard</h3>
+                <p class="feature-desc">Bank, CPS, BPS, Gems, Location, Ping и другие элементы настраиваемого скора.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">&#127981;</span>
+                <h3 class="feature-title">Помощник по Музею</h3>
+                <p class="feature-desc">Автоматическое отслеживание коллекции музея и подсказки.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">&#127873;</span>
+                <h3 class="feature-title">Мега-ящики NPC</h3>
+                <p class="feature-desc">Визуализация и рендеринг мега-ящиков для удобного просмотра.</p>
             </div>
         </div>
+
+        <div class="cta-section">
+            <a href="https://github.com/Starlevka/StarredHeltix/releases/latest" class="btn btn-primary">
+                <span>&#128640;</span> Скачать v0.1.0
+            </a>
+            <a href="https://github.com/Starlevka/StarredHeltix" class="btn btn-secondary">
+                <span>&#128193;</span> GitHub
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p>Разработано с любовью для <a href="https://heltix.net">Heltix</a> комьюнити</p>
+            <p style="margin-top: 8px;">Fabric Loader 0.18.4 • Kotlin</p>
+        </footer>
     </div>
 
     <script>
-        // Stars
-        function createStars() {
-            const container = document.getElementById('stars-container');
-            const count = 150;
-            for (let i = 0; i < count; i++) {
-                const star = document.createElement('div');
-                star.className = 'star';
-                const size = Math.random() * 2 + 1 + 'px';
-                star.style.width = size;
-                star.style.height = size;
-                star.style.left = Math.random() * 100 + '%';
-                star.style.top = Math.random() * 100 + '%';
-                star.style.setProperty('--duration', Math.random() * 3 + 2 + 's');
-                star.style.animationDelay = Math.random() * 5 + 's';
-                container.appendChild(star);
+        const canvas = document.getElementById('particles-js');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = Math.random() * 0.3 + 0.1;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.hue = Math.random() * 60 + 220;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.y > height) {
+                    this.y = 0;
+                    this.x = Math.random() * width;
+                }
+                if (this.x > width) this.x = 0;
+                if (this.x < 0) this.x = width;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${this.hue}, 80%, 70%, ${this.opacity})`;
+                ctx.fill();
             }
         }
 
-        // Snow
-        function createSnow() {
-            const container = document.getElementById('snow-container');
-            const count = 70;
+        function init() {
+            resize();
+            particles = [];
+            const count = Math.min(150, Math.floor((width * height) / 10000));
             for (let i = 0; i < count; i++) {
-                const snow = document.createElement('div');
-                snow.className = 'snowflake';
-                const size = Math.random() * 4 + 2 + 'px';
-                snow.style.width = size;
-                snow.style.height = size;
-                snow.style.left = Math.random() * 100 + '%';
-                snow.style.animationDuration = Math.random() * 3 + 4 + 's';
-                snow.style.animationDelay = Math.random() * 5 + 's';
-                snow.style.opacity = Math.random() * 0.6 + 0.2;
-                container.appendChild(snow);
+                particles.push(new Particle());
             }
         }
 
-        createStars();
-        createSnow();
+        function connectParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
 
-        // Interactive Card Tilt
-        const card = document.querySelector('.card');
-        const container = document.querySelector('.container');
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(192, 132, 252, ${0.15 * (1 - dist / 120)})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
 
-        container.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
 
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
 
-            const rotateX = (y - centerY) / 25;
-            const rotateY = (centerX - x) / 25;
+            connectParticles();
+            requestAnimationFrame(animate);
+        }
 
-            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-        });
+        window.addEventListener('resize', init);
+        init();
+        animate();
 
-        container.addEventListener('mouseleave', () => {
-            card.style.transform = 'rotateX(0deg) rotateY(0deg)';
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = `translateY(-8px) scale(1.02) rotateX(${Math.random() * 2 - 1}deg)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = '';
+            });
         });
     </script>
 </body>
-
->>>>>>> 452f6eeb681b9b40f065036329c29a50d6d2c728
 </html>

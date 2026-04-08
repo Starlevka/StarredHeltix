@@ -11,7 +11,6 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorText
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
-import set.starlev.secret.features.ai.AiPersona
 import set.starlev.utils.ConfigUtils.asStructuredText
 
 class SecretConfig : Config() {
@@ -35,13 +34,7 @@ class SecretConfig : Config() {
     @Category(name = "§e§lПриколы", desc = "· Секретные функции и пасхалки.")
     var funCategory = FunCategory()
 
-    @Expose
-    @Category(name = "§6§lИнтерфейс", desc = "· Настройка элементов интерфейса.")
-    var interfaceCategory = InterfaceCategory()
-
-    @Expose
-    @Category(name = "§b§lЧат-бот", desc = "· Настройки автоответчика и ИИ.")
-    var chatBot = ChatBotCategory()
+    // Раздел чат-бота был удалён: ИИ-функции больше недоступны.
 
     class MainCategory {
         @Expose
@@ -55,102 +48,7 @@ class SecretConfig : Config() {
         }
     }
 
-    class ChatBotCategory {
-        @Expose
-        @ConfigOption(name = "§lБот АвтоОтветчик", desc = "Включает бота, который отвечает на сообщения в чате.")
-        @ConfigEditorBoolean
-        var autoResponderEnabled: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "Авто-приветствия/прощания", desc = "Бот автоматически здоровается и прощается с игроками.")
-        @ConfigEditorBoolean
-        var greetingsEnabled: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "Режим §cПО ПОЛНОЙ!", desc = "Бот отвечает на ВСЕ вопросы в чате (с знаком ?), даже если они не адресованы ему.")
-        @ConfigEditorBoolean
-        var fullModeEnabled: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "Уведомления бота", desc = "Отправлять сообщения в чат при включении/выключении бота и его режима (outdated)")
-        @ConfigEditorBoolean
-        var sendStateMessages: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "§cМини-ИИ", desc = "Включает запоминание контекста и предпочтений игроков.")
-        @ConfigEditorBoolean
-        var aiEnabled: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "Активация ИИ", desc = "Введите для разблокировки систем ИИ и LM Studio.")
-        @ConfigEditorText
-        var aiActivationCode: String = ""
-
-        @ConfigOption(name = "Разблокировать", desc = "или /sh code starl <code>")
-        @ConfigEditorButton(buttonText = "Ввод")
-        val activateAi: Runnable = Runnable {
-            val h = aiActivationCode.trim().lowercase().hashCode()
-            if ((h xor 4919) == -1643579854) {
-                if (!isAiUnlocked) {
-                    isAiUnlocked = true
-                    SecretMenuManager.save()
-                    Minecraft.getInstance().player?.displayClientMessage(
-                        Component.literal("§d§l[Secret] §fСистема ИИ §aразблокирована§f!"),
-                        false
-                    )
-                }
-                aiActivationCode = ""
-            } else {
-                Minecraft.getInstance().player?.displayClientMessage(
-                    Component.literal("§d§l[Secret] §cНеверный код активации!"),
-                    false
-                )
-            }
-        }
-
-        @Expose
-        var isAiUnlocked: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "§aЛичность ИИ", desc = "Меняет характер и манеру общения бота.")
-        @ConfigEditorDropdown
-        var aiPersona: AiPersona = AiPersona.HELPFUL
-
-        @ConfigEditorInfoText
-        var lmStudioHeader: String = "§b§lLM Studio §7(Локальный ИИ)"
-
-        @Expose
-        @ConfigOption(name = "Использовать LM Studio", desc = "Включает использование локальной нейросети вместо встроенных алгоритмов.")
-        @ConfigEditorBoolean
-        var lmStudioEnabled: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "API URL", desc = "Адрес сервера LM Studio (обычно http://localhost:1234/v1).")
-        @ConfigEditorText
-        var apiUrl: String = "http://localhost:1234/v1"
-
-        @Expose
-        @ConfigOption(name = "Название модели", desc = "ID модели в LM Studio (можно оставить пустым для автоматического выбора).")
-        @ConfigEditorText
-        var modelId: String = ""
-
-        @Expose
-        @ConfigOption(name = "Режим работы", desc = "Гибридный: сначала ищет простые ответы в моде, если не находит — спрашивает LM Studio.\nТолько LM Studio: всегда спрашивает нейросеть.")
-        @ConfigEditorDropdown
-        var mode: LmMode = LmMode.HYBRID
-
-        @Expose
-        @ConfigOption(name = "Температура", desc = "Случайность ответов (0.0 - 2.0).")
-        @ConfigEditorText
-        var temperature: String = "0.7"
-    }
-
-    enum class LmMode(val displayName: String) {
-        HYBRID("Гибридный"),
-        ALWAYS_LM("Только LM Studio");
-        
-        override fun toString(): String = displayName
-    }
+    // Ранее здесь был класс ChatBotCategory и enum LmMode для ИИ-чат-бота.
 
     class ModerationCategory {
         @ConfigOption(name = "Команды модерации", desc = "Просмотреть список доступных party-команд для управления игроками.")
@@ -198,16 +96,6 @@ class SecretConfig : Config() {
         var customWeather: Boolean = false
 
         @Expose
-        @ConfigOption(name = "Эффект текста", desc = "Выберите визуальный эффект для указанного слова.")
-        @ConfigEditorDropdown
-        var customNameEffect: NameEffectType = NameEffectType.NONE
-
-        @Expose
-        @ConfigOption(name = "Слово для эффекта", desc = "Текст, к которому будет применяться эффект (например: Ivan).")
-        @ConfigEditorText
-        var customEffectTarget: String = ""
-
-        @Expose
         @ConfigOption(name = "§bТип погоды", desc = "Выберите желаемую погоду.")
         @ConfigEditorDropdown
         var weatherType: WeatherMode = WeatherMode.CLEAR
@@ -228,22 +116,71 @@ class SecretConfig : Config() {
         var megaChromeXEffect: Boolean = true
 
         @Expose
-        @ConfigOption(name = "Пасхалка #1", desc = "Что-то секретное... §lТы л")
-        @ConfigEditorInfoText
-        var easterEgg: String = "§kSECRET_DATA"
+        @ConfigOption(name = "§bВолновой maksimwain", desc = "Включает волновой эффект для ника или слова maksimwain.")
+        @ConfigEditorBoolean
+        var maksimwainEffect: Boolean = true
+
+        @Expose
+        @ConfigOption(name = "§dПереливающийся ridar", desc = "Включает переливающийся фиолетово-синий эффект для ника или слова ridar.")
+        @ConfigEditorBoolean
+        var ridarEffect: Boolean = true
+
+        @Expose
+        @ConfigOption(name = "§bПереливающийся zinanel0", desc = "Включает голубо-синий переливающийся эффект для ника или слова zinanel0.")
+        @ConfigEditorBoolean
+        var zinanel0Effect: Boolean = true
+
+        @Expose
+        @ConfigOption(name = "§7Серый Apostol312", desc = "Включает серый цвет для ника или слова Apostol312.")
+        @ConfigEditorBoolean
+        var apostol312Effect: Boolean = true
+
+        @Expose
+        @ConfigOption(name = "§1Волновой Timyr12", desc = "Включает синий волновой эффект для ника или слова Timyr12.")
+        @ConfigEditorBoolean
+        var timyr12Effect: Boolean = true
+
+        @Expose
+        @ConfigOption(name = "§5Волновой ZurGames", desc = "Включает голубо-фиолетовый волновой эффект для ника или слова ZurGames.")
+        @ConfigEditorBoolean
+        var zurGamesEffect: Boolean = true
+
+        @Expose
+        @ConfigOption(name = "§dВолновой NiKoMao", desc = "Включает розовый волновой эффект для ника или слова NiKoMao.")
+        @ConfigEditorBoolean
+        var niKoMaoEffect: Boolean = true
+
+        @Expose
+        @ConfigOption(name = "§6Meow Music Rune III", desc = "Воспроизводит завораживающие мяуканья при убийстве моба поблизости (радиус 16 блоков). Звук из Hypixel Skyblock.")
+        @ConfigEditorBoolean
+        var meowMusicRune: Boolean = false
+
+        @Expose
+        @ConfigOption(name = "§6Громкость Meow", desc = "Громкость звука Meow Music Rune (0.0 - 1.0).")
+        @ConfigEditorDropdown
+        var meowVolume: MeowVolume = MeowVolume.NORMAL
+
+        @Expose
+        @ConfigOption(name = "§6Повторяшкинс", desc = "С шансом 10% повторяет ваши сообщения в чате с забавными подписями (Лёва AI или Амёба AI).")
+        @ConfigEditorBoolean
+        var povtorayshkins: Boolean = false
     }
 
     class InterfaceCategory {
-        @Expose
-        @ConfigOption(name = "Мгновенные тайтлы", desc = "Убирает анимацию появления/затухания у крупных заголовков (Title).")
-        @ConfigEditorBoolean
-        var instantTitles: Boolean = true
     }
 
     enum class WeatherMode(val displayName: String) {
         CLEAR("Ясно"),
         RAIN("Дождь"),
         THUNDER("Гроза");
+        override fun toString(): String = displayName
+    }
+
+    enum class MeowVolume(val displayName: String, val value: Float) {
+        QUIET("Тихо (25%)", 0.25f),
+        NORMAL("Нормально (50%)", 0.5f),
+        LOUD("Громко (75%)", 0.75f),
+        VERY_LOUD("Очень громко (100%)", 1.0f);
         override fun toString(): String = displayName
     }
 

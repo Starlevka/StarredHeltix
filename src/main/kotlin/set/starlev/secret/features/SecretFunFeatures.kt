@@ -19,6 +19,13 @@ import java.util.regex.Pattern
 object SecretFunFeatures {
     private val starlevPattern = Pattern.compile("(?i)starlev")
     private val megaChromeXPattern = Pattern.compile("(?i)MegaChromeX")
+    private val maksimwainPattern = Pattern.compile("(?i)maksimwain")
+    private val ridarPattern = Pattern.compile("(?i)ridar")
+    private val zinanel0Pattern = Pattern.compile("(?i)zinanel0")
+    private val zurGamesPattern = Pattern.compile("(?i)ZurGames")
+    private val niKoMaoPattern = Pattern.compile("(?i)NiKoMao")
+    private val apostol312Pattern = Pattern.compile("(?i)apostol312")
+    private val timyr12Pattern = Pattern.compile("(?i)timyr12")
     
     private var cachedCustomPattern: Pair<String, Pattern>? = null
     
@@ -27,6 +34,22 @@ object SecretFunFeatures {
 
     private val STARLEV_COLOR = 0xFFFFF5 // Trigger ID 10
     private val MEGACHROME_COLOR = 0xAA00F3 // Dark Red (&4) + Fade+Shake (ID 12)
+    // maksimwain: более мягкий бирюзовый оттенок с волной (ID 2)
+    private val MAKSIMWAIN_COLOR = 0x33E0FF // (51, 224, 255)
+    // ridar: сине-фиолетовое переливание (ID 3)
+    private val RIDAR_COLOR = 0x6432C8 // (100, 50, 200)
+    // zinanel0: голубо-синее переливание (ID 3)
+    private val ZINANEL0_COLOR = 0x3296C8 // (50, 150, 200)
+    // ZurGames: голубо-фиолетовый, статичный, волна
+    private val ZURGAMES_COLOR = 0x8060FF // (128, 96, 255)
+    // NiKoMao: розовый, волна
+    private val NIKOMAO_COLOR = 0xFF80C0 // (255, 128, 192)
+    // apostol312: серый цвет (&7)
+    private val APOSTOL312_COLOR = 0xAAAAAA // (170, 170, 170)
+    // timyr12: синий оттенок с волной (ID 2)
+    private val TIMYR12_COLOR = 0x1E90FF // (30, 144, 255)
+    private val RAINBOW_TRIGGER_COLOR = 0xFFFFFC // ID 3
+    private val SPIN_TRIGGER_COLOR = 0xFFFFF7 // ID 8
     
     fun init() {
         // ...
@@ -58,50 +81,85 @@ object SecretFunFeatures {
         // Эффекты работают только если:
         // 1. Они включены в конфиге И включен глобальный форс (isForceEnabled)
         // 2. ИЛИ если передан параметр force=true (для таба/тайтлов, если нужно)
-        val isStarlevEnabled = isStarlevNameEffectEnabled() && (isForceEnabled.get() || force)
-        val isMegaChromeEnabled = isMegaChromeXEffectEnabled() && (isForceEnabled.get() || force)
-        val isCustomEnabled = isCustomNameEffectEnabled() && (isForceEnabled.get() || force)
+        // 3. ИЛИ если в тексте есть специальные триггер-коды (&z, &f и т.д.) - это обрабатывается в ChatFormatting
         
-        if (!isStarlevEnabled && !isMegaChromeEnabled && !isCustomEnabled) return component
+        // Но здесь мы обрабатываем специфические слова "Starlev", "MegaChromeX", "maksimwain", "ridar", "zinanel0" и "Apostol312"
+         val isStarlevEnabled = isStarlevNameEffectEnabled() && (isForceEnabled.get() || force)
+         val isMegaChromeEnabled = isMegaChromeXEffectEnabled() && (isForceEnabled.get() || force)
+         val isMaksimwainEnabled = isMaksimwainEffectEnabled() && (isForceEnabled.get() || force)
+         val isRidarEnabled = isRidarEffectEnabled() && (isForceEnabled.get() || force)
+         val isZinanel0Enabled = isZinanel0EffectEnabled() && (isForceEnabled.get() || force)
+         val isZurGamesEnabled = isZurGamesEffectEnabled() && (isForceEnabled.get() || force)
+         val isNiKoMaoEnabled = isNiKoMaoEffectEnabled() && (isForceEnabled.get() || force)
+         val isApostol312Enabled = isApostol312EffectEnabled() && (isForceEnabled.get() || force)
+         val isTimyr12Enabled = isTimyr12EffectEnabled() && (isForceEnabled.get() || force)
+         val isCustomEnabled = isCustomNameEffectEnabled() && (isForceEnabled.get() || force)
+        
+        val fullText = component.string
+        val style = component.style
+        val colorValue = style.color?.value
+        
+        // Если это уже цвет эффекта, не трогаем, но разрешаем ChatFormatting
+        if (colorValue == STARLEV_COLOR || colorValue == MEGACHROME_COLOR || 
+           colorValue == MAKSIMWAIN_COLOR || colorValue == RIDAR_COLOR || 
+           colorValue == ZINANEL0_COLOR || colorValue == ZURGAMES_COLOR || colorValue == NIKOMAO_COLOR ||
+           colorValue == APOSTOL312_COLOR || colorValue == TIMYR12_COLOR ||
+           colorValue == RAINBOW_TRIGGER_COLOR || colorValue == SPIN_TRIGGER_COLOR) {
+            return component
+        }
+        
+        // Если форса нет, но в тексте есть коды эффектов, то ChatFormatting сам справится.
+        if (!isStarlevEnabled && !isMegaChromeEnabled && !isMaksimwainEnabled && !isRidarEnabled && !isZinanel0Enabled && !isZurGamesEnabled && !isNiKoMaoEnabled && !isApostol312Enabled && !isTimyr12Enabled && !isCustomEnabled) {
+            // Проверка на наличие кодов эффектов в тексте, даже если форса нет
+            if (fullText.contains("§z") || fullText.contains("&z") || fullText.contains("§f") || fullText.contains("&f") || fullText.contains("§s") || fullText.contains("&s")) {
+                return set.starlev.features.chat.ChatFormatting.processComponent(component)
+            }
+            return component
+        }
         
         // Проверяем кэш (только если не форсируем)
-        val fullText = component.getString()
-        val styleHash = component.style.hashCode()
+        val styleHash = style.hashCode()
         
         if (!force) {
             val cached = CacheManager.getCachedTextEffect(fullText, styleHash)
             if (cached != null) return cached
         }
         
-        val style = component.style
-        val colorValue = style.color?.value
-        
-        // Если это уже цвет эффекта, не трогаем
-        if (colorValue == STARLEV_COLOR || colorValue == MEGACHROME_COLOR) return component
-        
         try {
             isProcessing.set(true)
             
             val hasStarlev = isStarlevEnabled && fullText.contains("Starlev", ignoreCase = true)
-            val hasMegaChrome = isMegaChromeEnabled && fullText.contains("MegaChromeX", ignoreCase = true)
-            
-            // Check for custom effect target presence
-            var hasCustom = false
-            if (isCustomEnabled) {
-                val target = getCustomEffectTarget()
-                if (target.isNotEmpty() && fullText.contains(target, ignoreCase = true)) {
-                    hasCustom = true
-                }
-            }
-            
-            if (!hasStarlev && !hasMegaChrome && !hasCustom) {
-                if (!force) CacheManager.cacheTextEffect(fullText, styleHash, component)
-                return component
+             val hasMegaChrome = isMegaChromeEnabled && fullText.contains("MegaChromeX", ignoreCase = true)
+             val hasMaksimwain = isMaksimwainEnabled && fullText.contains("maksimwain", ignoreCase = true)
+             val hasRidar = isRidarEnabled && fullText.contains("ridar", ignoreCase = true)
+             val hasZinanel0 = isZinanel0Enabled && fullText.contains("zinanel0", ignoreCase = true)
+             val hasZurGames = isZurGamesEnabled && fullText.contains("ZurGames", ignoreCase = true)
+             val hasNiKoMao = isNiKoMaoEnabled && fullText.contains("NiKoMao", ignoreCase = true)
+             val hasApostol312 = isApostol312Enabled && fullText.contains("Apostol312", ignoreCase = true)
+             val hasTimyr12 = isTimyr12Enabled && fullText.contains("Timyr12", ignoreCase = true)
+             
+             // Check for custom effect target presence
+             var hasCustom = false
+             if (isCustomEnabled) {
+                 val target = getCustomEffectTarget()
+                 if (target.isNotEmpty() && fullText.contains(target, ignoreCase = true)) {
+                     hasCustom = true
+                 }
+             }
+             
+             // Если нет специфических слов, но есть коды эффектов - обрабатываем их
+             if (!hasStarlev && !hasMegaChrome && !hasMaksimwain && !hasRidar && !hasZinanel0 && !hasZurGames && !hasNiKoMao && !hasApostol312 && !hasTimyr12 && !hasCustom) {
+                val formatted = set.starlev.features.chat.ChatFormatting.processComponent(component)
+                if (!force && formatted !== component) CacheManager.cacheTextEffect(fullText, styleHash, formatted)
+                return formatted
             }
             
             val modified = modifyComponent(component)
-            if (!force) CacheManager.cacheTextEffect(fullText, styleHash, modified)
-            return modified
+            // После обработки специфических слов, прогоняем через ChatFormatting для поддержки кодов в этом же компоненте
+            val finalModified = set.starlev.features.chat.ChatFormatting.processComponent(modified)
+            
+            if (!force) CacheManager.cacheTextEffect(fullText, styleHash, finalModified)
+            return finalModified
         } catch (e: Exception) {
             return component
         } finally {
@@ -111,14 +169,19 @@ object SecretFunFeatures {
 
     private fun modifyComponent(component: Component): Component {
         val color = component.style.color?.value
-        if (color == STARLEV_COLOR || color == MEGACHROME_COLOR) return component
+        if (color == STARLEV_COLOR || color == MEGACHROME_COLOR || 
+           color == RAINBOW_TRIGGER_COLOR || color == SPIN_TRIGGER_COLOR || color == ZINANEL0_COLOR || color == ZURGAMES_COLOR || color == NIKOMAO_COLOR || color == APOSTOL312_COLOR || color == TIMYR12_COLOR) return component
 
         val contents = component.contents
         var result: MutableComponent? = null
         
         if (contents is PlainTextContents) {
             val text = contents.text()
-            if (text.contains("Starlev", ignoreCase = true) || text.contains("MegaChromeX", ignoreCase = true)) {
+            if (text.contains("Starlev", ignoreCase = true) || text.contains("MegaChromeX", ignoreCase = true) || 
+               text.contains("maksimwain", ignoreCase = true) || text.contains("ridar", ignoreCase = true) || 
+               text.contains("zinanel0", ignoreCase = true) || text.contains("ZurGames", ignoreCase = true) ||
+               text.contains("NiKoMao", ignoreCase = true) || text.contains("Apostol312", ignoreCase = true) ||
+               text.contains("Timyr12", ignoreCase = true)) {
                 result = replaceInString(text, component.style)
             }
         } else if (contents is TranslatableContents) {
@@ -180,23 +243,15 @@ object SecretFunFeatures {
         
         val isStarlevEnabled = isStarlevNameEffectEnabled()
         val isMegaChromeEnabled = isMegaChromeXEffectEnabled()
+        val isMaksimwainEnabled = isMaksimwainEffectEnabled()
+        val isRidarEnabled = isRidarEffectEnabled()
+        val isZinanel0Enabled = isZinanel0EffectEnabled()
+        val isZurGamesEnabled = isZurGamesEffectEnabled()
+        val isNiKoMaoEnabled = isNiKoMaoEffectEnabled()
+        val isApostol312Enabled = isApostol312EffectEnabled()
 
-        // Custom Effect Logic
-        val customEffect = getCustomNameEffect()
-        val customTarget = getCustomEffectTarget()
-        
-        // Restriction: Starlev and MegaChromeX cannot use custom effects
-        // But we are targeting a specific word now, not necessarily the player name.
-        // Let's keep the restriction if the target IS the player name and they are restricted,
-        // OR if the target word itself is "Starlev" or "MegaChromeX" (reserved).
-        val currentPlayer = try { Minecraft.getInstance().user.name } catch (e: Exception) { "" }
-        
-        val isRestrictedTarget = customTarget.equals("Starlev", ignoreCase = true) || 
-                                 customTarget.equals("MegaChromeX", ignoreCase = true)
-                               
-        val isCustomEnabled = !isRestrictedTarget && 
-                              customEffect != SecretConfig.NameEffectType.NONE && 
-                              customTarget.isNotEmpty()
+        // Custom Effect Logic - удалено
+        val isCustomEnabled = false
 
         // Создаем список всех вхождений
         val matches = mutableListOf<MatchResult>()
@@ -215,22 +270,53 @@ object SecretFunFeatures {
             }
         }
         
-        if (isCustomEnabled) {
-            val pattern = getCustomPattern(customTarget)
-            val matcher = pattern.matcher(input)
-            val color = customEffect.colorValue ?: 0xFFFFFF
-            
+        if (isMaksimwainEnabled) {
+            val matcher = maksimwainPattern.matcher(input)
             while (matcher.find()) {
-                // Avoid overlapping with existing matches (priority to original names)
-                val start = matcher.start()
-                val end = matcher.end()
-                val overlaps = matches.any { m -> 
-                    (start >= m.start && start < m.end) || (end > m.start && end <= m.end) 
-                }
-                
-                if (!overlaps) {
-                    matches.add(MatchResult(start, end, matcher.group(), color))
-                }
+                matches.add(MatchResult(matcher.start(), matcher.end(), matcher.group(), MAKSIMWAIN_COLOR))
+            }
+        }
+        
+        if (isRidarEnabled) {
+            val matcher = ridarPattern.matcher(input)
+            while (matcher.find()) {
+                matches.add(MatchResult(matcher.start(), matcher.end(), matcher.group(), RIDAR_COLOR))
+            }
+        }
+        
+        if (isZinanel0Enabled) {
+           val matcher = zinanel0Pattern.matcher(input)
+           while (matcher.find()) {
+                 matches.add(MatchResult(matcher.start(), matcher.end(), matcher.group(), ZINANEL0_COLOR))
+           }
+        }
+
+        if (isZurGamesEnabled) {
+           val matcher = zurGamesPattern.matcher(input)
+           while (matcher.find()) {
+                 matches.add(MatchResult(matcher.start(), matcher.end(), matcher.group(), ZURGAMES_COLOR))
+           }
+        }
+
+        if (isNiKoMaoEnabled) {
+           val matcher = niKoMaoPattern.matcher(input)
+           while (matcher.find()) {
+                 matches.add(MatchResult(matcher.start(), matcher.end(), matcher.group(), NIKOMAO_COLOR))
+           }
+        }
+
+        if (isApostol312Enabled) {
+            val matcher = apostol312Pattern.matcher(input)
+            while (matcher.find()) {
+                matches.add(MatchResult(matcher.start(), matcher.end(), matcher.group(), APOSTOL312_COLOR))
+            }
+        }
+        
+        val isTimyr12Enabled = isTimyr12EffectEnabled()
+        if (isTimyr12Enabled) {
+            val matcher = timyr12Pattern.matcher(input)
+            while (matcher.find()) {
+                matches.add(MatchResult(matcher.start(), matcher.end(), matcher.group(), TIMYR12_COLOR))
             }
         }
         
@@ -292,31 +378,44 @@ object SecretFunFeatures {
         if (!SecretMenuManager.isConfigInitialized) return false
         return SecretMenuManager.secretConfig.funCategory.megaChromeXEffect
     }
-    
-    private fun isCustomNameEffectEnabled(): Boolean {
+
+    private fun isMaksimwainEffectEnabled(): Boolean {
         if (!SecretMenuManager.isConfigInitialized) return false
-        val effect = SecretMenuManager.secretConfig.funCategory.customNameEffect
-        val target = SecretMenuManager.secretConfig.funCategory.customEffectTarget
-        return effect != SecretConfig.NameEffectType.NONE && target.isNotEmpty()
+        return SecretMenuManager.secretConfig.funCategory.maksimwainEffect
     }
 
-    private fun getCustomNameEffect(): SecretConfig.NameEffectType {
-        if (!SecretMenuManager.isConfigInitialized) return SecretConfig.NameEffectType.NONE
-        return SecretMenuManager.secretConfig.funCategory.customNameEffect
+    private fun isRidarEffectEnabled(): Boolean {
+        if (!SecretMenuManager.isConfigInitialized) return false
+        return SecretMenuManager.secretConfig.funCategory.ridarEffect
     }
 
-    private fun getCustomEffectTarget(): String {
-        if (!SecretMenuManager.isConfigInitialized) return ""
-        return SecretMenuManager.secretConfig.funCategory.customEffectTarget
+    private fun isZinanel0EffectEnabled(): Boolean {
+       if (!SecretMenuManager.isConfigInitialized) return false
+       return SecretMenuManager.secretConfig.funCategory.zinanel0Effect
+    }
+
+    private fun isZurGamesEffectEnabled(): Boolean {
+       if (!SecretMenuManager.isConfigInitialized) return false
+       return SecretMenuManager.secretConfig.funCategory.zurGamesEffect
+    }
+
+    private fun isNiKoMaoEffectEnabled(): Boolean {
+       if (!SecretMenuManager.isConfigInitialized) return false
+       return SecretMenuManager.secretConfig.funCategory.niKoMaoEffect
+    }
+
+    private fun isApostol312EffectEnabled(): Boolean {
+        if (!SecretMenuManager.isConfigInitialized) return false
+        return SecretMenuManager.secretConfig.funCategory.apostol312Effect
+    }
+
+    private fun isTimyr12EffectEnabled(): Boolean {
+        if (!SecretMenuManager.isConfigInitialized) return false
+        return SecretMenuManager.secretConfig.funCategory.timyr12Effect
     }
     
-    private fun getCustomPattern(target: String): Pattern {
-        val cached = cachedCustomPattern
-        if (cached != null && cached.first == target) {
-            return cached.second
-        }
-        val pattern = Pattern.compile(Pattern.quote(target), Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
-        cachedCustomPattern = target to pattern
-        return pattern
-    }
+    private fun isCustomNameEffectEnabled(): Boolean = false
+    private fun getCustomNameEffect(): SecretConfig.NameEffectType = SecretConfig.NameEffectType.NONE
+    private fun getCustomEffectTarget(): String = ""
+    private fun getCustomPattern(target: String): Pattern = Pattern.compile("")
 }

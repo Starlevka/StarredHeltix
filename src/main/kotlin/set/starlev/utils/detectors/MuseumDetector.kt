@@ -58,7 +58,7 @@ object MuseumDetector {
         if (isInMuseumZone()) return true
 
         // 1. Проверка по заголовку контейнера
-        val containerTitle = normalize(screen.title.string)
+        val containerTitle = normalize(ContainerDetector.decodeTitle(screen.title.string))
         if (matchesMuseumKeyword(containerTitle)) return true
         
         // 2. Проверка по структуре предметов (запасной вариант)

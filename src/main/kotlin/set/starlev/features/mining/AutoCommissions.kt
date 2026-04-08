@@ -13,55 +13,39 @@ import kotlin.concurrent.schedule
 
 object AutoCommissions {
     private val mc = Minecraft.getInstance()
-    private var isWaitingForClick = false
+    var isWaitingForClick = false
+        private set
     private var pigeonSlot = -1
     private var lastTriggerTime = 0L
-    private var lastClickTime = 0L
     private val timer = Timer()
 
     fun init() {
         ChatEventsManager.registerIncoming { message ->
             if (StarredHeltix.feature.mining.commissions.autoCommissions) {
                 val cleanMessage = message.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "")
-                // "Commission Complete!" or "Поручение выполнено!"
                 if (cleanMessage.contains("Commission Complete!") || (cleanMessage.contains("Поручение выполнено!") && cleanMessage.contains("Короля"))) {
                     findPigeonAndTrigger()
                 }
             }
         }
+    }
 
-        ClientTickEvents.END_CLIENT_TICK.register { client ->
-            if (isWaitingForClick && mc.player != null && mc.screen == null) {
-                val currentTime = System.currentTimeMillis()
-                // 10 second window to use the pigeon
-                if (currentTime - lastTriggerTime > 10000) {
-                    isWaitingForClick = false
-                    return@register
-                }
+    /**
+    * Вызывается из MouseButtonMixin при ПКМ.
+    * Переключает слот на голубя и выполняет ПКМ для использования.
+    */
+    fun onRightClickWhileWaiting() {
+        if (!isWaitingForClick || mc.player == null) return
+        if (pigeonSlot == -1) return
 
-                if (mc.options.keyUse.isDown) {
-                    // 5 second cooldown between activations as requested
-                    if (currentTime - lastClickTime < 5000) return@register
-                    lastClickTime = currentTime
+        // Переключаемся на слот с голубем
+        mc.player?.inventory?.selected = pigeonSlot
+        isWaitingForClick = false
+        mc.gui.setTitle(Component.empty())
+        mc.gui.setSubtitle(Component.empty())
 
-                    mc.execute {
-                        if (pigeonSlot != -1) {
-                            val originalSlot = mc.player?.inventory?.selected ?: 0
-                            mc.player?.inventory?.selected = pigeonSlot
-                            mc.gameMode?.useItem(mc.player!!, InteractionHand.MAIN_HAND)
-                            
-                            // Optional: switch back to original slot after a short delay
-                            // For now, we keep it simple
-                            
-                            isWaitingForClick = false
-                            // Clear titles
-                            mc.gui.setTitle(Component.empty())
-                            mc.gui.setSubtitle(Component.empty())
-                        }
-                    }
-                }
-            }
-        }
+        // Выполняем ПКМ для использования голубя
+        mc.player?.let { mc.gameMode?.useItem(it, InteractionHand.MAIN_HAND) }
     }
 
     private fun findPigeonAndTrigger() {

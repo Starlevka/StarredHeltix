@@ -2,6 +2,9 @@
 
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:dynamictransforms.glsl>
+#moj_import <minecraft:globals.glsl>
+#moj_import <minecraft:text_data.glsl>
+#moj_import <minecraft:spin_effect.glsl>
 
 uniform sampler2D Sampler0;
 
@@ -17,59 +20,31 @@ in vec3 spinT3;
 in float spinFlip;
 in float spinScale;
 
+in float fshEffectID;
+in vec4 fshBaseColor;
+in vec2 fshCharUV;
+
 out vec4 fragColor;
 
 void main() {
     vec2 uv = texCoord0;
 
-    if (spinScale < 0.99 || spinFlip > 0.5) {
-        vec2 uvMin = vec2(100.0);
-        vec2 uvMax = vec2(-100.0);
-        
-        if (spinT0.z > 0.001) { vec2 p = spinT0.xy / spinT0.z; uvMin = min(uvMin, p); uvMax = max(uvMax, p); }
-        if (spinT1.z > 0.001) { vec2 p = spinT1.xy / spinT1.z; uvMin = min(uvMin, p); uvMax = max(uvMax, p); }
-        if (spinT2.z > 0.001) { vec2 p = spinT2.xy / spinT2.z; uvMin = min(uvMin, p); uvMax = max(uvMax, p); }
-        if (spinT3.z > 0.001) { vec2 p = spinT3.xy / spinT3.z; uvMin = min(uvMin, p); uvMax = max(uvMax, p); }
-
-        vec2 uvSize = uvMax - uvMin;
-
-        float minX = 1.0;
-        float maxX = 0.0;
-        bool hasInk = false;
-
-        float sampleY = 0.5;
-        for (float x = 0.0; x <= 1.0; x += 0.1) {
-            if (texture(Sampler0, uvMin + vec2(x, sampleY) * uvSize).a > 0.1) {
-                minX = min(minX, x);
-                maxX = max(maxX, x);
-                hasInk = true;
-            }
-        }
-
-        float inkCenter = 0.5;
-        if (hasInk) {
-            inkCenter = (minX + maxX) * 0.5;
-        }
-
-        float currentNormX = (texCoord0.x - uvMin.x) / max(uvSize.x, 0.000001);
-        
-        float distFromInkCenter = currentNormX - inkCenter;
-        float sampleDist = distFromInkCenter / spinScale;
-
-        if (spinFlip > 0.5) {
-            sampleDist = -sampleDist;
-        }
-
-        float targetNormX = inkCenter + sampleDist;
-
-        if (targetNormX < 0.0 || targetNormX > 1.0) {
-            discard;
-        }
-
-        uv.x = uvMin.x + targetNormX * uvSize.x;
-    }
+    // Apply spin effect
+    applySpinEffect(uv, spinT0, spinT1, spinT2, spinT3, spinScale, spinFlip, texCoord0, Sampler0);
 
     vec4 color = texture(Sampler0, uv) * vertexColor * ColorModulator;
+
+    int effectID = int(fshEffectID + 0.5);
+
+    // Create TextData struct for effect processing
+    TextData textData;
+    textData.uv = uv;
+    textData.spinT0 = spinT0;
+    textData.spinT1 = spinT1;
+    textData.spinT2 = spinT2;
+    textData.spinT3 = spinT3;
+    textData.color = color;
+    textData.vertexColor = vertexColor;
 
     if (color.a < 0.1) {
         discard;

@@ -73,6 +73,7 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
                 1 -> 38000L
                 2 -> 42000L
                 3 -> 50000L
+                4 -> 60900L
                 else -> 31000L
             }
             endTime = System.currentTimeMillis() + delay
@@ -144,11 +145,13 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
                 val config = StarredHeltix.feature.dungeons.bloodRoom
                 MC.player?.connection?.sendCommand("pc ${config.message}")
                 
-                // Показываем Title
-                MC.gui.setTitle(Component.literal("§cКровавая комната заполнена!"))
-                MC.gui.setTimes(10, 40, 10)
+                // Показываем Title (кастомизируемый)
+                MC.gui.setTitle(Component.literal(config.titleText))
+                MC.gui.setSubtitle(Component.literal(config.subtitleText))
+                MC.gui.setTimes(10, 100, 30)
                 
                 MC.soundManager.play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f))
+                MC.soundManager.play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 1.2f))
                 return
             }
             message = "Кровавая комната: ${String.format(java.util.Locale.ROOT, "%.1f", remaining / 1000.0)}с"

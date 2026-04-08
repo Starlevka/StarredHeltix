@@ -9,7 +9,7 @@ void processFadeEffect(inout vec4 vertex, float speed) {
     vec4 texColor = texelFetch(Sampler2, UV2 / 16, 0);
     
     vertexColor = Color * texColor;
-    vertexColor.a *= alpha;
+    vertexColor.a *= alpha; 
     
     finalize();
 }

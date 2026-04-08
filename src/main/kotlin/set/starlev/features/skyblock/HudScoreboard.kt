@@ -17,6 +17,9 @@ object HudScoreboard : HudElement("Scoreboard") {
     private val mc = Minecraft.getInstance()
     private var anchorSide: AnchorSide = AnchorSide.RIGHT
     private var anchoredX: Float? = null
+    private var anchoredScreenWidth: Int? = null
+    private var anchoredContentWidth: Float? = null
+    private var anchoredScale: Float? = null
     private var cachedLines: List<ScoreboardLine>? = null
 
     enum class AnchorSide {
@@ -118,6 +121,10 @@ object HudScoreboard : HudElement("Scoreboard") {
         private var loaded = false
         private val order = mutableListOf<String>()
 
+        // Запоминаем предыдущие строки для отслеживания изменений
+        private var previousLines: List<ScoreboardLine>? = null
+        private val contentToPosition = mutableMapOf<String, Int>() // content hash -> position index
+
         fun getOrder(): List<String> {
             ensureLoaded()
             return order.toList()
@@ -136,6 +143,89 @@ object HudScoreboard : HudElement("Scoreboard") {
                 Files.writeString(file, gson.toJson(order))
             } catch (_: Exception) {
             }
+        }
+
+        /**
+        * Отслеживает изменения строк и сохраняет правильный порядок.
+        * Если строка изменила содержимое, она остаётся на своём месте.
+        * Если строка новая, она вставляется рядом с похожей или в конец.
+        */
+        fun trackAndReorder(lines: List<ScoreboardLine>): List<ScoreboardLine> {
+            val prev = previousLines
+            if (prev == null) {
+                previousLines = lines.toList()
+                updateContentMap(lines)
+                return lines
+            }
+
+            // Строим карту: позиция -> строка из предыдущего кадра
+            val prevByPosition = prev.mapIndexed { idx, line -> idx to line }.toMap()
+            val usedKeys = mutableSetOf<String>()
+            val result = mutableListOf<ScoreboardLine>()
+
+            // Проходим по предыдущим позициям и ищем соответствующие строки
+            for ((prevIdx, prevLine) in prevByPosition) {
+                // 1. Ищем точное совпадение по ключу
+                val exactMatch = lines.find { it.key == prevLine.key && it.key !in usedKeys }
+                if (exactMatch != null) {
+                    result.add(exactMatch)
+                    usedKeys.add(exactMatch.key)
+                    continue
+                }
+
+                // 2. Ищем совпадение по алиасам
+                val aliasMatch = lines.find { line ->
+                    line.key !in usedKeys && prevLine.aliases.any { alias -> alias == line.key }
+                }
+                if (aliasMatch != null) {
+                    result.add(aliasMatch)
+                    usedKeys.add(aliasMatch.key)
+                    continue
+                }
+
+                // 3. Ищем по содержимому (текст без форматирования) - строка изменилась, но это та же позиция
+                val prevText = prevLine.component.string.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+                val contentMatch = lines.find { line ->
+                    if (line.key in usedKeys) return@find false
+                    val lineText = line.component.string.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+                    // Сравниваем начало строки (до чисел) - если совпадает, это та же строка с обновлённым значением
+                    val prevPrefix = prevText.takeWhile { !it.isDigit() }.trim()
+                    val linePrefix = lineText.takeWhile { !it.isDigit() }.trim()
+                    prevPrefix.isNotEmpty() && prevPrefix == linePrefix
+                }
+                if (contentMatch != null) {
+                    result.add(contentMatch)
+                    usedKeys.add(contentMatch.key)
+                    continue
+                }
+
+                // 4. Строка исчезла - пропускаем позицию
+            }
+
+            // Добавляем новые строки, которых не было раньше
+            for (line in lines) {
+                if (line.key !in usedKeys) {
+                    result.add(line)
+                    usedKeys.add(line.key)
+                }
+            }
+
+            previousLines = result.toList()
+            updateContentMap(result)
+            return result
+        }
+
+        private fun updateContentMap(lines: List<ScoreboardLine>) {
+            contentToPosition.clear()
+            lines.forEachIndexed { idx, line ->
+                val text = line.component.string.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+                contentToPosition[text] = idx
+            }
+        }
+
+        fun reset() {
+            previousLines = null
+            contentToPosition.clear()
         }
 
         private fun ensureLoaded() {
@@ -166,7 +256,9 @@ object HudScoreboard : HudElement("Scoreboard") {
     fun getEditorLines(): List<ScoreboardLine> {
         ensureInitialized()
         val includeSlayer = StarredHeltix.feature.slayer.slayerHud.slayerScoreboardHud
-        return buildOrderedLines(includeSlayer = includeSlayer)
+        val base = buildBaseLines(includeSlayer = includeSlayer)
+        if (base.isEmpty()) return emptyList()
+        return applyStoredOrder(base)
     }
 
     fun setEditorOrder(newOrder: List<String>) {
@@ -190,148 +282,30 @@ object HudScoreboard : HudElement("Scoreboard") {
         return (maxWidth + padding * 2) to (totalHeight + padding * 2)
     }
 
-    private fun buildCustomLines(includeSlayer: Boolean, anchor: CustomLineAnchor): List<ScoreboardLine> {
+    private fun buildCustomLines(includeSlayer: Boolean): List<ScoreboardLine> {
         val cfg = StarredHeltix.feature
-        val statsCfg = cfg.misc.general.hudStats
         val scoreboardCfg = cfg.skyblock.scoreboard
         val slayerEnabled = includeSlayer && cfg.slayer.slayerHud.slayerScoreboardHud
 
-        val enabledIds = buildSet {
-            if (slayerEnabled) add("slayer")
-            if (statsCfg.fps.scoreboard) add("fps")
-            if (statsCfg.ping.scoreboard) add("ping")
-            if (statsCfg.cps.scoreboard) add("cps")
-            if (statsCfg.bps.scoreboard) add("bps")
-            if (scoreboardCfg.gems.scoreboard) add("gems")
-            if (scoreboardCfg.bank.scoreboard) add("bank")
-            if (scoreboardCfg.cookie.scoreboard) add("cookie")
-        }
-        if (enabledIds.isEmpty()) return emptyList()
-
-        val layouts = CustomLinesLayoutStore.getAllLayouts()
-            .filter { enabledIds.contains(it.id) && it.anchor == anchor }
-            .sortedBy { it.order }
+        // Получаем порядок элементов из конфига (ConfigEditorDraggableList)
+        val orderedElements = scoreboardCfg.scoreboardEntries.toList()
 
         val out = mutableListOf<ScoreboardLine>()
-        for (l in layouts) {
-            when (l.id) {
-                "slayer" -> {
-                    val lines = set.starlev.features.combat.slayer.SlayerScoreboard.getExtraLines()
-                    for (i in lines.indices) {
-                        val processed = set.starlev.secret.features.SecretFunFeatures.processComponent(lines[i], true)
-                        out.add(ScoreboardLine("custom:slayer:$i", processed, centered = false))
-                    }
-                }
-                "fps" -> out.add(
-                    ScoreboardLine(
-                        "custom:fps",
-                        set.starlev.secret.features.SecretFunFeatures.processComponent(Component.literal("§7FPS: §a${mc.fps}"), true),
-                        centered = false
-                    )
-                )
-                "ping" -> {
-                    val ping = mc.player?.let { mc.connection?.getPlayerInfo(it.uuid)?.latency }
-                    out.add(
-                        ScoreboardLine(
-                            "custom:ping",
-                            set.starlev.secret.features.SecretFunFeatures.processComponent(Component.literal("§7Ping: §a${ping ?: 0}ms"), true),
-                            centered = false
-                        )
-                    )
-                }
-                "cps" -> out.add(
-                    ScoreboardLine(
-                        "custom:cps",
-                        set.starlev.secret.features.SecretFunFeatures.processComponent(Component.literal("§7CPS: §a${StatsTracker.getCps()}"), true),
-                        centered = false
-                    )
-                )
-                "bps" -> out.add(
-                    ScoreboardLine(
-                        "custom:bps",
-                        set.starlev.secret.features.SecretFunFeatures.processComponent(Component.literal("§7BPS: §a${StatsTracker.getBps()}"), true),
-                        centered = false
-                    )
-                )
-                "gems" -> {
-                    val gemsLine = set.starlev.utils.detectors.TabListDetector.getGemsLine()
-                    if (gemsLine != null) {
-                        out.add(
-                            ScoreboardLine(
-                                "custom:gems",
-                                set.starlev.secret.features.SecretFunFeatures.processComponent(Component.literal(gemsLine), true),
-                                centered = false
-                            )
-                        )
-                    }
-                }
-                "bank" -> {
-                    val bankLine = set.starlev.utils.detectors.TabListDetector.getBankLine()
-                    if (bankLine != null) {
-                        out.add(
-                            ScoreboardLine(
-                                "custom:bank",
-                                set.starlev.secret.features.SecretFunFeatures.processComponent(Component.literal(bankLine), true),
-                                centered = false
-                            )
-                        )
-                    }
-                }
-                "cookie" -> {
-                    // Проверяем статус в скорборде и в табе
-                    var status = set.starlev.utils.detectors.ScoreboardDetector.getCookieStatus()
-                    if (status == "Не активно!") {
-                        // Если в скорборде нет, может в табе? (хотя ScoreboardDetector уже мог искать, но проверим логику)
-                        // В ScoreboardDetector я реализовал поиск только в scoreboard lines
-                        // Так что здесь можно попробовать поискать через TabListDetector если там нет
-                        // Но пользователь сказал "находит строчку Магическое печенье и под ним строчку"
-                        // Если в TabListDetector тоже искать, то лучше это инкапсулировать
-                        // Пока используем то что есть, так как ScoreboardDetector теперь ищет в ScoreboardText
-                        // А в скриншоте это в Tab Footer.
-                        // Поэтому я должен был обновить ScoreboardDetector чтобы он искал везде, или добавить сюда логику
-                        // Но ScoreboardDetector.getScoreboardText() берет только сайдбар.
-                        // Так что мне нужен TabListDetector.getCookieStatus() если он там есть, или я его не добавил?
-                        // Я добавил getGems и getBank в TabListDetector.
-                        // Я добавил getCookieStatus в ScoreboardDetector.
-                        // Это ошибка логики. Скриншот показывает Tab List Footer.
-                        // Я должен добавить поиск в Tab List Footer тоже.
-                        
-                        // Ладно, я сейчас добавлю логику сюда, или лучше вынесу в утилиту.
-                        // Давайте вызовем TabListDetector.getCookieStatus() если я его добавлю.
-                        // Я НЕ добавил getCookieStatus в TabListDetector в предыдущем шаге.
-                        // Я добавил его в ScoreboardDetector.
-                        // И он ищет только в ScoreboardText.
-                        
-                        // Исправим: поищем в TabListDetector "Бонус печенья" вручную здесь или добавим метод.
-                        // Лучше добавить метод в TabListDetector, но я не хочу тратить еще один tool call на это если могу здесь.
-                        // Но здесь код чище если вызывать метод.
-                        
-                        // Я могу получить все линии таба здесь:
-                        val tabLines = set.starlev.utils.detectors.TabListDetector.getAllTabListLines()
-                        for (i in tabLines.indices) {
-                            val line = tabLines[i]
-                            if (line.contains("Бонус печенья") || line.contains("Cookie Buff")) {
-                                if (i + 1 < tabLines.size) {
-                                    val next = tabLines[i + 1]
-                                    if (next.any { it.isDigit() }) {
-                                        status = next
-                                        break
-                                    }
-                                }
-                            }
-                        }
-                    }
+        for (configElement in orderedElements) {
+            val element = configElement.element
+            if (!element.showWhen()) continue
+            if (!element.showIsland()) continue
 
-                    val color = if (status == "Не активно!") "§c" else "§d"
-                    out.add(
-                        ScoreboardLine(
-                            "custom:cookie",
-                            set.starlev.secret.features.SecretFunFeatures.processComponent(Component.literal("§7Печенье: $color$status"), true),
-                            centered = false
-                        )
-                    )
-                }
-            }
+            // Пропускаем Slayer, если он отключен
+            if (configElement == set.starlev.features.skyblock.scoreboard.ScoreboardConfigElement.SLAYER && !slayerEnabled) continue
+
+            val lines = element.getDisplay()
+            if (lines.isEmpty()) continue
+
+            // Фильтрация последовательных пустых строк
+            if (lines.first().component.string.isEmpty() && out.lastOrNull()?.component?.string?.isEmpty() == true) continue
+
+            out.addAll(lines)
         }
         return out
     }
@@ -339,7 +313,8 @@ object HudScoreboard : HudElement("Scoreboard") {
     private fun buildOrderedLines(includeSlayer: Boolean): List<ScoreboardLine> {
         val base = buildBaseLines(includeSlayer = includeSlayer)
         if (base.isEmpty()) return emptyList()
-        return applyStoredOrder(base)
+        val ordered = applyStoredOrder(base)
+        return ordered
     }
 
     private fun buildBaseLines(includeSlayer: Boolean): List<ScoreboardLine> {
@@ -391,16 +366,15 @@ object HudScoreboard : HudElement("Scoreboard") {
             if (!didInsertAfterXp) {
                 val text = lineComponent.string
                 if (text.contains("/") && (text.contains("опыта") || text.contains("XP") || text.contains("опыта Боя"))) {
-                    lines.addAll(buildCustomLines(includeSlayer = includeSlayer, anchor = CustomLineAnchor.AFTER_XP))
+                    lines.addAll(buildCustomLines(includeSlayer = includeSlayer))
                     didInsertAfterXp = true
                 }
             }
         }
 
         if (!didInsertAfterXp) {
-            lines.addAll(buildCustomLines(includeSlayer = includeSlayer, anchor = CustomLineAnchor.AFTER_XP))
+            lines.addAll(buildCustomLines(includeSlayer = includeSlayer))
         }
-        lines.addAll(buildCustomLines(includeSlayer = includeSlayer, anchor = CustomLineAnchor.BOTTOM))
         return lines
     }
 
@@ -417,15 +391,37 @@ object HudScoreboard : HudElement("Scoreboard") {
         }
         val used = HashSet<String>(base.size)
         val out = ArrayList<ScoreboardLine>(base.size)
-
         for (k in stored) {
             val line = anyKeyToLine[k] ?: continue
             if (used.add(line.key)) out.add(line)
         }
-        for (line in base) {
-            if (used.add(line.key)) out.add(line)
+        // Новые строки вставляем рядом с похожими, а не в конец
+        val newLines = base.filter { it.key !in used }
+        for (newLine in newLines) {
+            val insertIdx = findBestInsertPosition(out, newLine)
+            out.add(insertIdx, newLine)
+            used.add(newLine.key)
         }
         return out
+    }
+
+    /**
+        * Ищет лучшую позицию для вставки новой строки.
+        * Сравнивает начало текста (до чисел) с существующими строками.
+        */
+    private fun findBestInsertPosition(existing: List<ScoreboardLine>, newLine: ScoreboardLine): Int {
+        val newText = newLine.component.string.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+        val newPrefix = newText.takeWhile { !it.isDigit() }.trim()
+        if (newPrefix.isEmpty()) return existing.size
+
+        for (i in existing.indices) {
+            val existText = existing[i].component.string.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+            val existPrefix = existText.takeWhile { !it.isDigit() }.trim()
+            if (existPrefix.isNotEmpty() && existPrefix == newPrefix) {
+                return i + 1 // Вставляем сразу после похожей строки
+            }
+        }
+        return existing.size
     }
 
     override fun renderWithGraphics(graphics: net.minecraft.client.gui.GuiGraphics) {
@@ -443,41 +439,35 @@ object HudScoreboard : HudElement("Scoreboard") {
             val width = maxWidth + padding * 2
             val currentWidth = width * scale
             val screenWidth = mc.window.guiScaledWidth
+            val height = lines.size * 9 + padding * 2
+            val currentHeight = height * scale
+            val screenHeight = mc.window.guiScaledHeight
 
-            // 2. Умное якорение (Smart Anchoring)
-            if (isEditing) {
-                // В режиме редактирования определяем сторону якорения на основе текущего положения
-                val centerX = x + currentWidth / 2
-                anchorSide = if (centerX > screenWidth / 2) AnchorSide.RIGHT else AnchorSide.LEFT
+            // Если экран не инициализирован, ничего не меняем и не рендерим
+            if (screenWidth <= 0 || screenHeight <= 0) return
+
+            // Если мы в режиме редактирования, позволяем выходить за края (для удобства)
+            // Но если нет - удерживаем в пределах экрана, НЕ меняя оригинальные x/y навсегда
+            if (!isEditing) {
+                val maxX = (screenWidth - currentWidth).coerceAtLeast(0f).toInt()
+                val maxY = (screenHeight - currentHeight).coerceAtLeast(0f).toInt()
                 
-                // Обновляем точку якоря, чтобы она соответствовала текущему визуальному положению
-                anchoredX = if (anchorSide == AnchorSide.RIGHT) {
-                    x + currentWidth
-                } else {
-                    x.toFloat()
-                }
-            } else {
-                // В обычном режиме принудительно используем якорь
-                if (anchoredX == null) {
-                     val centerX = x + currentWidth / 2
-                     anchorSide = if (centerX > screenWidth / 2) AnchorSide.RIGHT else AnchorSide.LEFT
-                     anchoredX = if (anchorSide == AnchorSide.RIGHT) x + currentWidth else x.toFloat()
-                }
+                val oldX = x
+                val oldY = y
                 
-                val targetX = if (anchorSide == AnchorSide.RIGHT) {
-                    anchoredX!! - currentWidth
-                } else {
-                    anchoredX!!
-                }
+                // Временно меняем x/y для super.renderWithGraphics
+                x = x.coerceIn(0, maxX)
+                y = y.coerceIn(0, maxY)
                 
-                // Плавно обновляем x, чтобы избежать дрожания
-                if (abs(x - targetX) > 1) {
-                    x = targetX.toInt()
-                }
+                super.renderWithGraphics(graphics)
+                
+                // Возвращаем как было, чтобы не портить сохраненную позицию
+                x = oldX
+                y = oldY
+                return
             }
         }
 
-        // 3. Стандартный рендер (уже с обновленным x)
         super.renderWithGraphics(graphics)
     }
 
@@ -516,16 +506,20 @@ object HudScoreboard : HudElement("Scoreboard") {
     override fun getHeight(): Int = calculateSize(true).second
 
     override fun getDefaultX(): Int {
-        val baseWidth = calculateSize(false).first
-        return mc.window.guiScaledWidth - baseWidth - 3
+        val screenWidth = mc.window.guiScaledWidth
+        if (screenWidth <= 0) return 500 // Разумное дефолтное значение если окно еще не готово
+        val baseSize = calculateSize(false)
+        return screenWidth - baseSize.first - 3
     }
 
     override fun getDefaultY(): Int {
+        val screenHeight = mc.window.guiScaledHeight
+        if (screenHeight <= 0) return 100
         val scoreboard = mc.level?.scoreboard
         val objective = scoreboard?.getDisplayObjective(DisplaySlot.SIDEBAR)
         val scoresCount = if (objective != null) scoreboard.listPlayerScores(objective).size else 15
         val totalHeight = (scoresCount + 1) * 9
-        val startY = mc.window.guiScaledHeight / 2 + totalHeight / 3
+        val startY = screenHeight / 2 + totalHeight / 3
         return startY - totalHeight - 1
     }
 

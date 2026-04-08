@@ -3,7 +3,6 @@ package set.starlev.config.categories
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
-import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
@@ -14,14 +13,9 @@ class OptimizationConfig {
     var visualOptimizations = VisualOptimizationsConfig()
 
     @Expose
-    @ConfigOption(name = "§bКэширование", desc = "§b(БЕТА) Настройки внутреннего кэширования для ускорения работы мода.")
+    @ConfigOption(name = "Рендер оптимизации", desc = "Оптимизации рендера: куллинг, чанки, погода.")
     @Accordion
-    var performance = PerformanceConfig()
-
-    @Expose
-    @ConfigOption(name = "Оптимизация сущностей", desc = "Настройки оптимизации ArmorStands и Display Entities.")
-    @Accordion
-    var entityOptimization = EntityOptimizationConfig()
+    var renderOptimizations = RenderOptimizationsConfig()
 
     class VisualOptimizationsConfig {
         @Expose
@@ -40,72 +34,45 @@ class OptimizationConfig {
         var hideStatusEffects = false
 
         @Expose
-        @ConfigOption(name = "Скрыть свечение", desc = "Отключает эффект свечения у всех сущностей для повышения FPS.")
-        @ConfigEditorBoolean
-        var disableGlowing = false
-
-        @Expose
         @ConfigOption(name = "Fullbright", desc = "Режим полной яркости.")
         @ConfigEditorBoolean
         var fullbright = false
 
         @Expose
-        @ConfigOption(name = "Скрыть частицы ломания блоков", desc = "Убирает частицы, которые появляются при ломании блоков.")
+        @ConfigOption(name = "Убрать ночное зрение", desc = "Отключает эффект ночного зрения при включенном Fullbright.")
+        @ConfigEditorBoolean
+        var fullbrightRemoveNightVision = false
+
+        @Expose
+        @ConfigOption(name = "Скрыть частицы блоков", desc = "Убирает частицы, которые появляются при ломании блоков.")
         @ConfigEditorBoolean
         var disableBlockBreakingParticles = false
     }
 
-    class PerformanceConfig {
+    class RenderOptimizationsConfig {
         @Expose
-        @ConfigOption(name = "Scoreboard", desc = "Кэширует текст скорборда для уменьшения нагрузки на CPU.")
+        @ConfigOption(name = "Куллинг блок-энтити", desc = "Не рендерит block entity (сундуки, печи и т.д.) за пределами видимости камеры.")
         @ConfigEditorBoolean
-        var cacheScoreboard = true
+        var blockEntityCulling = true
 
         @Expose
-        @ConfigOption(name = "Лог предметов", desc = "Кэширует описание предметов. Помогает при большом количестве предметов в инвентаре.")
+        @ConfigOption(name = "Куллинг энтити", desc = "Не рендерит сущности (мобы, игроки, предметы) за пределами видимости камеры.")
         @ConfigEditorBoolean
-        var cacheItemLore = true
+        var entityCulling = true
 
         @Expose
-        @ConfigOption(name = "Кэщ", desc = "Ускоряет работу детекторов чата и других функций. §cДай бог.")
+        @ConfigOption(name = "Куллинг партиклов", desc = "Не рендерит частицы за пределами видимости камеры.")
         @ConfigEditorBoolean
-        var cacheRegex = true
-    }
+        var particleCulling = true
 
-    class EntityOptimizationConfig {
         @Expose
-        @ConfigOption(name = "Culling стоек брони", desc = "Не рендерит стойки для брони, которые находятся слишком далеко.")
+        @ConfigOption(name = "Приоритеты чанков", desc = "Понижает приоритет потоков загрузки чанков для снижения нагрузки на CPU.")
         @ConfigEditorBoolean
-        var cullArmorStands = false
+        var chunkOptimization = true
 
         @Expose
-        @ConfigOption(name = "Дистанция стоек брони", desc = "Максимальное расстояние для рендеринга ArmorStands.")
-        @ConfigEditorSlider(minValue = 8f, maxValue = 64f, minStep = 1f)
-        var armorStandDistance = 32f
-
-        @Expose
-        @ConfigOption(name = "Оптимизация голограмм", desc = "Отключает лишние вычисления для статических стоек для брони. Не очень помогает.")
+        @ConfigOption(name = "Оптимизация погоды", desc = "Отключает рендер дождя и снега для повышения FPS.")
         @ConfigEditorBoolean
-        var optimizeHolograms = false
-
-        @Expose
-        @ConfigOption(name = "Culling дисплей-мобов", desc = "Оптимизирует рендеринг Block Display и Text Display.")
-        @ConfigEditorBoolean
-        var cullDisplayEntities = false
-
-        @Expose
-        @ConfigOption(name = "Дистанция дисплей-мобов", desc = "Максимальное расстояние для рендеринга Display сущностей.")
-        @ConfigEditorSlider(minValue = 16f, maxValue = 128f, minStep = 1f)
-        var displayEntityDistance = 64f
-
-        @Expose
-        @ConfigOption(name = "Culling частиц", desc = "Не рендерит частицы, которые находится слишком далеко.")
-        @ConfigEditorBoolean
-        var optimizeParticles = false
-
-        @Expose
-        @ConfigOption(name = "Дистанция частиц", desc = "Максимальное расстояние для отрисовки частиц.")
-        @ConfigEditorSlider(minValue = 4f, maxValue = 64f, minStep = 1f)
-        var particleDistance = 24f
+        var weatherOptimization = false
     }
 }

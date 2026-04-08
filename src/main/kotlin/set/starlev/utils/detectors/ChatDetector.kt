@@ -1,7 +1,7 @@
 package set.starlev.utils.detectors
 
 import net.minecraft.client.Minecraft
-import set.starlev.mixin.accessors.ChatComponentAccessor
+import set.starlev.injections.accessors.ChatComponentAccessor
 import set.starlev.utils.CacheManager
 
 object ChatDetector {

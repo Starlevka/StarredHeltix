@@ -27,7 +27,33 @@ object DungeonDetector {
         
         // 1. Проверка по ID измерения
         if (dimId.startsWith("minecraft:dungeon_") || dimId.contains("dungeon", ignoreCase = true)) return true
+
+        val title = ScoreboardDetector.getScoreboardTitle()
+        if (looksLikeDungeonText(title)) return true
+
+        val lines = ScoreboardDetector.getScoreboardText()
+        for (line in lines) {
+            if (looksLikeDungeonText(line)) return true
+        }
         
         return false
+    }
+
+    private fun looksLikeDungeonText(text: String): Boolean {
+        if (text.isBlank()) return false
+        val s = text.lowercase()
+        return s.contains("подзем", ignoreCase = true) ||
+            s.contains("данж", ignoreCase = true) ||
+            s.contains("dungeon", ignoreCase = true) ||
+            s.contains("catacomb", ignoreCase = true) ||
+            s.contains("катакомб", ignoreCase = true) ||
+            s.contains("зачищено", ignoreCase = true) ||
+            s.contains("cleared", ignoreCase = true) ||
+            s.contains("boss", ignoreCase = true) ||
+            s.contains("босс", ignoreCase = true) ||
+            s.contains("очки", ignoreCase = true) ||
+            s.contains("баллы", ignoreCase = true) ||
+            s.contains("счёт", ignoreCase = true) ||
+            s.contains("прогресс", ignoreCase = true)
     }
 }

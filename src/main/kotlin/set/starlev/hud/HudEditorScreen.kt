@@ -169,6 +169,9 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
         return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL)
     }
 
+    override fun renderBackground(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
+    }
+
     override fun onClose() {
         HudManager.isEditMode = false
         HudManager.saveAllLayouts()
@@ -341,6 +344,9 @@ class ScoreboardEditorScreen(private val parent: Screen? = null) : Screen(Compon
         draggingKey = null
         dragInsertIndex = -1
         return true
+    }
+
+    override fun renderBackground(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
     }
 
     override fun onClose() {

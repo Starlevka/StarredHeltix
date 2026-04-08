@@ -18,6 +18,10 @@ object SkillXpDetector {
     private val listeners = mutableListOf<(SkillXpInfo) -> Unit>()
     private var lastActionBarText = ""
     private var lastInfo: SkillXpInfo? = null
+    private var lastSkill: String? = null
+
+    fun getLastSkill(): String? = lastSkill
+    fun getLastInfo(): SkillXpInfo? = lastInfo
 
     data class SkillXpInfo(
         val gained: Double,
@@ -100,6 +104,7 @@ object SkillXpDetector {
             val info = detectFromText(actionBarText)
             if (info != null && !info.isSameAs(lastInfo)) {
                 lastInfo = info
+                lastSkill = info.skill
                 listeners.forEach { it(info) }
             }
         }

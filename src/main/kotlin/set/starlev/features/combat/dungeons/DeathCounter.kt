@@ -16,13 +16,14 @@ object DeathCounter {
     private var lastTitle = ""
     private var lastActionBar = ""
 
+    private val formattingRegex = set.starlev.utils.CacheManager.getRegex("(?i)§[0-9a-fk-orlnmxz]")
     private val DEATH_PATTERN = java.util.regex.Pattern.compile("^☠\\s+(?:.*\\s+)?([a-zA-Z0-9_]{3,16})\\s+[а-яА-ЯёЁ]")
 
     fun init() {
         ChatEventsManager.registerIncoming { message ->
             if (config.deathDetect) {
                 // Ищем символ черепка, ник игрока и фразу "был убит"
-                val cleanMessage = message.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+                val cleanMessage = message.replace(formattingRegex, "").trim()
                 val matcher = DEATH_PATTERN.matcher(cleanMessage)
                 if (matcher.find()) {
                     trigger()
@@ -35,7 +36,7 @@ object DeathCounter {
             
             val currentTitle = TitleDetector.getTitleText()
             if (currentTitle != lastTitle) {
-                val cleanTitle = currentTitle.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+                val cleanTitle = currentTitle.replace(formattingRegex, "").trim()
                 val matcher = DEATH_PATTERN.matcher(cleanTitle)
                 if (matcher.find()) {
                     trigger()
@@ -45,7 +46,7 @@ object DeathCounter {
 
             val currentActionBar = ActionBarDetector.getActionBarText()
             if (currentActionBar != lastActionBar) {
-                val cleanActionBar = currentActionBar.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+                val cleanActionBar = currentActionBar.replace(formattingRegex, "").trim()
                 val matcher = DEATH_PATTERN.matcher(cleanActionBar)
                 if (matcher.find()) {
                     trigger()

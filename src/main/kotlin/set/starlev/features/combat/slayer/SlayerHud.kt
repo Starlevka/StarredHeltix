@@ -3,28 +3,20 @@ package set.starlev.features.combat.slayer
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
+import set.starlev.features.chat.ChatEventsManager
 import set.starlev.hud.HudElement
 import set.starlev.utils.ColorUtils
-import set.starlev.utils.detectors.ActionBarDetector
 import set.starlev.utils.detectors.EntityDeathDetector
 import set.starlev.utils.detectors.ScoreboardDetector
-import set.starlev.utils.detectors.SkillXpDetector
 import set.starlev.utils.PersonalBestManager
 import java.util.Locale
-import kotlin.math.ceil
 
 object SlayerHud : HudElement("SlayerHud") {
     private val mc = Minecraft.getInstance()
     private var slayerInfo: List<String> = emptyList()
     private var lastUpdate = 0L
 
-    // Состояние для расчета мобов
-    private var lastCombatXpPerMob = 50.0 // Дефолтное значение
-    private var isFirstKill = true
-    private var lastCurrentXp = 0.0
-    private var lastTargetXp = 0.0
-    private var mobsRemaining = -1
-    private var lastWarningMobs = -1
+    // Таймер босса
     
     // Тип текущего слеера для фильтрации мобов
     private var currentSlayerType = ""
@@ -34,6 +26,7 @@ object SlayerHud : HudElement("SlayerHud") {
     private var bossStartTime = 0L
     private var isBossTimerRunning = false
     private var lastBossPhase = ""
+    private var detectedMiniBosses = mutableSetOf<Int>()
 
     // Данные для рендеринга
     private var progressValue = 0f
@@ -47,23 +40,19 @@ object SlayerHud : HudElement("SlayerHud") {
             }
         }
         
-        SkillXpDetector.registerListener { info ->
-            if (info.skill.contains("Бой", ignoreCase = true) && currentSlayerType.isNotEmpty()) {
-                if (isFirstKill) {
-                    lastCombatXpPerMob = info.gained
-                    isFirstKill = false
-                } else {
-                    if (info.gained < 700.0) {
-                        lastCombatXpPerMob = info.gained
-                    }
-                }
-                lastCurrentXp = info.current
-                lastTargetXp = info.target
-            }
         }
-    }
 
     fun init() {
+        ChatEventsManager.registerIncoming { message ->
+            val clean = message.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+            if (clean.contains("МИНИБОСС") || clean.contains("МИНИ-БОСС") || clean.uppercase().contains("MINIBOSS")) {
+                mc.execute {
+                    mc.gui.setTitle(Component.literal("§d§lМИНИБОСС!"))
+                    mc.gui.setSubtitle(Component.literal("§fВ чате замечен: §e$clean"))
+                    mc.gui.setTimes(10, 100, 30)
+                }
+            }
+        }
     }
 
     private fun getHudTextColor(): Int {
@@ -86,9 +75,7 @@ object SlayerHud : HudElement("SlayerHud") {
         val lines = mutableListOf<String>()
         
         if (isEditing && slayerInfo.isEmpty()) {
-            lines.add("§fОсталось мобов: §b~40")
-            progressValue = 0.5f
-            progressText = "50,000 / 100,000"
+            lines.add("§c☠ Босс появился!")
         } else {
             slayerInfo.forEachIndexed { index, line ->
                 if (index > 0) lines.add(line) // Пропускаем заголовок, он пойдет в drawBackground
@@ -128,17 +115,6 @@ object SlayerHud : HudElement("SlayerHud") {
         if (currentTime - lastUpdate < 100) return 
         lastUpdate = currentTime
 
-        val actionBar = ActionBarDetector.getActionBarText()
-        val skillInfo = SkillXpDetector.detectFromText(actionBar)
-        
-        if (skillInfo != null && skillInfo.skill.contains("Бой", ignoreCase = true)) {
-            if (skillInfo.gained < 700.0) {
-                lastCombatXpPerMob = skillInfo.gained
-            }
-            lastCurrentXp = skillInfo.current
-            lastTargetXp = skillInfo.target
-        }
-
         val scoreboard = ScoreboardDetector.getScoreboardText()
         val result = mutableListOf<String>()
         
@@ -169,11 +145,10 @@ object SlayerHud : HudElement("SlayerHud") {
         } else {
             currentSlayerType = ""
             currentSlayerTier = ""
-            isFirstKill = true
             progressValue = 0f
             progressText = ""
             isBossTimerRunning = false
-            slayerInfo = emptyList() // Явно очищаем
+            slayerInfo = emptyList()
             return
         }    
 
@@ -185,14 +160,11 @@ object SlayerHud : HudElement("SlayerHud") {
             if (hasKillBossMsg && !isBossTimerRunning) {
                 bossStartTime = System.currentTimeMillis()
                 isBossTimerRunning = true
-            } else if (hasBossKilledMsg && isBossTimerRunning) {
-                handleBossKill()
-                isBossTimerRunning = false
-            } else if (!hasKillBossMsg && !hasBossKilledMsg && isBossTimerRunning) {
-                // Если нет сообщения об убийстве или активном боссе, но таймер идет - проверяем, есть ли вообще слеер
-                if (!foundSlayer) {
-                    isBossTimerRunning = false
+            } else if ((hasBossKilledMsg || !hasKillBossMsg) && isBossTimerRunning) {
+                if (hasBossKilledMsg) {
+                    handleBossKill()
                 }
+                isBossTimerRunning = false
             }
             
             if (isBossTimerRunning) {
@@ -203,44 +175,65 @@ object SlayerHud : HudElement("SlayerHud") {
             }
         }
 
-        val progressLine = scoreboard.find { it.contains("/") && (it.contains("опыта", ignoreCase = true) || it.contains("XP", ignoreCase = true)) }
-        
-        if (progressLine != null) {
-            val cleanProgress = progressLine.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").replace(",", "")
-            val xpMatch = Regex("(\\d+)/(\\d+)").find(cleanProgress)
-            
-            if (xpMatch != null) {
-                val currentXp = xpMatch.groupValues[1].toDouble()
-                val targetXp = xpMatch.groupValues[2].toDouble()
-                
-                progressValue = (currentXp / targetXp).toFloat()
-                progressText = "${String.format("%,.0f", currentXp)} / ${String.format("%,.0f", targetXp)}"
-                
-                val remaining = targetXp - currentXp
-                if (remaining > 0) {
-                    val mobs = ceil(remaining / lastCombatXpPerMob).toInt()
-                    result.add("§cМоб: §c~$mobs §7(по §e${lastCombatXpPerMob.toInt()}§7)")
-                    
-                    if (mobs in 1..4 && mobs != lastWarningMobs) {
-                        sendBossWarning(mobs)
-                        lastWarningMobs = mobs
-                    }
-                } else {
-                    result.add("§a✔ Босс готов!")
-                    lastWarningMobs = -1
-                }
-            }
-        } else if (scoreboard.any { it.contains("spawned", ignoreCase = true) || it.contains("появился", ignoreCase = true) }) {
+        if (scoreboard.any { it.contains("spawned", ignoreCase = true) || it.contains("появился", ignoreCase = true) }) {
             result.add("§c☠ Босс появился!")
-            lastWarningMobs = -1
             progressValue = 1f
         }
+        
+        // Детект мини-боссов
+        detectMiniBosses()
         
         // Если остался только заголовок, значит полезной инфы нет - скрываем худ
         slayerInfo = if (result.size > 1) result else emptyList()
     }
 
+    private fun detectMiniBosses() {
+        if (currentSlayerType.isEmpty()) {
+            detectedMiniBosses.clear()
+            return
+        }
+
+        val level = mc.level ?: return
+        val miniBossNames = listOf(
+            "Revenant Sycophant", "Revenant Champion", "Deformed Revenant",
+            "Tarantula Vermin", "Tarantula Beast", "Mutant Tarantula",
+            "Pack Spirit", "Howling Spirit",
+            "Slayer Mini-Boss", "Мститель-прислужник", "Мститель-чемпион", "Деформированный мститель",
+            "Тарантул-вредитель", "Тарантул-зверь", "Мутант-тарантул",
+            "Дух стаи", "Воющий дух"
+        )
+
+        for (entity in level.entitiesForRendering()) {
+            if (entity is net.minecraft.world.entity.LivingEntity && !detectedMiniBosses.contains(entity.id)) {
+                val name = entity.customName?.string ?: ""
+                val cleanName = name.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+                
+                if (miniBossNames.any { cleanName.contains(it, ignoreCase = true) }) {
+                    detectedMiniBosses.add(entity.id)
+                    mc.execute {
+                        mc.player?.displayClientMessage(
+                            Component.literal("§d§l[StarredHeltix] §fПоявился §e§lМИНИ-БОСС §f- §6$cleanName!"),
+                            false
+                        )
+                        // Добавляем Title
+                        mc.gui.setTitle(Component.literal("§d§lМИНИБОСС!"))
+                        mc.gui.setSubtitle(Component.literal("§fРядом замечен §e$cleanName"))
+                        mc.gui.setTimes(10, 100, 30)
+                        mc.soundManager.play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT, 1.2f))
+                    }
+                }
+            }
+        }
+        
+        // Очистка старых ID (которых больше нет в мире)
+        if (detectedMiniBosses.size > 20) {
+            val currentIds = level.entitiesForRendering().map { it.id }.toSet()
+            detectedMiniBosses.retainAll { currentIds.contains(it) }
+        }
+    }
+
     private fun handleBossKill() {
+        detectedMiniBosses.clear()
         val durationMs = System.currentTimeMillis() - bossStartTime
         val durationSec = durationMs / 1000.0
         val localeUS = Locale.US
@@ -268,20 +261,12 @@ object SlayerHud : HudElement("SlayerHud") {
         }
     }
 
-    private fun sendBossWarning(mobs: Int) {
-        mc.execute {
-            mc.gui.setTimes(10, 40, 10)
-            mc.gui.setTitle(Component.literal("§6§lВнимание!"))
-            mc.gui.setSubtitle(Component.literal("§eДо босса осталось мобов: §c$mobs"))
-        }
-    }
-
     override fun getWidth(): Int {
         val title = if (isEditing && slayerInfo.isEmpty()) "Zombie T4" else if (currentSlayerType.isNotEmpty()) "$currentSlayerType $currentSlayerTier" else "Slayer"
         val titleWidth = mc.font.width("§lSLAYER §7($title)")
         
         val lines = if (isEditing && slayerInfo.isEmpty()) {
-            listOf("§fОсталось мобов: §b~40")
+            listOf("§c☠ Босс появился!")
         } else {
             slayerInfo.drop(1)
         }

@@ -46,11 +46,13 @@ object Waypoints {
     private val waypointPattern = Pattern.compile(
         "(?i)(?:\\bwaypoint\\b|\\bвейпоинт\\b|\\bметка\\b)\\s*(?::\\s*)?(?:\\[?(temp|temporary|врем(?:енная|енно)?)\\]?)?\\s*([^()\\[\\]{}]{1,40})?\\s*\\(?(?:x\\s*[:=]\\s*)?(-?\\d{1,6})\\s*[,; ]\\s*(?:y\\s*[:=]\\s*)?(-?\\d{1,6})\\s*[,; ]\\s*(?:z\\s*[:=]\\s*)?(-?\\d{1,6})\\)?"
     )
-    private val shCoordsPattern = Pattern.compile(
-        "(?i)starredheltix\\s*x\\s*:\\s*(-?\\d{1,7}(?:\\.\\d+)?)\\s*y\\s*:\\s*(-?\\d{1,7}(?:\\.\\d+)?)\\s*z\\s*:\\s*(-?\\d{1,7}(?:\\.\\d+)?)"
+    // Паттерн для координат с явными метками: "x:10 y:132 z:23", "x=10, y=132, z=23"
+    private val coordsPattern = Pattern.compile(
+        "(?i)x\\s*[:=]\\s*(-?\\d{1,7}(?:\\.\\d+)?)\\s*[,;]?\\s*y\\s*[:=]\\s*(-?\\d{1,7}(?:\\.\\d+)?)\\s*[,;]?\\s*z\\s*[:=]\\s*(-?\\d{1,7}(?:\\.\\d+)?)"
     )
-    private val coordsLinePattern = Pattern.compile(
-        "(?i)(?:координат[ыa]|coords)\\s*:\\s*(-?\\d{1,7}(?:\\.\\d+)?)\\s*[,;]\\s*(-?\\d{1,7}(?:\\.\\d+)?)\\s*[,;]\\s*(-?\\d{1,7}(?:\\.\\d+)?)"
+    // Паттерн для координат через запятую: "Координаты: 100, 200, 300" — только с ключевым словом
+    private val coordsCommaPattern = Pattern.compile(
+        "(?i)(?:координат[ыa]|coords)\\s*[:=]\\s*(-?\\d{1,7})\\s*[,;]\\s*(-?\\d{1,7})\\s*[,;]\\s*(-?\\d{1,7})"
     )
 
     fun init() {
@@ -300,20 +302,24 @@ object Waypoints {
     )
 
     private fun parseChatCoords(cleaned: String): ParsedChatCoords? {
-        val sh = shCoordsPattern.matcher(cleaned)
-        if (sh.find()) {
-            val x = sh.group(1)?.toDoubleOrNull()?.roundToInt() ?: return null
-            val y = sh.group(2)?.toDoubleOrNull()?.roundToInt() ?: return null
-            val z = sh.group(3)?.toDoubleOrNull()?.roundToInt() ?: return null
+        // 1. Формат с метками: "x:100 y:200 z:300"
+        val m = coordsPattern.matcher(cleaned)
+        if (m.find()) {
+            val x = m.group(1)?.toDoubleOrNull()?.roundToInt() ?: return null
+            val y = m.group(2)?.toDoubleOrNull()?.roundToInt() ?: return null
+            val z = m.group(3)?.toDoubleOrNull()?.roundToInt() ?: return null
             return ParsedChatCoords(x, y, z, "Coords", isTemp = true)
         }
 
-        val coords = coordsLinePattern.matcher(cleaned)
-        if (coords.find()) {
-            val x = coords.group(1)?.toDoubleOrNull()?.roundToInt() ?: return null
-            val y = coords.group(2)?.toDoubleOrNull()?.roundToInt() ?: return null
-            val z = coords.group(3)?.toDoubleOrNull()?.roundToInt() ?: return null
-            return ParsedChatCoords(x, y, z, "Coords", isTemp = true)
+        // 2. Формат через запятую: "100, 200, 300" — только если есть ключевое слово
+        if (cleaned.contains("координат", ignoreCase = true) || cleaned.contains("coords", ignoreCase = true)) {
+            val cm = coordsCommaPattern.matcher(cleaned)
+            if (cm.find()) {
+                val x = cm.group(1)?.toIntOrNull() ?: return null
+                val y = cm.group(2)?.toIntOrNull() ?: return null
+                val z = cm.group(3)?.toIntOrNull() ?: return null
+                return ParsedChatCoords(x, y, z, "Coords", isTemp = true)
+            }
         }
 
         return null

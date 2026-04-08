@@ -45,6 +45,11 @@ class CombatConfig {
         @ConfigOption(name = "Зомби", desc = "Настройки подсветки зомби.")
         @Accordion
         var zombie = ZombieConfig()
+
+        @Expose
+        @ConfigOption(name = "Слеер боссы (T1-T4)", desc = "Подсветка боссов Слеера: Мститель, Тарантул, Свен.")
+        @Accordion
+        var slayerBosses = SlayerBossesConfig()
     }
 
     class EndermanConfig {
@@ -54,9 +59,19 @@ class CombatConfig {
         var enabled = false
 
         @Expose
+        @ConfigOption(name = "=> Бокс", desc = "Рисует бокс вокруг сущности (заливка или контур).")
+        @ConfigEditorBoolean
+        var box = true
+
+        @Expose
         @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
         @ConfigEditorBoolean
         var outline = false
+
+        @Expose
+        @ConfigOption(name = "=> Glow", desc = "Включает ванильное свечение (outline shader) для сущности.")
+        @ConfigEditorBoolean
+        var glow = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
@@ -76,9 +91,19 @@ class CombatConfig {
         var enabled = false
 
         @Expose
+        @ConfigOption(name = "=> Бокс", desc = "Рисует бокс вокруг сущности (заливка или контур).")
+        @ConfigEditorBoolean
+        var box = true
+
+        @Expose
         @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
         @ConfigEditorBoolean
         var outline = false
+
+        @Expose
+        @ConfigOption(name = "=> Glow", desc = "Включает ванильное свечение (outline shader) для сущности.")
+        @ConfigEditorBoolean
+        var glow = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
@@ -98,9 +123,19 @@ class CombatConfig {
         var enabled = false
 
         @Expose
+        @ConfigOption(name = "=> Бокс", desc = "Рисует бокс вокруг сущности (заливка или контур).")
+        @ConfigEditorBoolean
+        var box = true
+
+        @Expose
         @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
         @ConfigEditorBoolean
         var outline = false
+
+        @Expose
+        @ConfigOption(name = "=> Glow", desc = "Включает ванильное свечение (outline shader) для сущности.")
+        @ConfigEditorBoolean
+        var glow = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
@@ -120,9 +155,19 @@ class CombatConfig {
         var enabled = false
 
         @Expose
+        @ConfigOption(name = "=> Бокс", desc = "Рисует бокс вокруг сущности (заливка или контур).")
+        @ConfigEditorBoolean
+        var box = true
+
+        @Expose
         @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
         @ConfigEditorBoolean
         var outline = false
+
+        @Expose
+        @ConfigOption(name = "=> Glow", desc = "Включает ванильное свечение (outline shader) для сущности.")
+        @ConfigEditorBoolean
+        var glow = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
@@ -142,9 +187,19 @@ class CombatConfig {
         var enabled = false
 
         @Expose
+        @ConfigOption(name = "=> Бокс", desc = "Рисует бокс вокруг сущности (заливка или контур).")
+        @ConfigEditorBoolean
+        var box = true
+
+        @Expose
         @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
         @ConfigEditorBoolean
         var outline = false
+
+        @Expose
+        @ConfigOption(name = "=> Glow", desc = "Включает ванильное свечение (outline shader) для сущности.")
+        @ConfigEditorBoolean
+        var glow = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
@@ -164,9 +219,19 @@ class CombatConfig {
         var enabled = false
 
         @Expose
+        @ConfigOption(name = "=> Бокс", desc = "Рисует бокс вокруг сущности (заливка или контур).")
+        @ConfigEditorBoolean
+        var box = true
+
+        @Expose
         @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
         @ConfigEditorBoolean
         var outline = false
+
+        @Expose
+        @ConfigOption(name = "=> Glow", desc = "Включает ванильное свечение (outline shader) для сущности.")
+        @ConfigEditorBoolean
+        var glow = false
 
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
@@ -177,6 +242,38 @@ class CombatConfig {
         @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
         @ConfigEditorSlider(minValue = 0.0f, maxValue = 1.0f, minStep = 0.05f)
         var transparency = 0.5f
+    }
+
+    class SlayerBossesConfig {
+        @Expose
+        @ConfigOption(name = "Подсветка", desc = "Активирует обводку для боссов Слеера (T1-T4).")
+        @ConfigEditorBoolean
+        var enabled = false
+
+        @Expose
+        @ConfigOption(name = "=> Бокс", desc = "Рисует бокс вокруг сущности (заливка или контур).")
+        @ConfigEditorBoolean
+        var box = true
+
+        @Expose
+        @ConfigOption(name = "=> Обводка", desc = "Будет обводить в виде хитбокса сущность.")
+        @ConfigEditorBoolean
+        var outline = true
+
+        @Expose
+        @ConfigOption(name = "=> Glow", desc = "Включает ванильное свечение (outline shader) для сущности.")
+        @ConfigEditorBoolean
+        var glow = false
+
+        @Expose
+        @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки.")
+        @ConfigEditorColour
+        var colorV2 = "0:255:255:0:255"
+
+        @Expose
+        @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки.")
+        @ConfigEditorSlider(minValue = 0.0f, maxValue = 1.0f, minStep = 0.05f)
+        var transparency = 0.65f
     }
 }
 

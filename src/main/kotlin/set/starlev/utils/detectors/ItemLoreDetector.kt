@@ -4,7 +4,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.TooltipFlag
 import net.minecraft.client.Minecraft
 import net.minecraft.world.item.Item
-import set.starlev.StarredHeltix
 import set.starlev.utils.CacheManager
 
 object ItemLoreDetector {
@@ -15,18 +14,13 @@ object ItemLoreDetector {
      */
     fun getLore(stack: ItemStack): List<String> {
         if (stack.isEmpty) return emptyList()
+        val hash = getItemStackHash(stack)
+        val cached = CacheManager.getCachedLore(hash)
+        if (cached != null) return cached
 
-        if (StarredHeltix.feature.optimization.performance.cacheItemLore) {
-            val hash = getItemStackHash(stack)
-            val cached = CacheManager.getCachedLore(hash)
-            if (cached != null) return cached
-            
-            val lore = generateLore(stack)
-            CacheManager.cacheLore(hash, lore)
-            return lore
-        }
-        
-        return generateLore(stack)
+        val lore = generateLore(stack)
+        CacheManager.cacheLore(hash, lore)
+        return lore
     }
 
     private fun generateLore(stack: ItemStack): List<String> {
@@ -40,16 +34,15 @@ object ItemLoreDetector {
         )
 
         return if (tooltipComponents.isNotEmpty()) {
-            tooltipComponents.drop(1).map { it.string }
+            tooltipComponents.drop(1).map { CacheManager.dedupString(it.string) }
         } else {
             emptyList()
         }
     }
 
     private fun getItemStackHash(stack: ItemStack): Int {
-        // Хэш зависит от предмета и его NBT (компонентов в 1.21)
         var result = stack.item.hashCode()
-        result = 31 * result + stack.components.hashCode()
+        result = 31 * result + CacheManager.getComponentHash(stack.components)
         result = 31 * result + stack.count
         return result
     }
@@ -69,6 +62,6 @@ object ItemLoreDetector {
             TooltipFlag.NORMAL
         )
 
-        return tooltipComponents.map { it.string }
+        return tooltipComponents.map { CacheManager.dedupString(it.string) }
     }
 }

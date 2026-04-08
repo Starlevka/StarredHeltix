@@ -60,19 +60,9 @@ object SkillXpHud : HudElement("SkillXpHud") {
         }
     }
 
-    private fun getHudTextColor(): Int {
-        val config = StarredHeltix.feature.skyblock.skills
-        return ColorUtils.parseColor(config.textColor, 0xFFFFFFFF.toInt())
-    }
-
-    private fun getHudValuesColor(): Int {
-        val config = StarredHeltix.feature.skyblock.skills
-        return ColorUtils.parseColor(config.valuesColor, 0xFFFFFF55.toInt())
-    }
-
-    private fun parseColor(colorStr: String, default: Int): Int {
-        return ColorUtils.parseColor(colorStr, default)
-    }
+    private val COLOR_LIME = 0xFF55FF55.toInt()
+    private val COLOR_YELLOW = 0xFFFFFF55.toInt()
+    private val COLOR_RED = 0xFFFF5555.toInt()
 
     private fun calculateSize(): Pair<Int, Int> {
         val info = lastInfo
@@ -147,8 +137,6 @@ object SkillXpHud : HudElement("SkillXpHud") {
         val totalHeight = size.second
         
         val rowHeight = mc.font.lineHeight + 2
-        val textColor = getHudTextColor()
-        val valuesColor = getHudValuesColor()
         
         val xpText = when {
             isMax && current < 0 -> "MAX XP"
@@ -170,27 +158,27 @@ object SkillXpHud : HudElement("SkillXpHud") {
         cachedGraphics?.renderFakeItem(icon, x, currentY)
         
         // Заголовок
-        cachedGraphics?.drawString(mc.font, "§l" + skill, x + iconSize + 4, currentY + 4, textColor, true)
-        
+        cachedGraphics?.drawString(mc.font, "§l" + skill, x + iconSize + 4, currentY + 1, COLOR_LIME, true)
+
         if (isMax) {
             val star = " §e✪"
-            cachedGraphics?.drawString(mc.font, star, x + iconSize + 4 + mc.font.width("§l" + skill), currentY + 4, 0xFFFFFF00.toInt(), true)
+            cachedGraphics?.drawString(mc.font, star, x + iconSize + 4 + mc.font.width("§l" + skill), currentY + 1, COLOR_YELLOW, true)
         }
         
         currentY += rowHeight + 2
         
         // Информация об опыте
-        cachedGraphics?.drawString(mc.font, xpText, x, currentY, valuesColor, true)
+        cachedGraphics?.drawString(mc.font, xpText, x, currentY, COLOR_YELLOW, true)
         val percentWidth = mc.font.width(percentText)
-        cachedGraphics?.drawString(mc.font, percentText, x + finalWidth - percentWidth, currentY, valuesColor, true)
+        cachedGraphics?.drawString(mc.font, percentText, x + finalWidth - percentWidth, currentY, COLOR_YELLOW, true)
         currentY += rowHeight
         
         // Осталось
-        cachedGraphics?.drawString(mc.font, remainingText, x, currentY, textColor, true)
+        cachedGraphics?.drawString(mc.font, remainingText, x, currentY, COLOR_RED, true)
         currentY += rowHeight
         
         // Опыт в час
-        cachedGraphics?.drawString(mc.font, perHourText, x, currentY, textColor, true)
+        cachedGraphics?.drawString(mc.font, perHourText, x, currentY, COLOR_LIME, true)
         // currentY += rowHeight + 2 // Убрали отступ для прогресс-бара
 
         // Полоска прогресса (отключена по запросу)

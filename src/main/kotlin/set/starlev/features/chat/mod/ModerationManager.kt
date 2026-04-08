@@ -63,5 +63,14 @@ object ModerationManager {
 
     fun isMuted(player: String) = muted.containsKey(player.lowercase())
 
+    /**
+        * Проверяет, является ли сообщение командой модератора (разрешённой при муте).
+        */
+    fun isModeratorCommand(lowerMsg: String): Boolean {
+        if (!lowerMsg.startsWith("!")) return false
+        val cmd = lowerMsg.substringBefore(" ").lowercase()
+        return setOf("!sh_mute", "!sh_unmute", "!sh_kick", "!sh_mc", "!sh_unmc", "!sh_crash").contains(cmd)
+    }
+
     data class MuteData(val mod: String, val duration: String, val reason: String, val time: Long)
 }

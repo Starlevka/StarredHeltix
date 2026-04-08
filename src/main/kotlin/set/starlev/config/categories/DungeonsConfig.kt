@@ -3,6 +3,7 @@ package set.starlev.config.categories
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorText
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
@@ -37,16 +38,74 @@ class DungeonsConfig {
     @Accordion
     var visuals = DungeonsVisualsConfig()
 
+    @Expose
+    @ConfigOption(name = "Ф4", desc = "Функции для четвёртого этажа подземелий.")
+    @Accordion
+    var floor4 = Floor4Config()
+
+    class Floor4Config {
+        @Expose
+        @ConfigOption(name = "Дух медведя - Подсветка", desc = "Подсвечивает моба с ником Дух медведя.")
+        @ConfigEditorBoolean
+        var bearSpiritHighlight = true
+
+        @Expose
+        @ConfigOption(name = "Дух медведя - Текст", desc = "Показывает текст над мобом Дух медведя.")
+        @ConfigEditorBoolean
+        var bearSpiritText = true
+
+        @Expose
+        @ConfigOption(name = "Дух медведя - Цвет", desc = "Цвет подсветки для Духа медведя.")
+        @ConfigEditorColour
+        var bearSpiritColorV2 = "0:255:255:105:180"
+
+        @Expose
+        @ConfigOption(name = "Дух курицы - Алерт", desc = "Показывает Title и звук при обнаружении Духа курицы в радиусе 64 блоков.")
+        @ConfigEditorBoolean
+        var chickenSpiritAlert = true
+
+        @Expose
+        @ConfigOption(name = "Дух курицы - Title", desc = "Показывать Title на экране.")
+        @ConfigEditorBoolean
+        var chickenTitleEnabled = true
+
+        @Expose
+        @ConfigOption(name = "Дух курицы - Заголовок", desc = "Текст заголовка Title.")
+        @ConfigEditorText
+        var chickenTitleText = "§c§l⚠ ЧИКЕНС КФС ⚠"
+
+        @Expose
+        @ConfigOption(name = "Дух курицы - Подзаголовок", desc = "Текст подзаголовка Title.")
+        @ConfigEditorText
+        var chickenSubtitleText = ""
+
+        @Expose
+        @ConfigOption(name = "Дух курицы - Звук", desc = "Воспроизводить предупреждающий звук.")
+        @ConfigEditorBoolean
+        var chickenSoundEnabled = true
+}
+
     class DungeonsVisualsConfig {
         @Expose
-        @ConfigOption(name = "Зеленые сундуки", desc = "Меняет текстуру сундуков в данже на зеленую (как у сундука с сокровищами).")
+        @ConfigOption(name = "Зеленые сундуки", desc = "Меняет текстуру сундуков в данже на зеленую. §cПонижает ФПС.")
         @ConfigEditorBoolean
         var greenChests = true
 
         @Expose
-        @ConfigOption(name = "Зеленые летучие мыши", desc = "Окрашивает летучих мышей в зеленый цвет для лучшей видимости.")
+        @ConfigOption(name = "Зеленые летучие мыши", desc = "Окрашивает летучих мышей в зеленый цвет для лучшей видимости. §cПонижает ФПС.")
         @ConfigEditorBoolean
         var greenBats = true
+
+        @Expose
+        @ConfigOption(name = "Glow звёздных мобов (✯)", desc = "Включает свечение звёздных мобов в данжах по символу ✯ над головой.")
+        @ConfigEditorBoolean
+        var starredMobGlow = true
+
+        @Expose
+        @ConfigOption(name = "Цвет glow (✯)", desc = "Цвет свечения для звёздных мобов.")
+        @ConfigEditorColour
+        var starredMobGlowColorV2 = "0:255:245:119:56"
+
     }
 
     class SolversConfig {
@@ -59,6 +118,11 @@ class DungeonsConfig {
         @ConfigOption(name = "Крипер-лучи", desc = "Отображает лучи для пазла Creeper Beams. (Нужен лук)")
         @ConfigEditorBoolean
         var creeperBeams = true
+
+        @Expose
+        @ConfigOption(name = "Крестики-нолики", desc = "Автоматически решает пазл с крестиками-ноликами и подсвечивает лучший ход.")
+        @ConfigEditorBoolean
+        var ticTacToe = true
     }
 
     class BloodRoomConfig {
@@ -71,6 +135,16 @@ class DungeonsConfig {
         @ConfigOption(name = "Сообщение", desc = "Текст сообщения, который будет отправлен в /pc")
         @ConfigEditorText
         var message = "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ Кровавая комната готова!"
+
+        @Expose
+        @ConfigOption(name = "Заголовок Title", desc = "Текст Title при готовности кровавой комнаты.")
+        @ConfigEditorText
+        var titleText = "§cКРОВАВАЯ ГОТОВА"
+
+        @Expose
+        @ConfigOption(name = "Подзаголовок Title", desc = "Текст подзаголовка при готовности кровавой комнаты.")
+        @ConfigEditorText
+        var subtitleText = ""
 
         @Expose
         @ConfigOption(name = "Фон HUD", desc = "Показывать темный фон позади текста.")
@@ -119,9 +193,39 @@ class DungeonsConfig {
         var showBackground = true
 
         @Expose
-        @ConfigOption(name = "Уведомление 270+Блад", desc = "Показывает Title на экране, когда есть 270 очков и Кровавая комната готова.")
+        @ConfigOption(name = "Title 270 очков", desc = "Показывает Title на экране при достижении 270 очков.")
         @ConfigEditorBoolean
-        var title270AndBlood = true
+        var title270Enabled = true
+
+        @Expose
+        @ConfigOption(name = "Заголовок 270", desc = "Текст Title при 270 очках.")
+        @ConfigEditorText
+        var title270Text = "§a270 ОЧКОВ"
+
+        @Expose
+        @ConfigOption(name = "Подзаголовок 270", desc = "Текст подзаголовка при 270 очках.")
+        @ConfigEditorText
+        var subtitle270Text = "§eРанг S"
+
+        @Expose
+        @ConfigOption(name = "Title 300 очков", desc = "Показывает Title на экране при достижении 300 очков.")
+        @ConfigEditorBoolean
+        var title300Enabled = true
+
+        @Expose
+        @ConfigOption(name = "Заголовок 300", desc = "Текст Title при 300 очках.")
+        @ConfigEditorText
+        var title300Text = "§6300 ОЧКОВ"
+
+        @Expose
+        @ConfigOption(name = "Подзаголовок 300", desc = "Текст подзаголовка при 300 очках.")
+        @ConfigEditorText
+        var subtitle300Text = "§eРанг S+"
+
+        @Expose
+        @ConfigOption(name = "Сообщение 300 очков", desc = "Текст сообщения для 300 очков.")
+        @ConfigEditorText
+        var message300 = "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ 300 ОЧКОВ ✪ Ранк S+ gogogo!"
     }
 }
 

@@ -18,6 +18,7 @@ object ItemRegistry {
         ASPECT_OF_THE_END("ASPECT_OF_THE_END", "Аспект Энда"),
         ASPECT_OF_THE_VOID("ASPECT_OF_THE_VOID", "Аспект Бездны"),
         HYPERION("HYPERION", "Гиперион"),
+        RANCHERS_BOOTS("RANCHERS_BOOTS", "Ботинки Ранчера"),
         UNKNOWN("UNKNOWN", "Неизвестно")
     }
 
@@ -27,28 +28,29 @@ object ItemRegistry {
      */
     fun getSkyblockId(stack: ItemStack): String? {
         if (stack.isEmpty) return null
-
-        // 1. Попытка получить через ExtraAttributes (стандарт Hypixel/Heltix)
-        try {
-            val customData: CustomData = stack.get(DataComponents.CUSTOM_DATA) ?: return null
-            val nbt: CompoundTag = customData.copyTag()
-            if (nbt.contains("ExtraAttributes")) {
-                // В этой версии маппингов getCompound возвращает Optional
-                val extraAttributesOpt = nbt.getCompound("ExtraAttributes")
-                if (extraAttributesOpt is java.util.Optional<*> && extraAttributesOpt.isPresent) {
-                    val extraAttributes = extraAttributesOpt.get() as CompoundTag
-                    if (extraAttributes.contains("id")) {
-                        // getString тоже может возвращать Optional
-                        val idOpt = extraAttributes.getString("id")
-                        if (idOpt is java.util.Optional<*> && idOpt.isPresent) {
-                            return idOpt.get() as String
+        val components = stack.components
+        val cached = set.starlev.utils.CacheManager.getCachedSkyblockId(components) {
+            // 1. Попытка получить через ExtraAttributes (стандарт Hypixel/Heltix)
+            try {
+                val customData: CustomData = stack.get(DataComponents.CUSTOM_DATA) ?: return@getCachedSkyblockId null
+                val nbt: CompoundTag = customData.copyTag()
+                if (nbt.contains("ExtraAttributes")) {
+                    val extraAttributesOpt: Optional<CompoundTag> = nbt.getCompound("ExtraAttributes")
+                    if (extraAttributesOpt.isPresent) {
+                        val extraAttributes = extraAttributesOpt.get()
+                        if (extraAttributes.contains("id")) {
+                            val idOpt: Optional<String> = extraAttributes.getString("id")
+                            if (idOpt.isPresent) {
+                                return@getCachedSkyblockId idOpt.get()
+                            }
                         }
                     }
                 }
+            } catch (_: Exception) {
             }
-        } catch (e: Exception) {
-            // Игнорируем ошибки парсинга NBT
+            null
         }
+        if (cached != null) return cached
 
         return null
     }

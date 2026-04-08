@@ -1,20 +1,14 @@
 accessWidener v2 named
 
-# Inventory access
+# Inventory access (используется в AutoCommissions.kt)
 accessible field net/minecraft/world/entity/player/Inventory items Lnet/minecraft/core/NonNullList;
 accessible field net/minecraft/world/entity/player/Inventory selected I
 
-# Level access
-accessible field net/minecraft/world/level/Level isClientSide Z
-accessible field net/minecraft/world/level/Level dimension Lnet/minecraft/resources/ResourceKey;
+# Avatar data access (используется в NPC.kt)
 accessible field net/minecraft/world/entity/Avatar DATA_PLAYER_MODE_CUSTOMISATION Lnet/minecraft/network/syncher/EntityDataAccessor;
-accessible field net/minecraft/world/entity/Avatar DATA_PLAYER_MAIN_HAND Lnet/minecraft/network/syncher/EntityDataAccessor;
 
-# SkyRenderState access
-accessible field net/minecraft/client/renderer/state/SkyRenderState sunAngle F
-
-# Minecraft access
+# Minecraft client access (используется в RenderContext.kt)
 accessible field net/minecraft/client/Minecraft levelRenderer Lnet/minecraft/client/renderer/LevelRenderer;
-# accessible field net/minecraft/client/Minecraft timer Lnet/minecraft/client/Timer;
-# accessible field net/minecraft/client/Timer tickDelta F
-# accessible field net/minecraft/client/Timer tickDeltaMatrix Lorg/joml/Matrix4f;
+
+# Level access (используется в LevelMixin.java)
+accessible field net/minecraft/world/level/Level isClientSide Z

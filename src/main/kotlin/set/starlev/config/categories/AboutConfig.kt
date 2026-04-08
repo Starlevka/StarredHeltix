@@ -32,11 +32,11 @@ class AboutModConfig {
         val mc = Minecraft.getInstance()
         val version = FabricLoader.getInstance().getModContainer("starredheltix")
             .map { it.metadata.version.friendlyString }
-            .orElse("0.0.14")
+            .orElse("0.1.0")
         mc.player?.displayClientMessage(Component.literal("§6§lStarredHeltix §b✪✪✪✪✪ §r§fИнформация:"), false)
         mc.player?.displayClientMessage(Component.literal("§6Версия мода: §f$version"), false)
         mc.player?.displayClientMessage(Component.literal("§6Лицензия мода: §fLGPL-3.0"), false)
-        mc.player?.displayClientMessage(Component.literal("§6Последня дата обновления версии мода: §f30.01.2026"), false)
+        mc.player?.displayClientMessage(Component.literal("§6Последня дата обновления версии мода: §f09.04.2026"), false)
         mc.player?.displayClientMessage(Component.literal("§6✶ Использованный код из модов: §f<3 SkyHanni, Skyblocker, OdinFabric, SkyFall, NoFrills, Firmament и SkyCubed <3"), false)
     }
 

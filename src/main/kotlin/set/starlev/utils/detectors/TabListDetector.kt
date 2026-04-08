@@ -4,7 +4,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.PlayerInfo
 import net.minecraft.network.chat.Component
 import net.minecraft.world.scores.PlayerTeam
-import set.starlev.mixin.accessors.PlayerTabOverlayAccessor
+import set.starlev.injections.accessors.PlayerTabOverlayAccessor
 import set.starlev.utils.CacheManager
 
 object TabListDetector {
@@ -260,7 +260,7 @@ object TabListDetector {
      * Очистить строку от цветовых кодов и лишних пробелов
      */
     fun cleanLine(line: String): String {
-        return CacheManager.getRegex(COLOR_PATTERN).replace(line, "").trim()
+        return CacheManager.dedupString(CacheManager.getRegex(COLOR_PATTERN).replace(line, "").trim())
     }
 
     /**

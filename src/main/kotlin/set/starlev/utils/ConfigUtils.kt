@@ -26,7 +26,7 @@ object ConfigUtils {
         return StructuredText.of(this)
     }
 
-    private fun toLegacyHex(component: net.minecraft.network.chat.Component): String {
+    fun toLegacyHex(component: net.minecraft.network.chat.Component): String {
         val sb = StringBuilder()
         component.visit({ style, text ->
             val color = style.color

@@ -38,7 +38,6 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.features.combat.EntityHighlight.init()
         set.starlev.utils.detectors.SkillXpDetector.init()
         set.starlev.features.chat.PartyCommands.init()
-        set.starlev.secret.features.AutoResponder.init()
         set.starlev.features.combat.dungeons.DeathCounter.init()
         set.starlev.features.chat.CustomBindManager.init()
         set.starlev.features.misc.MouseLock.init()
@@ -61,7 +60,13 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.features.skyblock.Museum.init()
         set.starlev.features.mining.PickaxeCooldownHud.init()
         set.starlev.features.mining.SpeedBoostCooldownHud.init()
-        
+        set.starlev.features.farming.RancherSpeedHud.init()
+        set.starlev.features.inventory.InventoryButtonsManager.init()
+        set.starlev.features.inventory.EquipmentOverlay.init()
+
+        // Инициализировать визуальную музыку по локациям
+        set.starlev.features.music.LocationMusicEngine.init()
+
         // Инициализировать event listener для TreeCapCooldown (регистрирует TreeCapBlockBreakMixin с проверкой логов)
         set.starlev.features.foraging.TreeCapCooldown
         
@@ -71,9 +76,19 @@ class StarredHeltix : ClientModInitializer {
         // Инициализировать солверы подземелий
         set.starlev.features.combat.dungeons.BloodRoomTimer.init()
         set.starlev.features.combat.dungeons.solvers.ThreeWeirdos.init()
+        set.starlev.features.combat.dungeons.solvers.ThreeWeirdosChest.init()
         set.starlev.features.combat.dungeons.solvers.CreeperBeams.init()
+        set.starlev.features.combat.dungeons.solvers.TicTacToe.init()
+        set.starlev.features.combat.dungeons.DeathCounter.init()
         set.starlev.features.combat.dungeons.ScoreCounter.init()
+        set.starlev.features.combat.dungeons.Floor4.init()
         set.starlev.features.fishing.LegendaryFishingNotifier.init()
+        
+        // Инициализировать Meow Music Rune III (фановая функция)
+        set.starlev.secret.features.MeowMusicRune.init()
+        
+        // Инициализировать Повторяшкинс (фановая функция)
+        set.starlev.secret.features.Povtorayshkins.init()
         
         // Регистрация сохранения конфига при выходе из игры
         ClientLifecycleEvents.CLIENT_STOPPING.register { client ->

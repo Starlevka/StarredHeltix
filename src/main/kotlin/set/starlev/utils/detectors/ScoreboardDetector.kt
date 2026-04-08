@@ -40,8 +40,7 @@ object ScoreboardDetector {
                         Component.literal(owner)
                     }
                     
-                    val cleanText = lineComponent.string.replace(CacheManager.getRegex(COLOR_PATTERN), "").trim()
-                    cleanText
+                    CacheManager.dedupString(lineComponent.string.replace(CacheManager.getRegex(COLOR_PATTERN), "").trim())
                 }
                 .filter { it.isNotEmpty() }
             
@@ -60,7 +59,7 @@ object ScoreboardDetector {
         val client = Minecraft.getInstance()
         val scoreboard = client.level?.scoreboard ?: return ""
         val objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return ""
-        return objective.displayName.string.replace(CacheManager.getRegex(COLOR_PATTERN), "").trim()
+        return CacheManager.dedupString(objective.displayName.string.replace(CacheManager.getRegex(COLOR_PATTERN), "").trim())
     }
 
     /**

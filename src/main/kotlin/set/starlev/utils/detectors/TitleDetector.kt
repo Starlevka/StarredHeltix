@@ -1,7 +1,7 @@
 package set.starlev.utils.detectors
 
 import net.minecraft.client.Minecraft
-import set.starlev.mixin.accessors.GuiAccessor
+import set.starlev.injections.accessors.GuiAccessor
 
 object TitleDetector {
 

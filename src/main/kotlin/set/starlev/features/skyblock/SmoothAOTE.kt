@@ -34,21 +34,23 @@ object SmoothAote {
 
         val mainHandItem = player.mainHandItem
         val isTeleportItem = set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.ASPECT_OF_THE_END) ||
-                             set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.ASPECT_OF_THE_VOID) ||
-                             set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.HYPERION)
+                            set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.ASPECT_OF_THE_VOID) ||
+                            set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.HYPERION)
 
         if (!isTeleportItem) return
 
-        // Offset method: We want to smooth the jump from currentRenderPos to newPos.
-        // The camera (without us) will jump to newPos immediately.
-        // So we add an offset that starts at (currentRenderPos - newPos) and decays to 0.
-        // (currentRenderPos - newPos) + newPos = currentRenderPos. (Start matches visual pos)
-        // 0 + newPos = newPos. (End matches target)
-        
-        // currentRenderPos from mainCamera already includes the previous offset if we were interpolating,
-        // because CameraMixin applies it to the camera position.
-        
-        offset = currentRenderPos.subtract(newPos)
+        // Если уже идёт интерполяция, вычисляем текущую визуальную позицию как стартовую
+        val startPos = if (isInterpolating) {
+            val elapsed = System.currentTimeMillis() - startTime
+            val progress = min(elapsed.toDouble() / duration.toDouble(), 1.0)
+            val ease = 1.0 - Math.pow(1.0 - progress, 4.0) // EaseOutQuart
+            val factor = 1.0 - ease
+            currentRenderPos // уже включает offset
+        } else {
+            currentRenderPos
+        }
+
+        offset = startPos.subtract(newPos)
         startTime = System.currentTimeMillis()
         duration = ConfigManager.features.skyblock.smoothAote.time.toLong()
         isInterpolating = true
@@ -72,7 +74,18 @@ object SmoothAote {
 
         if (!isTeleportItem) return
 
-        offset = oldRenderPos.subtract(newPos)
+        // Если уже идёт интерполяция, вычисляем текущую визуальную позицию как стартовую
+        val startPos = if (isInterpolating) {
+            val elapsed = System.currentTimeMillis() - startTime
+            val progress = min(elapsed.toDouble() / duration.toDouble(), 1.0)
+            val ease = 1.0 - Math.pow(1.0 - progress, 4.0) // EaseOutQuart
+            val factor = 1.0 - ease
+            oldRenderPos // уже включает offset
+        } else {
+            oldRenderPos
+        }
+
+        offset = startPos.subtract(newPos)
         startTime = System.currentTimeMillis()
         duration = ConfigManager.features.skyblock.smoothAote.time.toLong()
         isInterpolating = true
@@ -89,15 +102,10 @@ object SmoothAote {
             return null
         }
         
-        // EaseOutCubic implementation (standard for smooth teleports)
-        // Formula: 1 - pow(1 - x, 3)
-        // We need the factor to go from 1.0 (start) to 0.0 (end)
-        // So we calculate ease(progress) which goes 0->1, then return offset * (1 - ease)
-        
-        val ease = 1.0 - Math.pow(1.0 - progress, 3.0)
-        
+        // EaseOutQuart implementation (более плавный)
+        // Formula: 1 - pow(1 - x, 4)
+        val ease = 1.0 - Math.pow(1.0 - progress, 4.0)
         val factor = 1.0 - ease
-        
         return offset.scale(factor)
     }
     

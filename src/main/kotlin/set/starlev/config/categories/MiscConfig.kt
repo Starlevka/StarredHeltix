@@ -1,3 +1,4 @@
+
 package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
@@ -35,6 +36,13 @@ class MiscConfig {
         @ConfigOption(name = "Лог предметов", desc = "Отображает историю изменения предметов в инвентаре.")
         @Accordion
         var inventoryHistory = VisualsConfig.InventoryHistoryConfig()
+
+        @Expose
+        @ConfigOption(name = "Кнопки инвентаря", desc = "Кастомные кнопки в инвентаре (как в NEU/Firmament).")
+        @Accordion
+        var inventoryButtons = InventoryButtonsConfig()
+
+        // EquipmentOverlay перенесён в SkyblockConfig
 
         @Expose
         var migratedInventoryHistoryToMisc = false
@@ -229,6 +237,24 @@ class MiscConfig {
             @ConfigOption(name = "Фон HUD", desc = "Отображает фон у HUD элемента.")
             @ConfigEditorBoolean
             var showBackground = true
+        }
+    }
+
+    class InventoryButtonsConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Включает кастомные кнопки в инвентаре.")
+        @ConfigEditorBoolean
+        var enabled = true
+
+        @Expose
+        @ConfigOption(name = "Только инвентарь", desc = "Показывать кнопки только в инвентаре игрока, а не в сундуках.")
+        @ConfigEditorBoolean
+        var onlyInventory = true
+
+        @ConfigOption(name = "Настроить кнопки", desc = "Открывает меню настройки кнопок инвентаря.")
+        @ConfigEditorButton(buttonText = "Открыть")
+        val openButtonsMenu: Runnable = Runnable {
+            set.starlev.StarredHeltix.screenToOpen = set.starlev.features.inventory.InventoryButtonsGui()
         }
     }
 }

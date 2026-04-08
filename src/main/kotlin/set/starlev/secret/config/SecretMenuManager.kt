@@ -14,8 +14,10 @@ import java.nio.charset.StandardCharsets
 object SecretMenuManager {
     private val secretFile = File("config/starredheltix/others/secret.json")
     lateinit var secretConfig: SecretConfig
+    
     val isConfigInitialized: Boolean
         get() = this::secretConfig.isInitialized
+    
     lateinit var processor: MoulConfigProcessor<SecretConfig>
 
     fun load(forceSave: Boolean = true) {

@@ -22,6 +22,7 @@ import set.starlev.features.chat.MessageFilterManager
 import set.starlev.features.chat.CustomBindManager
 import set.starlev.features.misc.Waypoints
 import set.starlev.features.misc.MouseLock
+import set.starlev.features.inventory.InventoryButtonsGui
 import set.starlev.utils.ConfigUtils
 
 object ConfigCommand {
@@ -115,6 +116,12 @@ object ConfigCommand {
                 1
             })
         )
+        .then(literal("buttons")
+            .executes {
+                StarredHeltix.screenToOpen = InventoryButtonsGui()
+                1
+            }
+        )
         .then(literal("waypoints")
             .executes {
                 StarredHeltix.screenToOpen = WaypointsGui(null)
@@ -207,28 +214,6 @@ object ConfigCommand {
         .then(literal("update")
             .then(literal("check").executes { set.starlev.utils.ModUpdater.checkUpdate(); 1 })
             .then(literal("install").executes { set.starlev.utils.ModUpdater.installUpdate(); 1 })
-        )
-        // Секретный код
-        .then(literal("code")
-            .then(argument("code", StringArgumentType.word())
-                .executes { ctx ->
-                    val code = StringArgumentType.getString(ctx, "code")
-                    val cleanCode = code.trim()
-                    
-                    if (cleanCode == set.starlev.secret.features.ai.AiConfig.AI_SECRET) {
-                        if (!set.starlev.secret.config.SecretMenuManager.secretConfig.chatBot.isAiUnlocked) {
-                            set.starlev.secret.config.SecretMenuManager.secretConfig.chatBot.isAiUnlocked = true
-                            set.starlev.secret.config.SecretMenuManager.save()
-                            ctx.source.sendFeedback(Component.literal("§d§l[Secret] §fСистема ИИ §aразблокирована§f!"))
-                        } else {
-                            ctx.source.sendFeedback(Component.literal("§d§l[Secret] §eСистема ИИ уже разблокирована!"))
-                        }
-                    } else {
-                        ctx.source.sendError(Component.literal("§d§l[Secret] §cНеверный код активации!"))
-                    }
-                    1
-                }
-            )
         )
         .then(literal("coords").executes(::showCoords))
         .then(literal("mouselock")

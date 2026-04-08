@@ -3,9 +3,12 @@ package set.starlev.config.categories
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDraggableList
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
+import set.starlev.features.skyblock.scoreboard.ScoreboardConfigElement
 
 class SkyblockConfig {
     @Expose
@@ -38,6 +41,12 @@ class SkyblockConfig {
     @Accordion
     var scoreboard = ScoreboardConfig()
 
+    @Expose
+    @ConfigOption(name = "Экипировка", desc = "Отображение экипировки рядом с инвентарём.")
+    @Accordion
+    var equipmentOverlay = EquipmentOverlayConfig()
+
+
     class ScoreboardConfig {
         @Expose
         @ConfigOption(name = "Кастомный?", desc = "Включает кастомизируемый scoreboard.")
@@ -50,39 +59,15 @@ class SkyblockConfig {
         var showBackground = true
 
         @Expose
-        @ConfigOption(name = "Гемы (Tab)", desc = "Настройки отображения Гемов (парсинг из Tab).")
-        @Accordion
-        var gems = GemsConfig()
+        @ConfigOption(name = "Внешний вид", desc = "Перетаскивайте элементы для изменения порядка отображения. Удалите элемент чтобы скрыть его.")
+        @ConfigEditorDraggableList
+        var scoreboardEntries: MutableList<ScoreboardConfigElement> = ScoreboardConfigElement.defaultOptions.toMutableList()
 
-        @Expose
-        @ConfigOption(name = "Банк (Tab)", desc = "Настройки отображения Банка (парсинг из Tab).")
-        @Accordion
-        var bank = BankConfig()
-
-        @Expose
-        @ConfigOption(name = "Печенье (Tab)", desc = "Настройки отображения статуса Магического Печенья (парсинг из Tab).")
-        @Accordion
-        var cookie = CookieConfig()
-
-        class GemsConfig {
-            @Expose
-            @ConfigOption(name = "Scoreboard", desc = "Добавлять Гемы в кастомный Scoreboard.")
-            @ConfigEditorBoolean
-            var scoreboard = true
-        }
-
-        class BankConfig {
-            @Expose
-            @ConfigOption(name = "Scoreboard", desc = "Добавлять Банк в кастомный Scoreboard.")
-            @ConfigEditorBoolean
-            var scoreboard = true
-        }
-
-        class CookieConfig {
-            @Expose
-            @ConfigOption(name = "Scoreboard", desc = "Добавлять статус Печенья в кастомный Scoreboard.")
-            @ConfigEditorBoolean
-            var scoreboard = true
+        @ConfigOption(name = "Сбросить внешний вид", desc = "Возвращает порядок элементов к стандартному.")
+        @ConfigEditorButton(buttonText = "Сброс")
+        val resetAppearance: Runnable = Runnable {
+            scoreboardEntries.clear()
+            scoreboardEntries.addAll(ScoreboardConfigElement.defaultOptions)
         }
     }
 
@@ -168,7 +153,7 @@ class SkyblockConfig {
         @Expose
         @ConfigOption(name = "Фон", desc = "Отображать фон HUD.")
         @ConfigEditorBoolean
-        var showBackground = true
+        var showBackground = false
 
         @Expose
         @ConfigOption(name = "Бой", desc = "Показывать опыт навыка Боя.")
@@ -216,13 +201,19 @@ class SkyblockConfig {
         var showDungeons = true
 
         @Expose
-        @ConfigOption(name = "Цвет текста", desc = "Цвет текста навыков.")
-        @ConfigEditorColour
-        var textColor = "255:255:255:255"
+        @ConfigOption(name = "Улучшающие зачарования", desc = "Показывает прогресс улучшающих зачарований на предмете в руке (Компактность, Экспертиза, Чемпион, Культивирование).")
+        @ConfigEditorBoolean
+        var showEnchantmentProgress = true
+        // Цвета захардкожены: название=лайм, опыт=жёлтый, осталось=красный, XP/час=лайм
+    }
+
+    class EquipmentOverlayConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Показывает экипировку рядом с инвентарём.")
+        @ConfigEditorBoolean
+        var enabled = true
 
         @Expose
-        @ConfigOption(name = "Цвет значений", desc = "Цвет цифр опыта.")
-        @ConfigEditorColour
-        var valuesColor = "255:255:255:255"
+        var cachedEquipment: List<String> = emptyList()
     }
 }

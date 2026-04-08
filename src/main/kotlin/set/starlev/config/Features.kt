@@ -1,6 +1,7 @@
 package set.starlev.config
 
 import com.google.gson.annotations.Expose
+import net.fabricmc.loader.api.FabricLoader
 import io.github.notenoughupdates.moulconfig.Config
 import io.github.notenoughupdates.moulconfig.annotations.Category
 import set.starlev.StarredHeltix
@@ -14,12 +15,14 @@ import set.starlev.config.categories.FishingConfig
 import set.starlev.config.categories.ForagingConfig
 import set.starlev.config.categories.MiningConfig
 import set.starlev.config.categories.MiscConfig
+import set.starlev.config.categories.MusicConfig
 import set.starlev.config.categories.SlayerConfig
 import set.starlev.config.categories.OptimizationConfig
 import set.starlev.config.categories.SkyblockConfig
 import set.starlev.config.categories.VisualsConfig
-import set.starlev.utils.ConfigUtils.asStructuredText
-import java.awt.Color
+import net.minecraft.network.chat.Component
+import set.starlev.features.chat.ChatFormatting
+import set.starlev.utils.ConfigUtils.toLegacyHex
 
 class Features : Config() {
     override fun saveNow() {
@@ -31,7 +34,14 @@ class Features : Config() {
     }
 
     private fun buildTitle(): String {
-        return "§6§lStarredHeltix §e§lv0.0.14"
+        return "§6§lStarredHeltix §f§l| §6§lv${getModVersion()}"
+    }
+
+    private fun getModVersion(): String {
+        return FabricLoader.getInstance()
+            .getModContainer("starredheltix")
+            .map { it.metadata.version.friendlyString }
+            .orElse("0.1.0")
     }
 
     @Expose
@@ -87,7 +97,10 @@ class Features : Config() {
     var mining = MiningConfig()
 
     @Expose
+    @Category(name = "𝄞 Аудио", desc = "· Визуальная музыка и эффекты по локациям.")
+    var music = MusicConfig()
+    
+    @Expose
     @Category(name = "О моде", desc = "· Информация о моде и его обновления.")
     var about = AboutModConfig()
 }
-

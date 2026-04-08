@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import set.starlev.config.ConfigManager
 import set.starlev.hud.HudElement
+import set.starlev.utils.detectors.DungeonDetector
 import java.util.regex.Pattern
 import java.awt.Color
 import com.mojang.blaze3d.platform.InputConstants
@@ -146,7 +147,9 @@ object NpcDialogueOverlay : HudElement("NpcDialogueOverlay") {
 
             currentDialogue = Dialogue(finalName, msgComp)
             lastActivity = System.currentTimeMillis()
-            return ConfigManager.features.skyblock.npcDialogue.hideMessages
+            val shouldHide = ConfigManager.features.skyblock.npcDialogue.hideMessages
+            if (shouldHide && DungeonDetector.isInDungeon() && cleanText.startsWith("[Персонаж] ")) return false
+            return shouldHide
         }
 
         // Опции
@@ -286,21 +289,25 @@ object NpcDialogueOverlay : HudElement("NpcDialogueOverlay") {
         val nameX = drawX + (boxWidth - nameWidth) / 2
         graphics.drawString(font, dialogue.name, nameX, drawY + padding, 0xFFFFFFFF.toInt())
 
-        // Отрисовка текста
+        // Отрисовка текста (по центру)
         var currentY = drawY + padding + nameGap
         for (line in wrappedText) {
-            graphics.drawString(font, line, drawX + padding, currentY, 0xFFFFFFFF.toInt())
-            currentY += font.lineHeight
+           val lineWidth = font.width(line)
+           val lineX = drawX + (boxWidth - lineWidth) / 2
+           graphics.drawString(font, line, lineX, currentY, 0xFFFFFFFF.toInt())
+           currentY += font.lineHeight
         }
 
-        // Отрисовка опций
+        // Отрисовка опций (по центру)
         if (dialogue.options.isNotEmpty() && config.showOptions) {
-            currentY += if (isCompact) 5 else 10
-            dialogue.options.forEachIndexed { index, option ->
-                val optionText = "§6${index + 1}. §b${option.text}"
-                graphics.drawString(font, optionText, drawX + padding, currentY, 0xFFFFFFFF.toInt())
-                currentY += font.lineHeight + lineSpacing
-            }
+           currentY += if (isCompact) 5 else 10
+           dialogue.options.forEachIndexed { index, option ->
+                 val optionText = "§6${index + 1}. §b${option.text}"
+                 val optWidth = font.width(optionText)
+                 val optX = drawX + (boxWidth - optWidth) / 2
+                 graphics.drawString(font, optionText, optX, currentY, 0xFFFFFFFF.toInt())
+                 currentY += font.lineHeight + lineSpacing
+           }
         }
         
         // Подсказка про ESC
