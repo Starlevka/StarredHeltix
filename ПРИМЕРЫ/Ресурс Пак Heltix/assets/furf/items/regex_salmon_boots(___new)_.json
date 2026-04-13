@@ -1,6 +1,0 @@
-{
-  "model": {
-    "type": "minecraft:model",
-    "model": "furf:item/regex:salmon_boots(?:_new)?"
-  }
-}

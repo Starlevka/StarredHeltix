@@ -1,1 +1,0 @@
-group = "moe.nea.firmament"

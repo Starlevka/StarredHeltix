@@ -1,6 +1,0 @@
-{
-  "model": {
-    "type": "minecraft:model",
-    "model": "furf:item/regex:tarantula_(helmet|chestplate|leggings|boots)"
-  }
-}

@@ -1,6 +1,0 @@
-{
-  "model": {
-    "type": "minecraft:model",
-    "model": "furf:item/regex:bat_person_(chestplate|leggings|boots)"
-  }
-}

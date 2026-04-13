@@ -1,6 +1,0 @@
-{
-  "model": {
-    "type": "minecraft:model",
-    "model": "furf:item/regex:campfire_talisman_(21|22|23|24|25|26|27|28|29).*"
-  }
-}

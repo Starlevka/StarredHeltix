@@ -1,6 +1,0 @@
-{
-  "model": {
-    "type": "minecraft:model",
-    "model": "furf:item/regex:armor_of_yog_(helmet|chestplate|leggings|boots)"
-  }
-}

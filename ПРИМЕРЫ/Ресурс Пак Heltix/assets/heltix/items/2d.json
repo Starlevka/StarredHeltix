@@ -1,9 +1,0 @@
-{
-  "model": {
-    "type": "minecraft:special",
-    "base": "heltix:custom/item/2d",
-    "model": {
-      "type": "minecraft:player_head"
-    }
-  }
-}

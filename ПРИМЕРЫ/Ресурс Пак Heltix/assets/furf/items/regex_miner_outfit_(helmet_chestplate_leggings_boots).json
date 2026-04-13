@@ -1,6 +1,0 @@
-{
-  "model": {
-    "type": "minecraft:model",
-    "model": "furf:item/regex:miner_outfit_(helmet|chestplate|leggings|boots)"
-  }
-}

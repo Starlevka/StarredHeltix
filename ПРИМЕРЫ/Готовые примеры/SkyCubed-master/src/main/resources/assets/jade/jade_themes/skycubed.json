@@ -1,8 +1,0 @@
-{
-	"version": 100,
-	"tooltipStyle": {
-        "sprite": "skycubed:background"
-	},
-    "changeOpacity": 1,
-    "roundCorner": false
-}

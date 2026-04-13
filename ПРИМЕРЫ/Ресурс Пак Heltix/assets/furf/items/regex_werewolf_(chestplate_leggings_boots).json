@@ -1,6 +1,0 @@
-{
-  "model": {
-    "type": "minecraft:model",
-    "model": "furf:item/regex:werewolf_(chestplate|leggings|boots)"
-  }
-}
