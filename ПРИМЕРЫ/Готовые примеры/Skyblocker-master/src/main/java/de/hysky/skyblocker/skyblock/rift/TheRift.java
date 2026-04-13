@@ -1,0 +1,24 @@
+package de.hysky.skyblocker.skyblock.rift;
+
+import de.hysky.skyblocker.annotations.Init;
+import de.hysky.skyblocker.config.SkyblockerConfigManager;
+import de.hysky.skyblocker.utils.render.WorldRenderExtractionCallback;
+import de.hysky.skyblocker.utils.scheduler.Scheduler;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+
+public class TheRift {
+	@Init
+	public static void init() {
+		WorldRenderExtractionCallback.EVENT.register(MirrorverseWaypoints::extractRendering);
+		WorldRenderExtractionCallback.EVENT.register(EffigyWaypoints::extractRendering);
+		WorldRenderExtractionCallback.EVENT.register(EnigmaSouls::extractRendering);
+		ClientLifecycleEvents.CLIENT_STARTED.register(MirrorverseWaypoints::load);
+		ClientLifecycleEvents.CLIENT_STARTED.register(EnigmaSouls::load);
+		ClientLifecycleEvents.CLIENT_STOPPING.register(EnigmaSouls::save);
+		ClientReceiveMessageEvents.ALLOW_GAME.register(EnigmaSouls::onMessage);
+		ClientCommandRegistrationCallback.EVENT.register(EnigmaSouls::registerCommands);
+		Scheduler.INSTANCE.scheduleCyclic(EffigyWaypoints::updateEffigies, SkyblockerConfigManager.get().slayers.vampireSlayer.effigyUpdateFrequency);
+	}
+}

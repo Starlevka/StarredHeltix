@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:miner_outfit_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:miner_outfit_armor"
+      }
+    ]
+  }
+}

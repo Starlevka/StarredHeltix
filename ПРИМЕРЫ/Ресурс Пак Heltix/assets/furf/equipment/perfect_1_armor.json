@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:perfect_1_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:perfect_1_armor"
+      }
+    ]
+  }
+}

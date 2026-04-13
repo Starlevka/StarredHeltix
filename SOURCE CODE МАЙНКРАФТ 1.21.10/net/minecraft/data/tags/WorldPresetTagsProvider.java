@@ -1,0 +1,20 @@
+package net.minecraft.data.tags;
+
+import java.util.concurrent.CompletableFuture;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.data.PackOutput;
+import net.minecraft.tags.WorldPresetTags;
+import net.minecraft.world.level.levelgen.presets.WorldPreset;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+
+public class WorldPresetTagsProvider extends KeyTagProvider<WorldPreset> {
+   public WorldPresetTagsProvider(PackOutput var1, CompletableFuture<HolderLookup.Provider> var2) {
+      super(var1, Registries.WORLD_PRESET, var2);
+   }
+
+   protected void addTags(HolderLookup.Provider var1) {
+      this.tag(WorldPresetTags.NORMAL).add((Object)WorldPresets.NORMAL).add((Object)WorldPresets.FLAT).add((Object)WorldPresets.LARGE_BIOMES).add((Object)WorldPresets.AMPLIFIED).add((Object)WorldPresets.SINGLE_BIOME_SURFACE);
+      this.tag(WorldPresetTags.EXTENDED).addTag(WorldPresetTags.NORMAL).add((Object)WorldPresets.DEBUG);
+   }
+}

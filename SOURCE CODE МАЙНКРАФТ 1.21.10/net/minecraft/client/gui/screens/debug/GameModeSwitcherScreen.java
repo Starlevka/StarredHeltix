@@ -1,0 +1,255 @@
+package net.minecraft.client.gui.screens.debug;
+
+import com.google.common.collect.Lists;
+import com.mojang.blaze3d.platform.InputConstants;
+import java.util.Iterator;
+import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.GameNarrator;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ServerboundChangeGameModePacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+
+public class GameModeSwitcherScreen extends Screen {
+   static final ResourceLocation SLOT_SPRITE = ResourceLocation.withDefaultNamespace("gamemode_switcher/slot");
+   static final ResourceLocation SELECTION_SPRITE = ResourceLocation.withDefaultNamespace("gamemode_switcher/selection");
+   private static final ResourceLocation GAMEMODE_SWITCHER_LOCATION = ResourceLocation.withDefaultNamespace("textures/gui/container/gamemode_switcher.png");
+   private static final int SPRITE_SHEET_WIDTH = 128;
+   private static final int SPRITE_SHEET_HEIGHT = 128;
+   private static final int SLOT_AREA = 26;
+   private static final int SLOT_PADDING = 5;
+   private static final int SLOT_AREA_PADDED = 31;
+   private static final int HELP_TIPS_OFFSET_Y = 5;
+   private static final int ALL_SLOTS_WIDTH = GameModeSwitcherScreen.GameModeIcon.values().length * 31 - 5;
+   private static final Component SELECT_KEY;
+   private final GameModeSwitcherScreen.GameModeIcon previousHovered = GameModeSwitcherScreen.GameModeIcon.getFromGameType(this.getDefaultSelected());
+   private GameModeSwitcherScreen.GameModeIcon currentlyHovered;
+   private int firstMouseX;
+   private int firstMouseY;
+   private boolean setFirstMousePos;
+   private final List<GameModeSwitcherScreen.GameModeSlot> slots = Lists.newArrayList();
+
+   public GameModeSwitcherScreen() {
+      super(GameNarrator.NO_TITLE);
+      this.currentlyHovered = this.previousHovered;
+   }
+
+   private GameType getDefaultSelected() {
+      MultiPlayerGameMode var1 = Minecraft.getInstance().gameMode;
+      GameType var2 = var1.getPreviousPlayerMode();
+      if (var2 != null) {
+         return var2;
+      } else {
+         return var1.getPlayerMode() == GameType.CREATIVE ? GameType.SURVIVAL : GameType.CREATIVE;
+      }
+   }
+
+   protected void init() {
+      super.init();
+      this.slots.clear();
+      this.currentlyHovered = this.previousHovered;
+
+      for(int var1 = 0; var1 < GameModeSwitcherScreen.GameModeIcon.VALUES.length; ++var1) {
+         GameModeSwitcherScreen.GameModeIcon var2 = GameModeSwitcherScreen.GameModeIcon.VALUES[var1];
+         this.slots.add(new GameModeSwitcherScreen.GameModeSlot(var2, this.width / 2 - ALL_SLOTS_WIDTH / 2 + var1 * 31, this.height / 2 - 31));
+      }
+
+   }
+
+   public void render(GuiGraphics var1, int var2, int var3, float var4) {
+      if (!this.checkToClose()) {
+         var1.drawCenteredString(this.font, (Component)this.currentlyHovered.name, this.width / 2, this.height / 2 - 31 - 20, -1);
+         var1.drawCenteredString(this.font, (Component)SELECT_KEY, this.width / 2, this.height / 2 + 5, -1);
+         if (!this.setFirstMousePos) {
+            this.firstMouseX = var2;
+            this.firstMouseY = var3;
+            this.setFirstMousePos = true;
+         }
+
+         boolean var5 = this.firstMouseX == var2 && this.firstMouseY == var3;
+         Iterator var6 = this.slots.iterator();
+
+         while(var6.hasNext()) {
+            GameModeSwitcherScreen.GameModeSlot var7 = (GameModeSwitcherScreen.GameModeSlot)var6.next();
+            var7.render(var1, var2, var3, var4);
+            var7.setSelected(this.currentlyHovered == var7.icon);
+            if (!var5 && var7.isHoveredOrFocused()) {
+               this.currentlyHovered = var7.icon;
+            }
+         }
+
+      }
+   }
+
+   public void renderBackground(GuiGraphics var1, int var2, int var3, float var4) {
+      int var5 = this.width / 2 - 62;
+      int var6 = this.height / 2 - 31 - 27;
+      var1.blit(RenderPipelines.GUI_TEXTURED, GAMEMODE_SWITCHER_LOCATION, var5, var6, 0.0F, 0.0F, 125, 75, 128, 128);
+   }
+
+   private void switchToHoveredGameMode() {
+      switchToHoveredGameMode(this.minecraft, this.currentlyHovered);
+   }
+
+   private static void switchToHoveredGameMode(Minecraft var0, GameModeSwitcherScreen.GameModeIcon var1) {
+      if (var0.canSwitchGameMode()) {
+         GameModeSwitcherScreen.GameModeIcon var2 = GameModeSwitcherScreen.GameModeIcon.getFromGameType(var0.gameMode.getPlayerMode());
+         if (var0.player.hasPermissions(2) && var1 != var2) {
+            var0.player.connection.send(new ServerboundChangeGameModePacket(var1.mode));
+         }
+
+      }
+   }
+
+   private boolean checkToClose() {
+      if (!InputConstants.isKeyDown(this.minecraft.getWindow(), 292)) {
+         this.switchToHoveredGameMode();
+         this.minecraft.setScreen((Screen)null);
+         return true;
+      } else {
+         return false;
+      }
+   }
+
+   public boolean keyPressed(KeyEvent var1) {
+      if (var1.key() == 293) {
+         this.setFirstMousePos = false;
+         this.currentlyHovered = this.currentlyHovered.getNext();
+         return true;
+      } else {
+         return super.keyPressed(var1);
+      }
+   }
+
+   public boolean isPauseScreen() {
+      return false;
+   }
+
+   static {
+      SELECT_KEY = Component.translatable("debug.gamemodes.select_next", Component.translatable("debug.gamemodes.press_f4").withStyle(ChatFormatting.AQUA));
+   }
+
+   static enum GameModeIcon {
+      CREATIVE(Component.translatable("gameMode.creative"), GameType.CREATIVE, new ItemStack(Blocks.GRASS_BLOCK)),
+      SURVIVAL(Component.translatable("gameMode.survival"), GameType.SURVIVAL, new ItemStack(Items.IRON_SWORD)),
+      ADVENTURE(Component.translatable("gameMode.adventure"), GameType.ADVENTURE, new ItemStack(Items.MAP)),
+      SPECTATOR(Component.translatable("gameMode.spectator"), GameType.SPECTATOR, new ItemStack(Items.ENDER_EYE));
+
+      static final GameModeSwitcherScreen.GameModeIcon[] VALUES = values();
+      private static final int ICON_AREA = 16;
+      private static final int ICON_TOP_LEFT = 5;
+      final Component name;
+      final GameType mode;
+      private final ItemStack renderStack;
+
+      private GameModeIcon(final Component param3, final GameType param4, final ItemStack param5) {
+         this.name = var3;
+         this.mode = var4;
+         this.renderStack = var5;
+      }
+
+      void drawIcon(GuiGraphics var1, int var2, int var3) {
+         var1.renderItem(this.renderStack, var2, var3);
+      }
+
+      GameModeSwitcherScreen.GameModeIcon getNext() {
+         GameModeSwitcherScreen.GameModeIcon var10000;
+         switch(this.ordinal()) {
+         case 0:
+            var10000 = SURVIVAL;
+            break;
+         case 1:
+            var10000 = ADVENTURE;
+            break;
+         case 2:
+            var10000 = SPECTATOR;
+            break;
+         case 3:
+            var10000 = CREATIVE;
+            break;
+         default:
+            throw new MatchException((String)null, (Throwable)null);
+         }
+
+         return var10000;
+      }
+
+      static GameModeSwitcherScreen.GameModeIcon getFromGameType(GameType var0) {
+         GameModeSwitcherScreen.GameModeIcon var10000;
+         switch(var0) {
+         case SPECTATOR:
+            var10000 = SPECTATOR;
+            break;
+         case SURVIVAL:
+            var10000 = SURVIVAL;
+            break;
+         case CREATIVE:
+            var10000 = CREATIVE;
+            break;
+         case ADVENTURE:
+            var10000 = ADVENTURE;
+            break;
+         default:
+            throw new MatchException((String)null, (Throwable)null);
+         }
+
+         return var10000;
+      }
+
+      // $FF: synthetic method
+      private static GameModeSwitcherScreen.GameModeIcon[] $values() {
+         return new GameModeSwitcherScreen.GameModeIcon[]{CREATIVE, SURVIVAL, ADVENTURE, SPECTATOR};
+      }
+   }
+
+   public static class GameModeSlot extends AbstractWidget {
+      final GameModeSwitcherScreen.GameModeIcon icon;
+      private boolean isSelected;
+
+      public GameModeSlot(GameModeSwitcherScreen.GameModeIcon var1, int var2, int var3) {
+         super(var2, var3, 26, 26, var1.name);
+         this.icon = var1;
+      }
+
+      public void renderWidget(GuiGraphics var1, int var2, int var3, float var4) {
+         this.drawSlot(var1);
+         if (this.isSelected) {
+            this.drawSelection(var1);
+         }
+
+         this.icon.drawIcon(var1, this.getX() + 5, this.getY() + 5);
+      }
+
+      public void updateWidgetNarration(NarrationElementOutput var1) {
+         this.defaultButtonNarrationText(var1);
+      }
+
+      public boolean isHoveredOrFocused() {
+         return super.isHoveredOrFocused() || this.isSelected;
+      }
+
+      public void setSelected(boolean var1) {
+         this.isSelected = var1;
+      }
+
+      private void drawSlot(GuiGraphics var1) {
+         var1.blitSprite(RenderPipelines.GUI_TEXTURED, (ResourceLocation)GameModeSwitcherScreen.SLOT_SPRITE, this.getX(), this.getY(), 26, 26);
+      }
+
+      private void drawSelection(GuiGraphics var1) {
+         var1.blitSprite(RenderPipelines.GUI_TEXTURED, (ResourceLocation)GameModeSwitcherScreen.SELECTION_SPRITE, this.getX(), this.getY(), 26, 26);
+      }
+   }
+}

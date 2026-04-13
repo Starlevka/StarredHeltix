@@ -1,4 +1,4 @@
-# StarredHeltix v0.1.0
+# StarredHeltix v0.1.1
 
 Fabric мод для Minecraft 1.21.10 (Heltix SkyBlock)
 
@@ -121,7 +121,7 @@ Fabric мод для Minecraft 1.21.10 (Heltix SkyBlock)
 ## 📦 Установка
 
 1. Установите Fabric Loader для Minecraft 1.21.10
-2. Скачайте StarredHeltix v0.1.0
+2. Скачайте StarredHeltix v0.1.1
 3. Поместите `.jar` в `.minecraft/mods`
 4. Установите Fabric API (обязательно), Fabric Language Kotlin (обязательно) и Mod Menu (опционально)
 5. Запустите Minecraft с профилем Fabric

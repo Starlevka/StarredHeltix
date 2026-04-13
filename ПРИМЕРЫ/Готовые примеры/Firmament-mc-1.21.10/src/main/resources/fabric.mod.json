@@ -1,0 +1,70 @@
+{
+    "schemaVersion": 1,
+    "id": "firmament",
+    "version": "${version}",
+    "name": "Firmament",
+    "description": "Firmament powered by NEU",
+    "authors": [
+        {
+            "name": "Linnea Gräf",
+            "contact": {
+                "email": "nea@nea.moe"
+            }
+        }
+    ],
+    "contact": {
+        "discord": "https://discord.gg/64pFP94AWA",
+        "sources": "https://github.com/nea89o/Firmament",
+		"modrinth": "https://modrinth.com/mod/firmament"
+    },
+    "license": "GPL 3.0 or Later",
+    "accessWidener": "firmament.accesswidener",
+    "icon": "assets/firmament/logo.png",
+    "environment": "client",
+    "entrypoints": {
+        "main": [
+            "moe.nea.firmament.Firmament::onInitialize"
+        ],
+        "mm_shedaniel:early_risers": [
+            "moe.nea.firmament.init.EarlyRiser"
+        ],
+        "client": [
+            "moe.nea.firmament.Firmament::onClientInitialize"
+        ],
+        "rei_client": [
+            "moe.nea.firmament.compat.rei.FirmamentReiPlugin"
+        ],
+		"rei_common": [
+			"moe.nea.firmament.compat.rei.FirmamentReiCommonPlugin"
+		],
+        "modmenu": [
+            "moe.nea.firmament.compat.modmenu.FirmamentModMenuPlugin"
+        ],
+		"jade": [
+			"moe.nea.firmament.compat.jade.FirmamentJadePlugin"
+		],
+        "jarvis": [
+            "moe.nea.firmament.jarvis.JarvisIntegration"
+        ]
+    },
+    "mixins": [
+        "firmament.mixins.json"
+    ],
+    "depends": {
+        "fabric-api": ">=${fabric_api_version}",
+        "fabric-language-kotlin": ">=${fabric_kotlin_version}",
+        "minecraft": ">=${minecraft_version}"
+    },
+    "custom": {
+        "modmenu": {
+            "links": {
+                "modmenu.discord": "https://discord.gg/64pFP94AWA"
+            }
+        },
+        "mc-publish": {
+            "dependencies": [
+                "roughlyenoughitems(recommended){modrinth:rei}"
+            ]
+        }
+    }
+}

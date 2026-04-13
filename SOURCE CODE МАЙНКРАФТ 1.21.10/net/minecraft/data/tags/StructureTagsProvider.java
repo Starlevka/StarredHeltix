@@ -1,0 +1,38 @@
+package net.minecraft.data.tags;
+
+import java.util.concurrent.CompletableFuture;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.data.PackOutput;
+import net.minecraft.tags.StructureTags;
+import net.minecraft.world.level.levelgen.structure.BuiltinStructures;
+import net.minecraft.world.level.levelgen.structure.Structure;
+
+public class StructureTagsProvider extends KeyTagProvider<Structure> {
+   public StructureTagsProvider(PackOutput var1, CompletableFuture<HolderLookup.Provider> var2) {
+      super(var1, Registries.STRUCTURE, var2);
+   }
+
+   protected void addTags(HolderLookup.Provider var1) {
+      this.tag(StructureTags.VILLAGE).add((Object)BuiltinStructures.VILLAGE_PLAINS).add((Object)BuiltinStructures.VILLAGE_DESERT).add((Object)BuiltinStructures.VILLAGE_SAVANNA).add((Object)BuiltinStructures.VILLAGE_SNOWY).add((Object)BuiltinStructures.VILLAGE_TAIGA);
+      this.tag(StructureTags.MINESHAFT).add((Object)BuiltinStructures.MINESHAFT).add((Object)BuiltinStructures.MINESHAFT_MESA);
+      this.tag(StructureTags.OCEAN_RUIN).add((Object)BuiltinStructures.OCEAN_RUIN_COLD).add((Object)BuiltinStructures.OCEAN_RUIN_WARM);
+      this.tag(StructureTags.SHIPWRECK).add((Object)BuiltinStructures.SHIPWRECK).add((Object)BuiltinStructures.SHIPWRECK_BEACHED);
+      this.tag(StructureTags.RUINED_PORTAL).add((Object)BuiltinStructures.RUINED_PORTAL_DESERT).add((Object)BuiltinStructures.RUINED_PORTAL_JUNGLE).add((Object)BuiltinStructures.RUINED_PORTAL_MOUNTAIN).add((Object)BuiltinStructures.RUINED_PORTAL_NETHER).add((Object)BuiltinStructures.RUINED_PORTAL_OCEAN).add((Object)BuiltinStructures.RUINED_PORTAL_STANDARD).add((Object)BuiltinStructures.RUINED_PORTAL_SWAMP);
+      this.tag(StructureTags.CATS_SPAWN_IN).add((Object)BuiltinStructures.SWAMP_HUT);
+      this.tag(StructureTags.CATS_SPAWN_AS_BLACK).add((Object)BuiltinStructures.SWAMP_HUT);
+      this.tag(StructureTags.EYE_OF_ENDER_LOCATED).add((Object)BuiltinStructures.STRONGHOLD);
+      this.tag(StructureTags.DOLPHIN_LOCATED).addTag(StructureTags.OCEAN_RUIN).addTag(StructureTags.SHIPWRECK);
+      this.tag(StructureTags.ON_WOODLAND_EXPLORER_MAPS).add((Object)BuiltinStructures.WOODLAND_MANSION);
+      this.tag(StructureTags.ON_OCEAN_EXPLORER_MAPS).add((Object)BuiltinStructures.OCEAN_MONUMENT);
+      this.tag(StructureTags.ON_TREASURE_MAPS).add((Object)BuiltinStructures.BURIED_TREASURE);
+      this.tag(StructureTags.ON_TRIAL_CHAMBERS_MAPS).add((Object)BuiltinStructures.TRIAL_CHAMBERS);
+      this.tag(StructureTags.ON_SAVANNA_VILLAGE_MAPS).add((Object)BuiltinStructures.VILLAGE_SAVANNA);
+      this.tag(StructureTags.ON_DESERT_VILLAGE_MAPS).add((Object)BuiltinStructures.VILLAGE_DESERT);
+      this.tag(StructureTags.ON_PLAINS_VILLAGE_MAPS).add((Object)BuiltinStructures.VILLAGE_PLAINS);
+      this.tag(StructureTags.ON_TAIGA_VILLAGE_MAPS).add((Object)BuiltinStructures.VILLAGE_TAIGA);
+      this.tag(StructureTags.ON_SNOWY_VILLAGE_MAPS).add((Object)BuiltinStructures.VILLAGE_SNOWY);
+      this.tag(StructureTags.ON_SWAMP_EXPLORER_MAPS).add((Object)BuiltinStructures.SWAMP_HUT);
+      this.tag(StructureTags.ON_JUNGLE_EXPLORER_MAPS).add((Object)BuiltinStructures.JUNGLE_TEMPLE);
+   }
+}

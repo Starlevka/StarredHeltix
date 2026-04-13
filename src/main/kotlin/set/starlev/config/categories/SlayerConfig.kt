@@ -3,7 +3,6 @@ package set.starlev.config.categories
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
-import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class SlayerConfig {
@@ -33,10 +32,5 @@ class SlayerConfig {
         @ConfigOption(name = "Личные рекорды", desc = "Отслеживает и сохраняет лучшие результаты убийства боссов.")
         @ConfigEditorBoolean
         var personalBests = true
-
-        @Expose
-        @ConfigOption(name = "Слеер в Scoreboard", desc = "Интегрирует Слеер HUD в Scoreboard. §cНужно ВЫКЛ HUD Слеера.")
-        @ConfigEditorBoolean
-        var slayerScoreboardHud = true
     }
 }

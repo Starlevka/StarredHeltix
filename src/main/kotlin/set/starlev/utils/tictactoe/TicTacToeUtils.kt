@@ -53,15 +53,20 @@ object TicTacToeUtils {
         val blockThreat = findBlockThreat(board, 'X')
         if (blockThreat != null) return blockThreat
 
-        // 8. Противоположный угол от занятого угла противника
+        // 8. Если противник занял противоположные углы и центр - выбираем сторону (не угол)
+        // Это предотвращает создание вилки противником
+        val sideMove = findSideMove(board)
+        if (sideMove != null) return sideMove
+
+        // 9. Противоположный угол от занятого угла противника
         val oppositeCorner = findOppositeCorner(board)
         if (oppositeCorner != null) return oppositeCorner
 
-        // 9. Углы предпочтительнее сторон, но только если не создают угрозу противнику
+        // 10. Углы предпочтительнее сторон, но только если не создают угрозу противнику
         val safeCorner = findSafeCorner(board)
         if (safeCorner != null) return safeCorner
 
-        // 10. Используем минимакс для оставшихся позиций
+        // 11. Используем минимакс для оставшихся позиций
         return minimaxBestMove(board)
     }
 
@@ -219,6 +224,40 @@ object TicTacToeUtils {
                 }
             }
         }
+        return null
+    }
+
+    /**
+     * Найти ход на сторону (не угол) когда противник занял противоположные углы и центр
+     * Это предотвращает создание вилки противником
+     */
+    private fun findSideMove(board: Array<CharArray>): BoardIndex? {
+        val corners = listOf(Pair(0, 0), Pair(0, 2), Pair(2, 0), Pair(2, 2))
+        val opponent = 'X'
+        val player = 'O'
+
+        // Проверяем, занял ли противник противоположные углы
+        val occupiedCorners = corners.filter { board[it.first][it.second] == opponent }
+        if (occupiedCorners.size != 2) return null
+
+        // Проверяем, противоположные ли эти углы
+        val corner1 = occupiedCorners[0]
+        val corner2 = occupiedCorners[1]
+        val areOpposite = (corner1.first + corner2.first == 2 && corner1.second + corner2.second == 2)
+
+        if (!areOpposite) return null
+
+        // Проверяем, занят ли центр противником
+        if (board[1][1] != opponent) return null
+
+        // Если все условия выполнены - выбираем сторону (не угол)
+        val sides = listOf(Pair(0, 1), Pair(1, 0), Pair(1, 2), Pair(2, 1))
+        for ((row, col) in sides) {
+            if (board[row][col] == '\u0000') {
+                return BoardIndex(row, col)
+            }
+        }
+
         return null
     }
 

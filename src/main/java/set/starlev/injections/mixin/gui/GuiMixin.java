@@ -13,28 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import set.starlev.StarredHeltix;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.gui.Font;
 import set.starlev.secret.features.SecretFunFeatures;
 import set.starlev.secret.config.SecretMenuManager;
-import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.PlayerScoreEntry;
-import net.minecraft.world.scores.ScoreHolder;
-import net.minecraft.world.scores.ReadOnlyScoreInfo;
-import net.minecraft.client.Minecraft;
-
-import java.util.Collection;
-import java.util.List;
 
 @Mixin(Gui.class)
 public class GuiMixin {
-    private int slayerYOffset = 0;
-    private List<Component> slayerExtraLines;
-    private float lastScoreboardX = 0;
-    private float lastScoreboardY = 0;
-    private float lastScoreboardScale = 1.0f;
-    private int currentScoreboardWidth = 0;
-    private int totalExtraHeight = 0;
-
     private boolean didPushScoreboardMatrix = false;
 
     @Inject(method = "renderEffects", at = @At("HEAD"), cancellable = true)
@@ -73,13 +56,9 @@ public class GuiMixin {
     )
     private void onDrawScoreboardString(Args args, GuiGraphics guiGraphics, net.minecraft.world.scores.Objective objective) {
         // Разрешаем выполнение для ванильного скорборда, чтобы работали эффекты
-        
-        Font font = args.get(0);
         Component component = args.get(1);
-        int x = args.get(2);
-        int y = args.get(3);
         
-        // 1. Process text effects
+        // Process text effects
         if (SecretMenuManager.INSTANCE.isConfigInitialized()) {
             boolean starlevEnabled = SecretMenuManager.INSTANCE.getSecretConfig().getFunCategory().getStarlevNameEffect();
             boolean megaChromeEnabled = SecretMenuManager.INSTANCE.getSecretConfig().getFunCategory().getMegaChromeXEffect();
@@ -88,29 +67,6 @@ public class GuiMixin {
                 // Применяем эффекты принудительно для scoreboard (чтобы работало всегда, как просил пользователь)
                 component = SecretFunFeatures.processComponent(component, true);
                 args.set(1, component);
-            }
-        }
-
-        // 2. Handle Slayer HUD injection
-        int currentY = y + slayerYOffset;
-        args.set(3, currentY);
-
-        if (StarredHeltix.Companion.getFeature().getSlayer().getSlayerHud().getSlayerScoreboardHud() &&
-            component != null) {
-            
-            String text = component.getString();
-            // Поддержка русского и английского
-            if (text.contains("/") && (text.contains("опыта") || text.contains("XP") || text.contains("опыта Боя"))) {
-                if (slayerExtraLines != null && !slayerExtraLines.isEmpty()) {
-                    int nextY = currentY + 9;
-                    
-                    for (Component extraLine : slayerExtraLines) {
-                        // Используем 0xFFFFFFFF (полностью непрозрачный белый) и тень текста всегда ВКЛЮЧЕНА
-                        guiGraphics.drawString(font, extraLine, x, nextY, 0xFFFFFFFF, true);
-                        nextY += 9;
-                    }
-                    slayerYOffset += slayerExtraLines.size() * 9;
-                }
             }
         }
     }
@@ -123,11 +79,7 @@ public class GuiMixin {
             return;
         }
 
-        // Кастомный скорборд выключен: используем ванильный скорборд без инъекций (slayer/stats/позиции/масштабов)
-        slayerYOffset = 0;
-        slayerExtraLines = null;
-        currentScoreboardWidth = 0;
-        totalExtraHeight = 0;
+        // Кастомный скорборд выключен: используем ванильный скорборд без дополнительных инъекций
         return;
     }
 

@@ -1,0 +1,740 @@
+package nofrills.hud.clickgui;
+
+import com.google.common.collect.Lists;
+import io.wispforest.owo.ui.base.BaseOwoScreen;
+import io.wispforest.owo.ui.component.ButtonComponent;
+import io.wispforest.owo.ui.component.Components;
+import io.wispforest.owo.ui.container.Containers;
+import io.wispforest.owo.ui.container.FlowLayout;
+import io.wispforest.owo.ui.container.ScrollContainer;
+import io.wispforest.owo.ui.core.*;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.text.Text;
+import nofrills.features.dungeons.*;
+import nofrills.features.farming.GlowingMushroom;
+import nofrills.features.farming.PlotBorders;
+import nofrills.features.farming.SpaceFarmer;
+import nofrills.features.farming.VacuumSolver;
+import nofrills.features.fishing.*;
+import nofrills.features.general.*;
+import nofrills.features.hunting.*;
+import nofrills.features.kuudra.*;
+import nofrills.features.mining.*;
+import nofrills.features.misc.*;
+import nofrills.features.slayer.*;
+import nofrills.features.solvers.*;
+import nofrills.features.tweaks.*;
+import nofrills.hud.HudEditorScreen;
+import nofrills.hud.clickgui.components.FlatTextbox;
+import nofrills.hud.clickgui.components.PlainLabel;
+import nofrills.misc.RenderColor;
+import nofrills.misc.Rendering;
+import nofrills.misc.Utils;
+import org.jetbrains.annotations.NotNull;
+import org.lwjgl.glfw.GLFW;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static nofrills.Main.mc;
+
+public class ClickGui extends BaseOwoScreen<FlowLayout> {
+    public List<Category> categories;
+    public ScrollContainer<FlowLayout> mainScroll;
+    public int mouseX = 0;
+    public int mouseY = 0;
+
+    private boolean matchSearch(String text, String search) {
+        return Utils.toLower(text).replaceAll(" ", "").contains(Utils.toLower(search).replaceAll(" ", ""));
+    }
+
+    @Override
+    protected @NotNull OwoUIAdapter<FlowLayout> createAdapter() {
+        return OwoUIAdapter.create(this, Containers::verticalFlow);
+    }
+
+    @Override
+    public boolean keyPressed(KeyInput input) {
+        if (input.key() != GLFW.GLFW_KEY_LEFT && input.key() != GLFW.GLFW_KEY_RIGHT && input.key() != GLFW.GLFW_KEY_PAGE_DOWN && input.key() != GLFW.GLFW_KEY_PAGE_UP) {
+            return super.keyPressed(input);
+        } else {
+            for (Category category : this.categories) {
+                for (Module module : category.features) {
+                    if (module.isInBoundingBox(this.mouseX, this.mouseY)) {
+                        return category.scroll.onMouseScroll(0, 0, input.key() == GLFW.GLFW_KEY_PAGE_UP ? 4 : -4);
+                    }
+                }
+            }
+            return this.mainScroll.onMouseScroll(0, 0, input.key() == GLFW.GLFW_KEY_PAGE_UP ? 4 : -4);
+        }
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        for (Category category : this.categories) {
+            for (Module module : category.features) {
+                if (module.isInBoundingBox(this.mouseX, this.mouseY)) {
+                    return category.scroll.onMouseScroll(0, 0, verticalAmount * 2);
+                }
+            }
+        }
+        return this.mainScroll.onMouseScroll(0, 0, verticalAmount * 2);
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        super.render(context, mouseX, mouseY, delta);
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+        int height = context.getScaledWindowHeight();
+        context.drawTextWithShadow(this.textRenderer, "Left click a feature to toggle", 1, height - 20, RenderColor.white.argb);
+        context.drawTextWithShadow(this.textRenderer, "Right click a feature open its settings", 1, height - 10, RenderColor.white.argb);
+    }
+
+    @Override
+    protected void build(FlowLayout root) {
+        root.surface(Surface.VANILLA_TRANSLUCENT);
+        FlowLayout parent = Containers.horizontalFlow(Sizing.content(), Sizing.content());
+        this.categories = Lists.newArrayList(
+                new Category("General", List.of(
+                        new Module("Auto Sprint", AutoSprint.instance, "Essentially Toggle Sprint, but always active.", new Settings(List.of(
+                                new Settings.Toggle("Water Check", AutoSprint.waterCheck, "Prevents Auto Sprint from working while you are in water.")
+                        ))),
+                        new Module("Slot Binding", SlotBinding.instance, "Bind your hotbar slots to your inventory slots, similarly to NEU's slot binding.", SlotBinding.buildSettings()),
+                        new Module("Price Tooltips", PriceTooltips.instance, "Adds pricing information to item tooltips. Requires connectivity to the NoFrills API.", new Settings(List.of(
+                                new Settings.Toggle("Lowest BIN", PriceTooltips.auction, "Adds the Lowest BIN price to applicable items."),
+                                new Settings.Toggle("Bazaar", PriceTooltips.bazaar, "Adds the Bazaar insta-buy and insta-sell prices to applicable items."),
+                                new Settings.Toggle("NPC Sell", PriceTooltips.npc, "Adds the NPC sell price to applicable items."),
+                                new Settings.Toggle("Motes Sell", PriceTooltips.mote, "Adds the Motes sell price to applicable items."),
+                                new Settings.SliderInt("Grubber Stacks", 0, 5, 1, PriceTooltips.burgers, "The amount of McGrubber's Burgers you've eaten, used to calculate the bonus Motes value.")
+                        ))),
+                        new Module("Wardrobe Keybinds", WardrobeKeybinds.instance, "Adds hotkeys to the Skyblock Wardrobe.", new Settings(List.of(
+                                new Settings.Dropdown<>("Keybind Style", WardrobeKeybinds.style, "The style of keybinds you want to use.\n\nSimple: Uses the 1-9 keyboard keys.\nHotbar: Uses your hotbar slot keybinds from the Minecraft controls screen.\nCustom: Uses the custom keys which you can define below."),
+                                new Settings.Toggle("No Unequip", WardrobeKeybinds.noUnequip, "Prevents you from being able to unequip your armor set with a keybind."),
+                                new Settings.Toggle("Sound Effect", WardrobeKeybinds.sound, "Plays a sound effect upon using a keybind."),
+                                new Settings.Keybind("Custom Slot 1", WardrobeKeybinds.custom1, "Your custom keybind for the 1st wardrobe slot."),
+                                new Settings.Keybind("Custom Slot 2", WardrobeKeybinds.custom2, "Your custom keybind for the 2nd wardrobe slot."),
+                                new Settings.Keybind("Custom Slot 3", WardrobeKeybinds.custom3, "Your custom keybind for the 3rd wardrobe slot."),
+                                new Settings.Keybind("Custom Slot 4", WardrobeKeybinds.custom4, "Your custom keybind for the 4th wardrobe slot."),
+                                new Settings.Keybind("Custom Slot 5", WardrobeKeybinds.custom5, "Your custom keybind for the 5th wardrobe slot."),
+                                new Settings.Keybind("Custom Slot 6", WardrobeKeybinds.custom6, "Your custom keybind for the 6th wardrobe slot."),
+                                new Settings.Keybind("Custom Slot 7", WardrobeKeybinds.custom7, "Your custom keybind for the 7th wardrobe slot."),
+                                new Settings.Keybind("Custom Slot 8", WardrobeKeybinds.custom8, "Your custom keybind for the 8th wardrobe slot."),
+                                new Settings.Keybind("Custom Slot 9", WardrobeKeybinds.custom9, "Your custom keybind for the 9th wardrobe slot.")
+                        ))),
+                        new Module("Chat Waypoints", ChatWaypoints.instance, "Automatically creates waypoints for coordinates sent in Party/Global chat.", new Settings(List.of(
+                                new Settings.Separator("Party Chat"),
+                                new Settings.Toggle("Create Waypoints", ChatWaypoints.partyWaypoints, "Enables creating waypoints for coordinates sent by party members."),
+                                new Settings.Toggle("Clear On Arrive", ChatWaypoints.partyClear, "Automatically removes the party waypoint once you get close."),
+                                new Settings.SliderInt("Duration", 1, 600, 1, ChatWaypoints.partyDuration, "The duration (in seconds) that party waypoints should be rendered for."),
+                                new Settings.ColorPicker("Color", true, ChatWaypoints.partyColor, "The color used for the party waypoints."),
+                                new Settings.Separator("All Chat"),
+                                new Settings.Toggle("Create Waypoints", ChatWaypoints.allWaypoints, "Enables creating waypoints for coordinates sent by players in the all chat."),
+                                new Settings.Toggle("Clear On Arrive", ChatWaypoints.allClear, "Automatically remove the all chat waypoint once you get close."),
+                                new Settings.SliderInt("Duration", 1, 600, 1, ChatWaypoints.allDuration, "The duration (in seconds) that all chat waypoints should be rendered for."),
+                                new Settings.ColorPicker("Color", true, ChatWaypoints.allColor, "The color used for the all chat waypoints.")
+                        ))),
+                        new Module("Etherwarp Overlay", EtherwarpOverlay.instance, "Highlights the block you are targeting with the Ether Transmission ability.", new Settings(List.of(
+                                new Settings.Separator("Sound"),
+                                new Settings.Toggle("Warp Sound", EtherwarpOverlay.doSound, "Plays a custom sound effect as soon as you start teleporting to the target block.\nMakes the ability more responsive on high ping, but may produce false positives."),
+                                new Settings.TextInput("Sound", EtherwarpOverlay.sound, "The identifier of the sound to play."),
+                                new Settings.SliderDouble("Volume", 0.0, 5.0, 0.1, EtherwarpOverlay.volume, "The volume of the sound."),
+                                new Settings.SliderDouble("Pitch", 0.0, 2.0, 0.05, EtherwarpOverlay.pitch, "The pitch of the sound."),
+                                new Settings.Toggle("Cancel Sound", EtherwarpOverlay.cancelSound, "Prevents the intended Ether Transmission sound effect from playing."),
+                                new Settings.Separator("Highlight"),
+                                new Settings.Dropdown<>("Highlight Style", EtherwarpOverlay.highlightStyle, "The style of the highlight"),
+                                new Settings.ColorPicker("Correct Fill", true, EtherwarpOverlay.fillCorrect, "The fill color used when your Etherwarp target is considered valid."),
+                                new Settings.ColorPicker("Wrong Fill", true, EtherwarpOverlay.fillWrong, "The fill color used when your Etherwarp target is considered invalid."),
+                                new Settings.ColorPicker("Correct Outline", true, EtherwarpOverlay.outlineCorrect, "The outline color used when your Etherwarp target is considered valid."),
+                                new Settings.ColorPicker("Wrong Outline", true, EtherwarpOverlay.outlineWrong, "The outline color used when your Etherwarp target is considered invalid.")
+                        ))),
+                        new Module("Fullbright", Fullbright.instance, "You know him, you love him.", new Settings(List.of(
+                                new Settings.Dropdown<>("Mode", Fullbright.mode, "The lighting mode used by fullbright."),
+                                new Settings.Toggle("No Effect", Fullbright.noEffect, "Removes the Night Vision effect while active. Ignored if you use the Potion mode.")
+                        ))),
+                        new Module("No Render", NoRender.instance, "Prevent various things from appearing.", new Settings(List.of(
+                                new Settings.Toggle("Explosions", NoRender.explosions, "Prevents the server from spawning any explosion particles."),
+                                new Settings.Toggle("Empty Tooltips", NoRender.emptyTooltips, "Disables slots that contain items with blank tooltips."),
+                                new Settings.Toggle("Fire Overlay", NoRender.fireOverlay, "Removes the fire overlay."),
+                                new Settings.Toggle("Break Particles", NoRender.breakParticles, "Removes the particles that appear when breaking blocks."),
+                                new Settings.Toggle("Boss Bar", NoRender.bossBar, "Hides the boss health bar that appears at the top of the screen."),
+                                new Settings.Toggle("Fog", NoRender.fog, "Hides terrain and ambient fog."),
+                                new Settings.Toggle("Effect Display", NoRender.effectDisplay, "Removes the potion effect display from the inventory and the top right of the screen."),
+                                new Settings.Toggle("Dead Entities", NoRender.deadEntities, "Hides entities that are in their death animation, and their health bars (if applicable)."),
+                                new Settings.Toggle("Dead Poof", NoRender.deadPoof, "Tries to hide the death \"poof\" particles that appear after a dead entity is deleted."),
+                                new Settings.Toggle("Lightning", NoRender.lightning, "Hides lightning strikes."),
+                                new Settings.Toggle("Falling Blocks", NoRender.fallingBlocks, "Hides falling block entities such as sand."),
+                                new Settings.Toggle("Mage Beam", NoRender.mageBeam, "Prevents the server from spawning the Mage Beam particles in Dungeons."),
+                                new Settings.Toggle("Tree Bits", NoRender.treeBits, "Hides the flying wood and leaves blocks that appear when chopping trees on the Galatea."),
+                                new Settings.Toggle("Nausea", NoRender.nausea, "Prevents the nausea screen wobble and/or green overlay from rendering."),
+                                new Settings.Toggle("Vignette", NoRender.vignette, "Prevents the dark vignette overlay from rendering."),
+                                new Settings.Toggle("Exp Orbs", NoRender.expOrbs, "Prevents experience orbs from rendering."),
+                                new Settings.Toggle("Stuck Arrows", NoRender.stuckArrows, "Prevents arrows stuck to entities from rendering.")
+                        ))),
+                        new Module("Party Commands", PartyCommands.instance, "Provide various commands to your party members.", new Settings(List.of(
+                                new Settings.Description("Usage", "Run the \"/nf partyCommands\" command to see more information."),
+                                new Settings.TextInput("Prefixes", PartyCommands.prefixes, "List of valid prefixes for these commands, separated by space."),
+                                new Settings.Toggle("Self Commands", PartyCommands.self, "Allows you to trigger your own party commands and grants you whitelisted status, not recommended."),
+                                new Settings.Dropdown<>("Warp", PartyCommands.warp, "Allows party members to warp themselves into your lobby on demand.\n\nCommands: !warp | !w"),
+                                new Settings.Dropdown<>("Party Transfer", PartyCommands.transfer, "Allows party members to promote themselves to party leader on demand.\n\nCommands: !ptme | !pt"),
+                                new Settings.Dropdown<>("All Invite", PartyCommands.allinv, "Allows party members to toggle the All Invite party setting on demand.\n\nCommand: !allinv"),
+                                new Settings.Dropdown<>("Downtime", PartyCommands.downtime, "Allows party members to schedule a downtime reminder for the end of your Kuudra/Dungeons run.\nThis command will also pause Auto Requeue if you have it enabled.\n\nCommand: !dt"),
+                                new Settings.Dropdown<>("Instance Queue", PartyCommands.queue, Utils.format("Allows party members to queue for any instance on demand.\n\nCommand List: {}", PartyCommands.listInstancesFormatted())),
+                                new Settings.Dropdown<>("Coords", PartyCommands.coords, "Allows party members to get your coordinates on demand.\n\nCommand: !coords"),
+                                new Settings.Dropdown<>("Kick", PartyCommands.kick, "Allows party members to kick specific players on demand.\n\nCommands: !kick | !k")
+                        ))),
+                        new Module("Viewmodel", Viewmodel.instance, "Easily customize the appearance of your held item.", new Settings(List.of(
+                                new Settings.Toggle("No Haste", Viewmodel.noHaste, "Prevents Haste and Mining Fatigue from affecting your swing speed."),
+                                new Settings.Toggle("No Equip Animation", Viewmodel.noEquip, "Removes the item swapping animation."),
+                                new Settings.Toggle("No Bow Swing", Viewmodel.noBowSwing, "Removes the swing animation for all bows."),
+                                new Settings.Toggle("Apply To Hand", Viewmodel.applyToHand, "Applies the viewmodel changes to the empty hand."),
+                                new Settings.SliderInt("Swing Speed", 0, 20, 1, Viewmodel.speed, "Apply a custom swing speed. Set to 0 to disable."),
+                                new Settings.SliderDouble("Offset X", -2, 2, 0.01, Viewmodel.offsetX, "The X axis offset position of your held item."),
+                                new Settings.SliderDouble("Offset Y", -2, 2, 0.01, Viewmodel.offsetY, "The Y axis offset position of your held item."),
+                                new Settings.SliderDouble("Offset Z", -2, 2, 0.01, Viewmodel.offsetZ, "The Z axis offset position of your held item."),
+                                new Settings.SliderDouble("Scale X", 0, 5, 0.01, Viewmodel.scaleX, "The X axis scale of your held item."),
+                                new Settings.SliderDouble("Scale Y", 0, 5, 0.01, Viewmodel.scaleY, "The Y axis scale of your held item."),
+                                new Settings.SliderDouble("Scale Z", 0, 5, 0.01, Viewmodel.scaleZ, "The Z axis scale of your held item."),
+                                new Settings.SliderDouble("Rotation X", -180, 180, 0.5, Viewmodel.rotX, "The X axis rotation of your held item."),
+                                new Settings.SliderDouble("Rotation Y", -180, 180, 0.5, Viewmodel.rotY, "The Y axis rotation of your held item."),
+                                new Settings.SliderDouble("Rotation Z", -180, 180, 0.5, Viewmodel.rotZ, "The Z axis rotation of your held item."),
+                                new Settings.SliderDouble("Swing X", 0, 2, 0.01, Viewmodel.swingX, "The X multiplier for swing animation offset."),
+                                new Settings.SliderDouble("Swing Y", 0, 2, 0.01, Viewmodel.swingY, "The Y multiplier for swing animation offset."),
+                                new Settings.SliderDouble("Swing Z", 0, 2, 0.01, Viewmodel.swingZ, "The Z multiplier for swing animation offset.")
+                        ))),
+                        new Module("Custom Keybinds", CustomKeybinds.instance, "Create keybinds that run a custom command when pressed.", CustomKeybinds.buildSettings()),
+                        new Module("Chat Rules", ChatRules.instance, "Create custom rules that activate when a matching message is sent in chat.", ChatRules.buildSettings()),
+                        new Module("Chat Tweaks", ChatTweaks.instance, "Various features/improvements for the chat hud.", new Settings(List.of(
+                                new Settings.Keybind("Copy Key", ChatTweaks.copyKey, "Copies the hovered message to clipboard when pressed."),
+                                new Settings.Keybind("Copy Line Key", ChatTweaks.copyLineKey, "Copies the hovered line of a message to clipboard when pressed."),
+                                new Settings.Toggle("Trim On Copy", ChatTweaks.trimOnCopy, "Trims copied chat messages to remove any leading/trailing space characters."),
+                                new Settings.Toggle("Message On Copy", ChatTweaks.msgOnCopy, "Sends a feedback message in chat after copying any message."),
+                                new Settings.SliderInt("Feedback Limit", 0, 512, 1, ChatTweaks.copyMsgLength, "The max length of the copied message within the feedback message.\nHelps to prevent the chat from filling up when copying large messages."),
+                                new Settings.Toggle("Keep History", ChatTweaks.keepHistory, "Prevents the chat history from clearing on disconnect."),
+                                new Settings.Toggle("Extra Lines", ChatTweaks.extraLines, "Overrides the chat line limit. Allows you to keep more messages in the chat history."),
+                                new Settings.SliderInt("Lines", 100, 5000, 10, ChatTweaks.lines, "The chat line limit override.")
+                        ))),
+                        new Module("Item Protection", ItemProtection.instance, "Prevent yourself from accidentally dropping and/or selling items.", new Settings(List.of(
+                                new Settings.Keybind("UUID Protect Key", ItemProtection.uuidKey, "The keybind to protect a specific item by UUID."),
+                                new Settings.Keybind("ID Protect Key", ItemProtection.skyblockIdKey, "The keybind to protect a specific item by Skyblock ID."),
+                                new Settings.Toggle("Protect By UUID", ItemProtection.protectUUID, "Protects items that you have protected by UUID."),
+                                new Settings.Toggle("Protect By ID", ItemProtection.protectSkyblockId, "Protects items that you have protected by Skyblock ID."),
+                                new Settings.Toggle("Protect Max Quality", ItemProtection.protectMaxQuality, "Protects Dungeon items with a rarity upgrade (50/50 quality)."),
+                                new Settings.Toggle("Protect Starred", ItemProtection.protectStarred, "Protects any item with Dungeon stars on it."),
+                                new Settings.Toggle("Protect Rarity Upgraded", ItemProtection.protectRarityUpgraded, "Protects any item that is Recombobulated."),
+                                new Settings.Toggle("Protect By Value", ItemProtection.protectValue, "Protects any item that has a high enough NPC/Auction/Bazaar value."),
+                                new Settings.DoubleInput("Minimum Value", ItemProtection.protectValueMin, "The minimum item value for an item to be protected by value.")
+                        ))),
+                        new Module("Info Tooltips", InfoTooltips.instance, "Adds various information about an item to its tooltip.", new Settings(List.of(
+                                new Settings.Toggle("Dungeon Quality", InfoTooltips.dungeonQuality, "Displays the quality and the floor tier on applicable dungeon items."),
+                                new Settings.Toggle("Created Date", InfoTooltips.createdDate, "Displays the exact date at which an item was created."),
+                                new Settings.Toggle("Hex Color", InfoTooltips.hexColor, "Displays the color of an item. Only applies to armor pieces that use leather armor as their base."),
+                                new Settings.Toggle("Museum Donated", InfoTooltips.museumDonated, "Displays if the item has been donated to the Museum.")
+                        )))
+                )),
+                new Category("Tweaks", List.of(
+                        new Module("No Loading Screen", NoLoadingScreen.instance, "Fully removes the loading terrain screen that appears when switching islands."),
+                        new Module("Middle Click Override", MiddleClickOverride.instance, "Replaces left clicks with middle clicks in applicable GUIs, making navigation smoother."),
+                        new Module("No Front Perspective", NoFrontPerspective.instance, "Removes the front facing camera perspective."),
+                        new Module("No Ability Place", NoAbilityPlace.instance, "Prevents block items with abilities from being placeable client side, such as the Egglocator.", new Settings(List.of(
+                                new Settings.Toggle("Skyblock Only", NoAbilityPlace.skyblockCheck, "Prevent the feature from activating outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", NoAbilityPlace.modernCheck, "Prevent the feature from activating on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("Hitbox Fix", HitboxFix.instance, "Fixes lagbacks on old islands caused by the smaller crouching/swimming collision hitbox.", new Settings(List.of(
+                                new Settings.Toggle("Skyblock Only", HitboxFix.skyblockCheck, "Prevent the feature from activating outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", HitboxFix.modernCheck, "Prevent the feature from activating on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("Enchant Fix", EnchantFix.instance, "Fixes client side issues with certain vanilla enchants.\n\n- Fixes Efficiency being lag and ping dependent\n- Fixes Aqua Affinity not working", new Settings(List.of(
+                                new Settings.Toggle("Skyblock Only", EnchantFix.skyblockCheck, "Prevent the feature from activating outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", EnchantFix.modernCheck, "Prevent the feature from activating on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("Item Count Fix", ItemCountFix.instance, "Prevents the game from hiding item counts for unstackable items."),
+                        new Module("Middle Click Fix", MiddleClickFix.instance, "Allows the middle mouse button to work just as it does on 1.8.9."),
+                        new Module("No Drop Swing", NoDropSwing.instance, "Don't swing your hand while dropping items.", new Settings(List.of(
+                                new Settings.Toggle("Skyblock Only", NoDropSwing.skyblockCheck, "Prevent the feature from activating outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", NoDropSwing.modernCheck, "Prevent the feature from activating on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("No Pearl Cooldown", NoPearlCooldown.instance, "Removes the visual cooldown from Ender Pearls.", new Settings(List.of(
+                                new Settings.Toggle("Skyblock Only", NoPearlCooldown.skyblockCheck, "Prevent the feature from activating outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", NoPearlCooldown.modernCheck, "Prevent the feature from activating on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("Old Eye Height", OldEyeHeight.instance, "Allows you to restore the 1.8 sneaking eye height and/or disable the swimming eye height.", new Settings(List.of(
+                                new Settings.Separator("Sneaking"),
+                                new Settings.Toggle("Sneaking", OldEyeHeight.sneakEnabled, "If enabled, the sneaking eye height will be reverted."),
+                                new Settings.Toggle("Skyblock Only", OldEyeHeight.sneakSkyblockCheck, "Prevent the sneaking eye height from changing outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", OldEyeHeight.sneakModernCheck, "Prevent the sneaking eye height from changing on islands using modern Minecraft versions (such as Galatea)."),
+                                new Settings.Separator("Swimming"),
+                                new Settings.Toggle("Swimming", OldEyeHeight.swimEnabled, "If enabled, the swimming eye height will be disabled."),
+                                new Settings.Toggle("Skyblock Only", OldEyeHeight.swimSkyblockCheck, "Prevent the swimming eye height from changing outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", OldEyeHeight.swimModernCheck, "Prevent the swimming eye height from changing on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("Riding Camera Fix", RidingCameraFix.instance, "Removes the floaty camera movement effect while riding entities.", new Settings(List.of(
+                                new Settings.Toggle("Skyblock Only", RidingCameraFix.skyblockCheck, "Prevent the feature from activating outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", RidingCameraFix.modernCheck, "Prevent the feature from activating on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("Animation Fix", AnimationFix.instance, "Fixes the ancient bug where certain animations can play twice, such as unsneaking.", new Settings(List.of(
+                                new Settings.Toggle("Skyblock Only", AnimationFix.skyblockCheck, "Prevent the feature from activating outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", AnimationFix.modernCheck, "Prevent the feature from activating on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("Double Use Fix", DoubleUseFix.instance, "Fixes Blaze Daggers and Fishing Rods being able to activate twice at once.", new Settings(List.of(
+                                new Settings.Toggle("Skyblock Only", DoubleUseFix.skyblockCheck, "Prevent the feature from activating outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", DoubleUseFix.modernCheck, "Prevent the feature from activating on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("Disconnect Fix", DisconnectFix.instance, "Patches any known kick/disconnect issues.\n\n- Fixes the rare disconnects that occur while doing Tarantula slayer."),
+                        new Module("No Confirm Screen", NoConfirmScreen.instance, "Removes the \"Confirm Command Execution\" screen and allows the command to run anyways."),
+                        new Module("No Cursor Reset", NoCursorReset.instance, "Retains your cursor position between container screens.", new Settings(List.of(
+                                new Settings.SliderInt("Clear Time", 0, 1200, 5, NoCursorReset.clearTicks, "The amount of ticks until your last cursor position is forgotten. Set to 0 to always remember.")
+                        ))),
+                        new Module("No Skull Place", NoSkullPlace.instance, "Prevents skull block items from being placeable client side, similarly to 1.8.9.", new Settings(List.of(
+                                new Settings.Toggle("Skyblock Only", NoSkullPlace.skyblockCheck, "Prevent the feature from activating outside of Skyblock."),
+                                new Settings.Toggle("Old Island Only", NoSkullPlace.modernCheck, "Prevent the feature from activating on islands using modern Minecraft versions (such as Galatea).")
+                        ))),
+                        new Module("Instant Sneak", InstantSneak.instance, "Removes the smooth sneaking animation.")
+                )),
+                new Category("Misc", List.of(
+                        new Module("Tooltip Scale", TooltipScale.instance, "Customize the scale of tooltips.", new Settings(List.of(
+                                new Settings.Dropdown<>("Mode", TooltipScale.mode, "The scaling mode.\n\nDynamic: Automatically scales down tooltips so that they always fit the screen.\nCustom: Scales tooltips using the Custom Scale value."),
+                                new Settings.SliderDouble("Custom Scale", 0.0, 4.0, 0.01, TooltipScale.scale, "The custom scale multiplier. Ignored if using Dynamic mode.")
+                        ))),
+                        new Module("Recipe Lookup", RecipeLookup.instance, "Search up recipes for the hovered item with a keybind.", new Settings(List.of(
+                                new Settings.Keybind("Keybind", RecipeLookup.keybind, "The key that activates the feature.")
+                        ))),
+                        new Module("Update Checker", UpdateChecker.instance, "Checks if a NoFrills update is available the first time you join any world/server."),
+                        new Module("Hotbar Swap", HotbarSwap.instance, "A simple alternative to slot binding with no configuration needed.", new Settings(List.of(
+                                new Settings.Separator("Usage"),
+                                new Settings.Description("Swapping", "Left ctrl + Left click on an item in your inventory to swap it with the hotbar slot directly below it."),
+                                new Settings.Separator("Settings"),
+                                new Settings.SliderInt("Last Override", 1, 9, 1, HotbarSwap.override, "Specify a replacement hotbar slot in cases where you swap with the 9th (unused) hotbar slot.")
+                        ))),
+                        new Module("Auto Requeue", AutoRequeue.instance, "Automatically starts a new Dungeons/Kuudra run once finished.", new Settings(List.of(
+                                new Settings.SliderInt("Delay", 0, 400, 5, AutoRequeue.delay, "The delay (in ticks) until the new run is started."),
+                                new Settings.Keybind("Pause Keybind", AutoRequeue.pauseBind, "A keybind that allows you to manually pause Auto Requeue on demand.")
+                        ))),
+                        new Module("Party Finder", PartyFinder.instance, "Various features for your monkey finding adventures.", new Settings(List.of(
+                                new Settings.Toggle("Buttons", PartyFinder.buttons, "Adds various buttons in chat whenever anyone joins your party, such as kick or copy name.")
+                        ))),
+                        new Module("Command Tooltip", CommandTooltip.instance, "Reveals the command that the hovered chat message would run when clicked."),
+                        new Module("Auto Save", AutoSave.instance, "Automatically saves your settings after closing the settings/HUD editor screen."),
+                        new Module("Unfocused Tweaks", UnfocusedTweaks.instance, "Various optimizations for when you are tabbed out of Minecraft.", new Settings(List.of(
+                                new Settings.Toggle("Skip World Render", UnfocusedTweaks.noWorldRender, "Skips world rendering while unfocused which greatly reduces usage."),
+                                new Settings.Toggle("Mute Sounds", UnfocusedTweaks.muteSounds, "Mutes the in-game sound while unfocused."),
+                                new Settings.Toggle("No Vanilla Limit", UnfocusedTweaks.noVanilla, "Fully disables the vanilla \"Reduce FPS\" option."),
+                                new Settings.SliderInt("FPS Limit", 0, 200, 1, UnfocusedTweaks.fpsLimit, "The max FPS the game will render at while unfocused. Set to 0 to disable.")
+                        ))),
+                        new Module("GUI Keybinds", GuiKeybinds.instance, "Adds navigation keybinds to applicable Skyblock GUIs.", new Settings(List.of(
+                                new Settings.Keybind("Next Page", GuiKeybinds.next, "The keybind to go to the next page of the GUI."),
+                                new Settings.Keybind("Previous Page", GuiKeybinds.previous, "The keybind to go to the previous page of the GUI."),
+                                new Settings.Keybind("Scroll Up", GuiKeybinds.up, "The keybind to scroll up in the GUI."),
+                                new Settings.Keybind("Scroll Down", GuiKeybinds.down, "The keybind to scroll down in the GUI."),
+                                new Settings.Keybind("Go Back", GuiKeybinds.back, "The keybind to go back to the previous GUI.")
+                        ))),
+                        new Module("Force Nametag", ForceNametag.instance, "Makes player nametags always visible, even if they are invisible and/or sneaking.", new Settings(List.of(
+                                new Settings.Toggle("Self Nametag", ForceNametag.self, "Forces your own player nametag to render. Only visible in the third person perspective.")
+                        ))),
+                        new Module("Hotbar Scroll Lock", HotbarScrollLock.instance, "Prevents your hotbar going from the first to the last slot when scrolling, and vice versa.")
+                )),
+                new Category("Solvers", List.of(
+                        new Module("Experimentation Table", ExperimentSolver.instance, "Solves the Experimentation Table mini-games and prevents wrong clicks.", new Settings(List.of(
+                                new Settings.Toggle("Chronomatron", ExperimentSolver.chronomatron, "Reveals the solution in Chronomatron."),
+                                new Settings.Toggle("Ultrasequencer", ExperimentSolver.ultrasequencer, "Reveals the solution in Ultrasequencer."),
+                                new Settings.Toggle("Superpairs", ExperimentSolver.superpairs, "Reveals uncovered rewards in Superpairs and highlights matchable/matched pairs.")
+                        ))),
+                        new Module("Calendar Date", CalendarDate.instance, "Calculates the exact starting dates of events in the calendar."),
+                        new Module("Spooky Chests", SpookyChests.instance, "Highlights nearby trick or treat chests during the Spooky Festival.", new Settings(List.of(
+                                new Settings.Toggle("Chest Tracer", SpookyChests.tracer, "Draws tracers towards unopened trick or treat chests."),
+                                new Settings.ColorPicker("Color", true, SpookyChests.color, "The color of the spooky chest highlight.")
+                        ))),
+                        new Module("Diana Solver", DianaSolver.instance, "Guesses Diana burrow positions when using your spade. Also highlights nearby burrows.", new Settings(List.of(
+                                new Settings.Separator("Burrows"),
+                                new Settings.Dropdown<>("Guess Mode", DianaSolver.guessMode, "Which spade particle to use for calculating the burrow position.\nThis option shouldn't have any difference in most cases."),
+                                new Settings.Toggle("Guess Tracer", DianaSolver.guessTracer, "Draws a tracer towards the guessed burrow."),
+                                new Settings.ColorPicker("Tracer Color", true, DianaSolver.guessTracerColor, "The color of the guessed burrow tracer."),
+                                new Settings.ColorPicker("Guess Color", true, DianaSolver.guessColor, "The color of the guessed burrow beacon."),
+                                new Settings.ColorPicker("Treasure Color", true, DianaSolver.treasureColor, "The color of the treasure burrow beacon."),
+                                new Settings.ColorPicker("Enemy Color", true, DianaSolver.enemyColor, "The color of the enemy burrow beacon."),
+                                new Settings.ColorPicker("Start Color", true, DianaSolver.startColor, "The color of the start burrow beacon."),
+                                new Settings.Separator("Warps"),
+                                new Settings.Keybind("Warp Keybind", DianaSolver.warpKey, "The keybind to warp to the location closest to the guessed burrow."),
+                                new Settings.Toggle("Warp Message", DianaSolver.warpMsg, "Shows a message in chat with the location name if the closest warp is successful."),
+                                new Settings.Toggle("Hub Warp", DianaSolver.hubToggle, "Consider Hub a valid warp location when using the Warp Keybind."),
+                                new Settings.Toggle("Stonks Warp", DianaSolver.stonksToggle, "Consider Stonks Auction as a valid warp location when using the Warp Keybind."),
+                                new Settings.Toggle("Museum Warp", DianaSolver.museumToggle, "Consider Museum as a valid warp location when using the Warp Keybind."),
+                                new Settings.Toggle("Castle Warp", DianaSolver.castleToggle, "Consider Castle as a valid warp location when using the Warp Keybind."),
+                                new Settings.Toggle("Wizard Tower Warp", DianaSolver.wizardToggle, "Consider Wizard Tower as a valid warp location when using the Warp Keybind."),
+                                new Settings.Toggle("Dark Auction Warp", DianaSolver.daToggle, "Consider Dark Auction as a valid warp location when using the Warp Keybind."),
+                                new Settings.Toggle("Crypt Warp", DianaSolver.cryptToggle, "Consider Crypt as a valid warp location when using the Warp Keybind.")
+                        ))),
+                        new Module("Hoppity Solver", HoppitySolver.instance, "Guesses Hoppity egg positions when using your Egglocator.", new Settings(List.of(
+                                new Settings.Toggle("Tracer", HoppitySolver.tracer, "Draws a tracer towards the guess."),
+                                new Settings.ColorPicker("Color", true, HoppitySolver.color, "The color of the guess highlight."),
+                                new Settings.ColorPicker("Tracer Color", true, HoppitySolver.tracerColor, "The color of the guess tracer.")
+                        ))),
+                        new Module("Moonglade Beacon", BeaconTuningSolver.instance, "Solves the beacon tuning mini-game on Galatea."),
+                        new Module("Anvil Helper", AnvilHelper.instance, "Highlights the enchanted books which you can safely combine while using the anvil.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, AnvilHelper.color, "The color of the highlight.")
+                        )))
+                )),
+                new Category("Fishing", List.of(
+                        new Module("Cap Tracker", CapTracker.instance, "Tracks the sea creature cap. Mostly for barn fishing.", new Settings(List.of(
+                                new Settings.SliderInt("Target", 1, 60, 1, CapTracker.target, "The amount of sea creatures to consider as the limit."),
+                                new Settings.Toggle("Show Title", CapTracker.title, "Shows a title on screen once the cap is reached."),
+                                new Settings.Toggle("Play Sound", CapTracker.sound, "Plays a sound effect once the cap is reached."),
+                                new Settings.Toggle("Send Message", CapTracker.sendMsg, "Sends a specific message once the cap is reached."),
+                                new Settings.TextInput("Message", CapTracker.msg, "The message to send."),
+                                new Settings.SliderInt("Kill Delay", 5, 120, 1, CapTracker.delay, "The delay (in seconds) until the cap starts being tracked again after it is reached.")
+                        ))),
+                        new Module("Mute Drake", MuteDrake.instance, "Prevents the Reindrake from blowing up your ears with gifts."),
+                        new Module("Rare Glow", RareGlow.instance, "Applies a glow effect to nearby rare/profitable sea creatures.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", false, RareGlow.color, "The color of the glow.")
+                        ))),
+                        new Module("Rare Alert", RareAnnounce.instance, "Alerts you, and/or your party when you catch a rare sea creature.", new Settings(List.of(
+                                new Settings.Toggle("Show Title", RareAnnounce.title, "Shows a title on screen with the name of the sea creature."),
+                                new Settings.Toggle("Play Sound", RareAnnounce.sound, "Plays a sound effect once you catch a rare sea creature."),
+                                new Settings.Toggle("Replace Message", RareAnnounce.replace, "Replaces the catch message of rare sea creatures with colored versions."),
+                                new Settings.Toggle("Send Message", RareAnnounce.sendMsg, "Sends a specific message once you catch a rare sea creature."),
+                                new Settings.TextInput("Message", RareAnnounce.msg, "The message to send. Replaces {spawnmsg} with the catch message, and {name} with the sea creature name.")
+                        ))),
+                        new Module("Radar Solver", RadarSolver.instance, "Guesses Fishing Hotspot positions when using your Hotspot Radar.", new Settings(List.of(
+                                new Settings.Toggle("Tracer", RadarSolver.tracer, "Draws a tracer towards the guess."),
+                                new Settings.ColorPicker("Color", true, RadarSolver.color, "The color of the guess highlight."),
+                                new Settings.ColorPicker("Tracer Color", true, RadarSolver.tracerColor, "The color of the guess tracer.")
+                        )))
+                )),
+                new Category("Hunting", List.of(
+                        new Module("Invisibug Highlight", InvisibugHighlight.instance, "Highlights nearby Invisibugs on the Galatea.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, InvisibugHighlight.color, "The color of the Invisibug highlight.")
+                        ))),
+                        new Module("Cinderbat Highlight", CinderbatHighlight.instance, "Highlights the annoying bats on the Crimson Isle.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, CinderbatHighlight.color, "The color of the Cinderbat highlight.")
+                        ))),
+                        new Module("Fusion Keybinds", FusionKeybinds.instance, "Adds handy keybinds to the Fusion Machine.", new Settings(List.of(
+                                new Settings.Keybind("Repeat Previous", FusionKeybinds.repeat, "The keybind to repeat the previous fusion."),
+                                new Settings.Keybind("Confirm Fusion", FusionKeybinds.confirm, "The keybind to confirm a fusion."),
+                                new Settings.Keybind("Cancel Fusion", FusionKeybinds.cancel, "The keybind to cancel a fusion.")
+                        ))),
+                        new Module("Lasso Alert", LassoAlert.instance, "Plays a sound effect once you can reel in with your lasso."),
+                        new Module("Instant Fog", InstantFog.instance, "Makes the thick underwater fog disappear instantly."),
+                        new Module("Shard Tracker", ShardTracker.instance, "Tracks obtained shards for you and displays information with a HUD element.", ShardTracker.buildSettings()),
+                        new Module("Huntaxe Lock", HuntaxeLock.instance, "Requires you to double right click with your Huntaxe to be able to open the GUI.")
+                )),
+                new Category("Dungeons", List.of(
+                        new Module("Device Solvers", DeviceSolvers.instance, "Solvers for various F7/M7 devices.", new Settings(List.of(
+                                new Settings.Separator("Sharpshooter"),
+                                new Settings.Toggle("Solve Sharpshooter", DeviceSolvers.sharpshooter, "Highlights the active and the hit targets while doing the 4th device."),
+                                new Settings.ColorPicker("Target Color", true, DeviceSolvers.sharpTargetColor, "The color of the active target block."),
+                                new Settings.ColorPicker("Hit Color", true, DeviceSolvers.sharpHitColor, "The color of the hit target blocks."),
+                                new Settings.Separator("Arrow Align"),
+                                new Settings.Toggle("Solve Arrow Align", DeviceSolvers.arrowAlign, "Shows the amount of needed clicks while doing the 3rd device."),
+                                new Settings.Toggle("Block Wrong Clicks", DeviceSolvers.alignBlockWrong, "Prevents you from rotating the arrows that already have the correct rotation."),
+                                new Settings.Toggle("Inverted Block", DeviceSolvers.alignBlockInvert, "Prevents wrong rotations only while sneaking instead of only while not sneaking."),
+                                new Settings.Toggle("Instant Rotate", DeviceSolvers.alignInstantRotate, "Makes the item frame arrow rotation pingless.")
+                        ))),
+                        new Module("Starred Mob Highlight", StarredMobHighlight.instance, "High performance starred mob highlights.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, StarredMobHighlight.color, "The color of the starred mob highlight.")
+                        ))),
+                        new Module("Miniboss Highlight", MinibossHighlight.instance, "Highlights minibosses.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, MinibossHighlight.color, "The color of the miniboss highlight.")
+                        ))),
+                        new Module("Key Highlight", KeyHighlight.instance, "Highlights nearby Wither and Blood keys.", new Settings(List.of(
+                                new Settings.Toggle("Highlight", KeyHighlight.highlight, "Renders a highlight + beam on top of Wither Keys."),
+                                new Settings.Toggle("Tracer", KeyHighlight.tracer, "Renders a tracer towards the Wither Key."),
+                                new Settings.ColorPicker("Highlight Color", true, KeyHighlight.color, "The color of the highlight."),
+                                new Settings.ColorPicker("Tracer Color", true, KeyHighlight.tracerColor, "The color of the tracer.")
+                        ))),
+                        new Module("Spirit Bow Highlight", SpiritBowHighlight.instance, "Highlights the Spirit Bow in the F4/M4 boss fight.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, SpiritBowHighlight.color, "The color of the Spirit Bow highlight.")
+                        ))),
+                        new Module("Reminders", DungeonReminders.instance, "Various class specific Dungeons reminders.", new Settings(List.of(
+                                new Settings.Toggle("Wish", DungeonReminders.wish, "Reminds you to wish as Healer when Maxor enrages in F7/M7."),
+                                new Settings.Toggle("Blood Camp", DungeonReminders.bloodCamp, "Reminds you to start camping the blood room as Mage."),
+                                new Settings.Toggle("M5 Rag", DungeonReminders.rag, "Reminds you to use your Ragnarock in the M5 boss room as Mage.")
+                        ))),
+                        new Module("Leap Overlay", LeapOverlay.instance, "Renders a custom overlay in place of the Spirit Leap menu.", new Settings(List.of(
+                                new Settings.Toggle("Send Message", LeapOverlay.send, "Sends a message once you leap to a teammate."),
+                                new Settings.TextInput("Leap Message", LeapOverlay.message, "The message to send. Replaces {name} with the name of the player."),
+                                new Settings.SliderDouble("Text Scale", 1.0, 4.0, 1.0, LeapOverlay.scale, "The scale of the text on the overlay."),
+                                new Settings.ColorPicker("Healer Color", false, LeapOverlay.healer, "The color used for Healer on the overlay."),
+                                new Settings.ColorPicker("Mage Color", false, LeapOverlay.mage, "The color used for Mage on the overlay."),
+                                new Settings.ColorPicker("Bers Color", false, LeapOverlay.bers, "The color used for Berserker on the overlay."),
+                                new Settings.ColorPicker("Arch Color", false, LeapOverlay.arch, "The color used for Archer on the overlay."),
+                                new Settings.ColorPicker("Tank Color", false, LeapOverlay.tank, "The color used for Tank on the overlay.")
+                        ))),
+                        new Module("Terminal Solvers", TerminalSolvers.instance, "Solves terminals and prevents wrong clicks in F7/M7. Also hides item tooltips in every terminal.", new Settings(List.of(
+                                new Settings.Toggle("Solve Panes", TerminalSolvers.panes, "Solves the \"Correct all panes\" terminal."),
+                                new Settings.Toggle("Solve In Order", TerminalSolvers.inOrder, "Solves the \"Click in order\" Among Us task."),
+                                new Settings.Toggle("Solve Starts With", TerminalSolvers.startsWith, "Solves the \"What starts with\" terminal."),
+                                new Settings.Toggle("Solve Select", TerminalSolvers.select, "Solves the \"Select all\" terminal."),
+                                new Settings.Toggle("Solve Colors", TerminalSolvers.colors, "Solves the \"Change all to same color\" terminal.")
+                        ))),
+                        new Module("Terracotta Timers", TerracottaTimer.instance, "Renders respawn timers for the dead terracottas in F6/M6.\nAlso displays timers for the 1st Gyro and Sadan's last giant, useful if you are Mage.", new Settings(List.of(
+                                new Settings.Toggle("Mage Check", TerracottaTimer.mageCheck, "If enabled, prevents the 1st Gyro and last giant timers from appearing if you are not Mage."),
+                                new Settings.ColorPicker("Text Color", true, TerracottaTimer.color, "The color of the timer text.")
+                        ))),
+                        new Module("Wither Dragons", WitherDragons.instance, "Features for the last phase of M7.", new Settings(List.of(
+                                new Settings.Toggle("Spawn Alert", WitherDragons.alert, "Alerts you when a dragon is about to spawn.\nThis option also calculates the priority on the initial spawn based on your selected class."),
+                                new Settings.SliderDouble("Split Power", 0, 32, 0.1, WitherDragons.power, "The required Power blessing level to consider a split possible.\nLeaving this option at 0 is recommended for party finder teams."),
+                                new Settings.SliderDouble("Easy Power", 0, 32, 0.1, WitherDragons.powerEasy, "The required Power blessing level to consider a split possible, as long as one of the dragons is Purple."),
+                                new Settings.Toggle("Dragon Glow", WitherDragons.glow, "Applies a glow effect to each dragon."),
+                                new Settings.Toggle("Kill Areas", WitherDragons.boxes, "Renders the kill areas of every alive dragon."),
+                                new Settings.Toggle("Tracers", WitherDragons.tracers, "Draws tracer lines to spawning dragons."),
+                                new Settings.Toggle("Stack Waypoints", WitherDragons.stack, "Renders waypoints for stacking your Last Breath arrows."),
+                                new Settings.Dropdown<>("Waypoint Type", WitherDragons.stackType, "The type of the arrow stack waypoints.\n\nSimple: Highlights the exact spawn position of a spawning dragon.\nAdvanced: Highlights each individual hitbox of a spawning dragon."),
+                                new Settings.Toggle("Spawn Timer", WitherDragons.timer, "Renders timers for exactly when a dragon should finish spawning."),
+                                new Settings.Toggle("Dragon Health", WitherDragons.health, "Renders the exact health of the dragons.")
+                        ))),
+                        new Module("Secret Bat Highlight", SecretBatHighlight.instance, "Applies a glow effect to secret bats.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", false, SecretBatHighlight.color, "The color of the secret bat glow.")
+                        ))),
+                        new Module("Livid Solver", LividSolver.instance, "Finds and highlights the correct Livid in F5/M5.", new Settings(List.of(
+                                new Settings.Toggle("Title", LividSolver.title, "Show a title on screen once the Livid color is identified."),
+                                new Settings.Toggle("Highlight", LividSolver.highlight, "Renders an outline for the correct Livid."),
+                                new Settings.Toggle("Tracer", LividSolver.tracer, "Renders a tracer towards the correct Livid."),
+                                new Settings.ColorPicker("Highlight Color", true, LividSolver.color, "The color of the outline."),
+                                new Settings.ColorPicker("Tracer Color", true, LividSolver.tracerColor, "The color of the tracer.")
+                        ))),
+                        new Module("Prince Message", PrinceMessage.instance, "Sends a message when you gain bonus score from the Prince Shard.", new Settings(List.of(
+                                new Settings.TextInput("Message", PrinceMessage.msg, "The message to send.")
+                        ))),
+                        new Module("Mimic Message", MimicMessage.instance, "Sends a message once you kill the Mimic. Should work even if it's instantly killed.", new Settings(List.of(
+                                new Settings.TextInput("Message", MimicMessage.msg, "The message to send.")
+                        ))),
+                        new Module("Spirit Bear Timer", SpiritBearTimer.instance, "Renders a timer on screen for when the Spirit Bear is going to spawn in F4/M4."),
+                        new Module("Secret Chime", SecretChime.instance, "Plays sounds upon collecting specific secrets.", new Settings(List.of(
+                                new Settings.Toggle("Items", SecretChime.itemsToggle, "Play a chime upon picking up a secret item."),
+                                new Settings.TextInput("Items Sound", SecretChime.itemsSound, "The identifier of the sound to play."),
+                                new Settings.SliderDouble("Items Volume", 0.0, 5.0, 0.1, SecretChime.itemsVolume, "The volume of the sound."),
+                                new Settings.SliderDouble("Items Pitch", 0.0, 2.0, 0.05, SecretChime.itemsPitch, "The pitch of the sound."),
+                                new Settings.Toggle("Chests", SecretChime.chestToggle, "Play a chime upon opening a secret chest."),
+                                new Settings.TextInput("Chests Sound", SecretChime.chestSound, "The identifier of the sound to play."),
+                                new Settings.SliderDouble("Chests Volume", 0.0, 5.0, 0.1, SecretChime.chestVolume, "The volume of the sound."),
+                                new Settings.SliderDouble("Chests Pitch", 0.0, 2.0, 0.05, SecretChime.chestPitch, "The pitch of the sound."),
+                                new Settings.Toggle("Essence", SecretChime.essenceToggle, "Play a chime upon collecting a Wither Essence secret."),
+                                new Settings.TextInput("Essence Sound", SecretChime.essenceSound, "The identifier of the sound to play."),
+                                new Settings.SliderDouble("Essence Volume", 0.0, 5.0, 0.1, SecretChime.essenceVolume, "The volume of the sound."),
+                                new Settings.SliderDouble("Essence Pitch", 0.0, 2.0, 0.05, SecretChime.essencePitch, "The pitch of the sound."),
+                                new Settings.Toggle("Bats", SecretChime.batToggle, "Play a chime upon killing a secret bat."),
+                                new Settings.TextInput("Bats Sound", SecretChime.batSound, "The identifier of the sound to play."),
+                                new Settings.SliderDouble("Bats Volume", 0.0, 5.0, 0.1, SecretChime.batVolume, "The volume of the sound."),
+                                new Settings.SliderDouble("Bats Pitch", 0.0, 2.0, 0.05, SecretChime.batPitch, "The pitch of the sound."),
+                                new Settings.Toggle("Levers", SecretChime.leverToggle, "Play a chime upon interacting with a lever."),
+                                new Settings.TextInput("Levers Sound", SecretChime.leverSound, "The identifier of the sound to play."),
+                                new Settings.SliderDouble("Levers Volume", 0.0, 5.0, 0.1, SecretChime.leverVolume, "The volume of the sound."),
+                                new Settings.SliderDouble("Levers Pitch", 0.0, 2.0, 0.05, SecretChime.leverPitch, "The pitch of the sound.")
+                        ))),
+                        new Module("Melody Message", MelodyMessage.instance, "Send start and progress messages when you get the Melody terminal in F7/M7.", new Settings(List.of(
+                                new Settings.TextInput("Message", MelodyMessage.msg, "The message to send when the terminal is opened."),
+                                new Settings.Toggle("Send Progress", MelodyMessage.progress, "Send messages when you make progress in the terminal."),
+                                new Settings.TextInput("% Message", MelodyMessage.progressMsg, "The message to send when you make progress.\nReplaces {percent} with your progress percentage (25%/50%/75%).")
+                        ))),
+                        new Module("Quick Close", QuickClose.instance, "Quickly close Dungeon secret and/or loot chests by pressing any of the movement keys (WASD)."),
+                        new Module("Chest Value", DungeonChestValue.instance, "Calculates the value of your Dungeons loot. Requires connectivity to the NoFrills API.", new Settings(List.of(
+                                new Settings.ColorPicker("Background", true, DungeonChestValue.background, "The color of the background of the value text.")
+                        ))),
+                        new Module("Tick Timers", TickTimers.instance, "Displays a timer for various things during the F7/M7 boss fight.\nUses the Tick Timers HUD element found in the HUD editor.", new Settings(List.of(
+                                new Settings.Toggle("Storm Timer", TickTimers.storm, "Shows a timer for the pads in 2nd phase."),
+                                new Settings.Toggle("Terminal Start Timer", TickTimers.terminalStart, "Shows a timer for the 3rd phase starting."),
+                                new Settings.Toggle("Goldor Timer", TickTimers.goldor, "Shows a timer for Goldor's death tick in 3rd phase.")
+                        ))),
+                        new Module("Relic Highlight", RelicHighlight.instance, "Highlights the correct placement position of your M7 king relic."),
+                        new Module("Class Nametags", ClassNametags.instance, "Renders large nametags for your teammates, indicating their selected class and position.", new Settings(List.of(
+                                new Settings.SliderDouble("Text Scale", 0.0, 1.0, 0.01, ClassNametags.scale, "The scale of the text."),
+                                new Settings.ColorPicker("Healer Color", false, ClassNametags.healer, "The text color for Healer."),
+                                new Settings.ColorPicker("Mage Color", false, ClassNametags.mage, "The text color for Mage."),
+                                new Settings.ColorPicker("Bers Color", false, ClassNametags.bers, "The text color for Berserker."),
+                                new Settings.ColorPicker("Arch Color", false, ClassNametags.arch, "The text color for Archer."),
+                                new Settings.ColorPicker("Tank Color", false, ClassNametags.tank, "The text color for Tank.")
+                        )))
+                )),
+                new Category("Kuudra", List.of(
+                        new Module("Drain Message", DrainMessage.instance, "Send a message when you drain your mana using an End Stone Sword.", new Settings(List.of(
+                                new Settings.TextInput("Message", DrainMessage.message, "The message to send.\nReplaces {mana} with the mana used, and {players} with the amount of affected players."),
+                                new Settings.Toggle("Hide Ability Messages", DrainMessage.hide, "Hides the chat messages that appear after using an End Stone Sword.")
+                        ))),
+                        new Module("Fresh Timer", FreshTimer.instance, "Shows a timer on screen for the Fresh Tools essence shop ability.", new Settings(List.of(
+                                new Settings.Toggle("Send Message", FreshTimer.send, "Send a message once Fresh Tools activates."),
+                                new Settings.TextInput("Message", FreshTimer.message, "The message to send.")
+                        ))),
+                        new Module("Kuudra Hitbox", KuudraHitbox.instance, "Renders a hitbox for Kuudra.", new Settings(List.of(
+                                new Settings.Toggle("Through Walls", KuudraHitbox.walls, "Makes the hitbox render through walls, because even YouTube ranks can get away with ESP in Kuudra."),
+                                new Settings.ColorPicker("Color", true, KuudraHitbox.color, "The color of the hitbox.")
+                        ))),
+                        new Module("Waypoints", KuudraWaypoints.instance, "Renders various waypoints in Kuudra.", new Settings(List.of(
+                                new Settings.Toggle("Supplies", KuudraWaypoints.supply, "Renders beacons for every supply crate."),
+                                new Settings.ColorPicker("Supply Color", true, KuudraWaypoints.supplyColor, "The color of the supply crate beacons."),
+                                new Settings.Toggle("Drop-offs", KuudraWaypoints.drop, "Renders beacons for every available supply drop-off point."),
+                                new Settings.ColorPicker("Drop-off Color", true, KuudraWaypoints.dropColor, "The color of the drop-off beacons."),
+                                new Settings.Toggle("Build Piles", KuudraWaypoints.build, "Renders beacons for every unfinished Ballista build pile."),
+                                new Settings.ColorPicker("Piles Color", true, KuudraWaypoints.buildColor, "The color of the build pile beacons.")
+                        ))),
+                        new Module("Pre Message", PreMessage.instance, "Announces if no supply spawns at your pre spot (or your next pickup spot)."),
+                        new Module("Shop Cleaner", ShopCleaner.instance, "Removes useless things from the perk shop."),
+                        new Module("Chest Value", KuudraChestValue.instance, "Calculates the value of your Kuudra loot. Requires connectivity to the NoFrills API.", new Settings(List.of(
+                                new Settings.SliderInt("Pet Bonus", 0, 20, 1, KuudraChestValue.petBonus, "The extra Crimson Essence percentage granted by your Kuudra pet.\nUsed to calculate the value of the essence with the extra perk included."),
+                                new Settings.Toggle("Use Salvage Value", KuudraChestValue.salvageValue, "Prices armor and equipment pieces based on the amount of essence gained from salvaging them.\nCan give a more accurate chest value compared to the default Lowest BIN value."),
+                                new Settings.ColorPicker("Background", true, KuudraChestValue.background, "The color of the background of the value text.")
+                        ))),
+                        new Module("Crate Priority", CratePriority.instance, "Shows which crates to pull and/or grab after you collect your Pre.\nThis feature requires the full party to be using some kind of Pre message feature.")
+                )),
+                new Category("Slayer", List.of(
+                        new Module("Boss Highlight", BossHighlight.instance, "Highlights your slayer boss.", new Settings(List.of(
+                                new Settings.ColorPicker("Fill Color", true, BossHighlight.fillColor, "The color of the filled box highlight (if applicable)."),
+                                new Settings.ColorPicker("Outline Color", true, BossHighlight.outlineColor, "The color of the outline box highlight (if applicable)."),
+                                new Settings.Dropdown<>("Highlight Style", BossHighlight.highlightStyle, "The style of the highlight."),
+                                new Settings.Separator("Inferno Demonlord"),
+                                new Settings.ColorPicker("Ashen Fill", true, BossHighlight.ashenFill, "The color of the filled box if your boss is using the Ashen attunement."),
+                                new Settings.ColorPicker("Ashen Outline", true, BossHighlight.ashenOutline, "The color of the outline box if your boss is using the Ashen attunement."),
+                                new Settings.ColorPicker("Spirit Fill", true, BossHighlight.spiritFill, "The color of the filled box if your boss is using the Spirit attunement."),
+                                new Settings.ColorPicker("Spirit Outline", true, BossHighlight.spiritOutline, "The color of the outline if your boss is using the Spirit attunement."),
+                                new Settings.ColorPicker("Auric Fill", true, BossHighlight.auricFill, "The color of the filled box if your boss is using the Auric attunement."),
+                                new Settings.ColorPicker("Auric Outline", true, BossHighlight.auricOutline, "The color of the outline box if your boss is using the Auric attunement."),
+                                new Settings.ColorPicker("Crystal Fill", true, BossHighlight.crystalFill, "The color of the filled box if your boss is using the Crystal attunement."),
+                                new Settings.ColorPicker("Crystal Outline", true, BossHighlight.crystalOutline, "The color of the outline box if your boss is using the Crystal attunement.")
+                        ))),
+                        new Module("Pillar Alert", PillarAlert.instance, "Alerts you when your Blaze boss spawns a fire pillar.\nThis feature tries to prevent false flags by tracking the \"path\" that the pillars take."),
+                        new Module("No Attunement Spam", NoAttunementSpam.instance, "Filters the chat messages about using the wrong attunement on the Blaze boss."),
+                        new Module("Kill Timer", KillTimer.instance, "Tracks how long your slayer boss took to kill."),
+                        new Module("Chalice Highlight", ChaliceHighlight.instance, "Highlights the Blood Ichor chalices spawned by the T5 Vampire.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, ChaliceHighlight.color, "The color of the chalice highlight.")
+                        ))),
+                        new Module("Ice Alert", IceAlert.instance, "Shows a timer for when your Vampire boss is going to cast Twinclaws."),
+                        new Module("Stake Alert", StakeAlert.instance, "Shows text on screen once you can vanquish your Vampire boss with the Steak Stake."),
+                        new Module("Mute Vampire", MuteVampire.instance, "Prevents the Vampire Mania/Killer Springs sounds from playing.", new Settings(List.of(
+                                new Settings.Toggle("Mania", MuteVampire.mania, "Mutes the loud Mania sounds while in the Chateau."),
+                                new Settings.Toggle("Killer Springs", MuteVampire.springs, "Mutes the Wither sound spam that occurs when your boss spawns a Killer Spring.")
+                        ))),
+                        new Module("Egg Hits Display", EggHitsDisplay.instance, "Renders the needed hits for the Tarantula Broodfather egg sack phase.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, EggHitsDisplay.color, "The color of the text."),
+                                new Settings.SliderDouble("Scale", 0.0, 1.0, 0.01, EggHitsDisplay.scale, "The scale of the text.")
+                        ))),
+                        new Module("Beacon Tracer", BeaconTracer.instance, "Draws tracers towards the Yang Glyphs thrown by the Voidgloom Seraph.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, BeaconTracer.color, "The color of the tracer.")
+                        ))),
+                        new Module("Mute Enderman", MuteEnderman.instance, "Prevents the angry Enderman sounds from playing."),
+                        new Module("Cocoon Alert", CocoonAlert.instance, "Alerts you when your slayer boss is cocooned by your Primordial belt."),
+                        new Module("Spawn Alert", SpawnAlert.instance, "Alerts you when your slayer boss is spawned.")
+                )),
+                new Category("Mining", List.of(
+                        new Module("Ability Alert", AbilityAlert.instance, "Alerts you when your Pickaxe Ability is available.\n\nIf present, uses the Pickaxe Ability widget for best accuracy.\nOtherwise, uses the cooldown displayed on your drill/pickaxe.\nMight be inaccurate in some cases.", new Settings(List.of(
+                                new Settings.SliderInt("Override Ticks", 0, 6000, 1, AbilityAlert.override, "Overrides your pickaxe ability cooldown to a custom value in ticks.\nOnly applies if the Pickaxe Ability widget isn't present.\nSet to 0 to disable.")
+                        ))),
+                        new Module("Corpse Highlight", CorpseHighlight.instance, "Highlights corpses in the Glacite Mineshafts.", new Settings(List.of(
+                                new Settings.Toggle("Hide Opened", CorpseHighlight.hideOpened, "Removes the highlight from corpses you've already opened."),
+                                new Settings.ColorPicker("Lapis Color", false, CorpseHighlight.lapisColor, "The color of the Lapis corpse."),
+                                new Settings.ColorPicker("Mineral Color", false, CorpseHighlight.mineralColor, "The color of the Tungsten corpse."),
+                                new Settings.ColorPicker("Yog Color", false, CorpseHighlight.yogColor, "The color of the Umber corpse."),
+                                new Settings.ColorPicker("Vanguard Color", false, CorpseHighlight.vanguardColor, "The color of the Vanguard corpse.")
+                        ))),
+                        new Module("Better Sky Mall", BetterSkyMall.instance, "Compacts Sky Mall messages, and fully hides them if you are not mining.", new Settings(List.of(
+                                new Settings.TextInput("Buff Whitelist", BetterSkyMall.whitelist, "Allows a buff message to always show if it contains a specific keyword.\nThe list is case insensitive, and separated by comma.")
+                        ))),
+                        new Module("Ghost Vision", GhostVision.instance, "Makes Ghosts easier to see in the Dwarven Mines.", new Settings(List.of(
+                                new Settings.ColorPicker("Fill Color", true, GhostVision.fill, "The color of the filled box over each Ghost."),
+                                new Settings.ColorPicker("Outline Color", true, GhostVision.outline, "The color of the outline box over each Ghost.")
+                        ))),
+                        new Module("Scatha Mining", ScathaMining.instance, "Scatha mining features.", new Settings(List.of(
+                                new Settings.Toggle("Spawn Alert", ScathaMining.alert, "Alerts you when a Worm/Scatha spawns nearby."),
+                                new Settings.Toggle("Cooldown", ScathaMining.cooldown, "Tracks the Worm spawn cooldown for you.")
+                        ))),
+                        new Module("End Node Highlight", EndNodeHighlight.instance, "Highlights Ender Nodes.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, EndNodeHighlight.color, "The color of the node highlight.")
+                        ))),
+                        new Module("Temple Skip", TempleSkip.instance, "Highlights a pearl skip spot for the Jungle Temple once you approach the entrance.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, TempleSkip.color, "The color of the skip highlight.")
+                        ))),
+                        new Module("Gemstone Desync Fix", GemstoneDesyncFix.instance, "Fixes adjacent gemstone blocks not correctly updating when mining."),
+                        new Module("Break Reset Fix", BreakResetFix.instance, "Fixes item updates resetting your block breaking progress, also known as HSM."),
+                        new Module("Shaft Announce", ShaftAnnounce.instance, "Sends a message with the mineshaft ID and the list of corpses upon entering a Glacite Mineshaft.", new Settings(List.of(
+                                new Settings.TextInput("Message", ShaftAnnounce.msg, "The message to send.\n\nReplaces {id} with the ID of the mineshaft, for example: \"JASP_1\".\nReplaces {corpses} with the list of corpses in the mineshaft, for example: \"2x Lapis, 1x Umber\".")
+                        )))
+                )),
+                new Category("Farming", List.of(
+                        new Module("Space Farmer", SpaceFarmer.instance, "Allows you to farm by holding space bar, sneak and press space to activate.\nThis feature will also lock your view once you start holding space."),
+                        new Module("Glowing Mushrooms", GlowingMushroom.instance, "Highlights Glowing Mushrooms.", new Settings(List.of(
+                                new Settings.ColorPicker("Color", true, GlowingMushroom.color, "The color of the highlight.")
+                        ))),
+                        new Module("Plot Borders", PlotBorders.instance, "Renders borders for plots.", new Settings(List.of(
+                                new Settings.Toggle("Infested Plots", PlotBorders.infested, "Adds borders to plots with pests in them."),
+                                new Settings.ColorPicker("Infested Color", true, PlotBorders.infestedColor, "The color of the infested plot border."),
+                                new Settings.Toggle("Current Plot", PlotBorders.current, "Adds a border to the plot you are in."),
+                                new Settings.ColorPicker("Current Color", true, PlotBorders.currentColor, "The color of the current plot border."),
+                                new Settings.Toggle("All Plots", PlotBorders.all, "Adds borders to every plot if no other border should apply."),
+                                new Settings.ColorPicker("All Color", true, PlotBorders.allColor, "The color of the border for every plot.")
+                        ))),
+                        new Module("Vacuum Solver", VacuumSolver.instance, "Guesses Pest positions when using the Pest Tracker ability on your vacuum.", new Settings(List.of(
+                                new Settings.Toggle("Tracer", VacuumSolver.tracer, "Draws a tracer towards the guess."),
+                                new Settings.ColorPicker("Color", true, VacuumSolver.color, "The color of the guess highlight."),
+                                new Settings.ColorPicker("Tracer Color", true, VacuumSolver.tracerColor, "The color of the guess tracer.")
+                        )))
+                ))
+        );
+        this.categories.getLast().margins(Insets.of(5, 0, 3, 3));
+        for (Category category : this.categories) {
+            parent.child(category);
+        }
+        this.mainScroll = Containers.horizontalScroll(Sizing.fill(100), Sizing.fill(100), parent);
+        this.mainScroll.scrollbarThiccness(2).scrollbar(ScrollContainer.Scrollbar.flat(Color.ofArgb(0xffffffff)));
+        root.child(this.mainScroll);
+        ButtonComponent hudEditorButton = Components.button(Text.literal("Open HUD Editor"), button -> mc.setScreen(new HudEditorScreen()));
+        hudEditorButton.margins(Insets.of(0, 3, 0, 3));
+        hudEditorButton.positioning(Positioning.relative(100, 100));
+        hudEditorButton.renderer((context, button, delta) -> {
+            context.fill(button.getX(), button.getY(), button.getX() + button.getWidth(), button.getY() + button.getHeight(), 0xff101010);
+            Rendering.drawBorder(context, button.getX(), button.getY(), button.getWidth(), button.getHeight(), 0xff5ca0bf);
+        });
+        root.child(hudEditorButton);
+        FlatTextbox searchBox = new FlatTextbox(Sizing.fixed(200));
+        searchBox.setSuggestion("Search...");
+        searchBox.margins(Insets.of(0, 3, 0, 0));
+        searchBox.positioning(Positioning.relative(50, 100));
+        searchBox.onChanged().subscribe(value -> {
+            if (value.isEmpty()) {
+                searchBox.setSuggestion("Search...");
+                for (Category category : this.categories) {
+                    category.scroll.child().clearChildren();
+                    for (Module module : category.features) {
+                        module.horizontalSizing(Sizing.fixed(category.categoryWidth));
+                        category.scroll.child().child(module);
+                    }
+                }
+            } else {
+                searchBox.setSuggestion("");
+                for (Category category : this.categories) {
+                    List<Module> features = new ArrayList<>(category.features);
+                    features.removeIf(feature -> {
+                        if (matchSearch(feature.label.getText(), value) || matchSearch(feature.label.getTooltip(), value)) {
+                            return false;
+                        }
+                        if (feature.options != null) {
+                            for (FlowLayout setting : feature.options.settings) {
+                                for (Component child : setting.children()) {
+                                    if (child instanceof PlainLabel label) {
+                                        if (matchSearch(label.getText(), value) || matchSearch(label.getTooltip(), value)) {
+                                            return false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        return true;
+                    });
+                    category.scroll.child().clearChildren();
+                    for (Module module : features) {
+                        module.horizontalSizing(Sizing.fixed(category.categoryWidth));
+                        category.scroll.child().child(module);
+                    }
+                }
+            }
+        });
+        root.child(searchBox);
+    }
+
+    @Override
+    public void close() {
+        if (AutoSave.instance.isActive()) AutoSave.save();
+        if (this.uiAdapter != null) {
+            this.uiAdapter.dispose();
+        }
+        super.close();
+    }
+}

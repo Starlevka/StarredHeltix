@@ -40,11 +40,6 @@ object HudManager {
         registerElement(set.starlev.features.misc.InventoryHistoryLog)
         registerElement(set.starlev.features.farming.RancherSpeedHud)
 
-        registerElement(set.starlev.features.misc.info.FpsHud)
-        registerElement(set.starlev.features.misc.info.PingHud)
-        registerElement(set.starlev.features.misc.info.CpsHud)
-        registerElement(set.starlev.features.misc.info.BpsHud)
-
         loadAllLayouts()
         HudScoreboard.CustomLinesLayoutStore.getAllLayouts()
         HudScoreboard.ScoreboardLinesOrderStore.getOrder()
@@ -86,6 +81,7 @@ object HudManager {
         val tabListOpen = mc.options.keyPlayerList.isDown
 
         for ((id, element) in elements) {
+            if (isEditMode && !isElementEnabledInConfig(id)) continue
             element.isEditing = isEditMode
 
             if (!isEditMode) {
@@ -117,6 +113,34 @@ object HudManager {
             if (isEditMode && element.getScaledWidth() > 0 && element.getScaledHeight() > 0) {
                 drawHudBorder(guiGraphics, element)
             }
+        }
+    }
+
+    fun getEditorElements(): List<HudElement> {
+        return elements.values.filter { isElementEnabledInConfig(it.id) }
+    }
+
+    private fun isElementEnabledInConfig(id: String): Boolean {
+        val f = StarredHeltix.feature
+        return when (id) {
+            "Scoreboard" -> f.skyblock.scoreboard.enabled
+            "EnchantmentProgressHud" -> f.skyblock.skills.enabled && f.skyblock.skills.showEnchantmentProgress
+            "BloodRoomTimer" -> f.dungeons.bloodRoom.enabled
+            "MuseumHud" -> f.skyblock.museum.enabled
+            "RancherSpeedHud" -> f.farming.rancherSpeed.enabled
+            "SkillXpHud" -> f.skyblock.skills.enabled
+            "ScoreCounter" -> f.dungeons.scoreCounter.enabled
+            "NpcDialogueOverlay" -> f.skyblock.npcDialogue.enabled
+            "SpeedBoostCooldownHud" -> f.mining.abilities.abilityCooldown.speedBoostEnabled
+            "TreeCapCooldown" -> f.foraging.axes.treeCapCooldown.enabled
+            "FishingNotifier" -> f.fishing.notifications.fishingNotifier
+            "LegendaryFishingNotifier" -> f.fishing.notifications.legendaryFishingNotifier
+            "SlayerHud" -> f.slayer.slayerHud.enabled
+            "PetOverlay" -> f.skyblock.pet.enabled
+            "PickaxeCooldownHud" -> f.mining.abilities.abilityCooldown.pickaxeBoostEnabled
+            "InventoryHistoryLog" -> f.misc.general.inventoryHistory.enabled
+            "CommissionsHud" -> f.mining.commissions.enabled
+            else -> true
         }
     }
 

@@ -18,6 +18,7 @@ object ThreeWeirdos {
     private val LOGGER = LoggerFactory.getLogger(ThreeWeirdos::class.java)
     private val STRANGER_PATTERN = Pattern.compile("\\[Персонаж] (.+?):")
     private val statements = mutableMapOf<String, String>()
+    private val strangerOrder = mutableListOf<String>() // Порядок NPC из чата
     private var lastCorrectStranger: String? = null
     
     // Публичные поля для ThreeWeirdosChest
@@ -55,14 +56,16 @@ object ThreeWeirdos {
         if (text.contains("ГОЛОВОЛОМКА РЕШЕНА") || text.contains("выбрал правильный сундук")) {
             puzzleSolved = true
             resetFound()
+            strangerOrder.clear()
             LOGGER.info("[ThreeWeirdos] Головоломка решена, сброс подсветки")
             return
         }
-        
+
         // Проверяем сообщение о провале головоломки
         if (text.contains("ГОЛОВОЛОМКА ПРОВАЛЕНА") || text.contains("обхитрил")) {
             puzzleSolved = true
             resetFound()
+            strangerOrder.clear()
             LOGGER.info("[ThreeWeirdos] Головоломка провалена, сброс подсветки")
             return
         }
@@ -72,9 +75,14 @@ object ThreeWeirdos {
         if (matcher.find()) {
             val name = matcher.group(1)
             val statement = text.substring(matcher.end()).trim()
-            
+
             // Store the statement
             statements[name] = statement
+
+            // Store the order of strangers (only if not already in list)
+            if (!strangerOrder.contains(name)) {
+                strangerOrder.add(name)
+            }
             
             // Check if we have exactly 3 statements to solve
             if (statements.size == 3) {
@@ -121,7 +129,7 @@ object ThreeWeirdos {
             mc.player!!.displayClientMessage(Component.literal("§a§l[Три незнакомца] §aНаграда в сундуке: §e$correct"), false)
             
             // Сразу ищем НПС и сундук после решения
-            findNpcAndChest(level, player, correct)
+            findNpcAndChest(level, player, correct, strangerOrder)
         }
 
         // Clear statements for next puzzle
@@ -131,7 +139,7 @@ object ThreeWeirdos {
     /**
      * Найти НПС по имени (через MobHeadDisplayDetector) и ближайший сундук
      */
-    private fun findNpcAndChest(level: net.minecraft.world.level.Level, player: net.minecraft.world.entity.player.Player, correctName: String) {
+    private fun findNpcAndChest(level: net.minecraft.world.level.Level, player: net.minecraft.world.entity.player.Player, correctName: String, strangerOrder: List<String>) {
         // Радиус поиска НПС от игрока
         val searchBox = AABB(
             player.x - 15, player.y - 10, player.z - 15,
@@ -150,11 +158,11 @@ object ThreeWeirdos {
         // 1. Ищем НПС через MobHeadDisplayDetector (текст над головой)
         for (entity in entities) {
             if (entity !is LivingEntity) continue
-            
+
             val headDisplays = MobHeadDisplayDetector.getHeadDisplays(entity)
             for (displayComp in headDisplays.textDisplays) {
                 val cleanName = displayComp.string.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
-                
+
                 if (cleanName.equals(normalizedName, ignoreCase = true) || 
                     cleanName.contains(normalizedName, ignoreCase = true) ||
                     normalizedName.contains(cleanName, ignoreCase = true)) {
@@ -165,7 +173,7 @@ object ThreeWeirdos {
             }
             if (npcPos != null) break
         }
-        
+
         // 2. Если не нашли, ищем по customName
         if (npcPos == null) {
             for (entity in entities) {
@@ -174,9 +182,9 @@ object ThreeWeirdos {
                     is ArmorStand -> entity.customName?.string
                     else -> null
                 } ?: continue
-                
+
                 val cleanName = nameTag.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
-                
+
                 if (cleanName.equals(normalizedName, ignoreCase = true) || 
                     cleanName.contains(normalizedName, ignoreCase = true) ||
                     normalizedName.contains(cleanName, ignoreCase = true)) {
@@ -187,19 +195,33 @@ object ThreeWeirdos {
             }
         }
         
-        // 3. Фоллбэк: ищем любого NPC с текстом над головой, содержащим имя
+        // 3. Фоллбэк: ищем всех NPC и выбираем по порядку из чата (если текст над головой пустой)
         if (npcPos == null) {
-            LOGGER.warn("[ThreeWeirdos] НПС '$correctName' не найден точно, ищем любого NPC с текстом...")
+            LOGGER.warn("[ThreeWeirdos] НПС '$correctName' не найден точно, используем порядок из чата...")
+
+            // Находим всех NPC в области
+            val npcPositions = mutableListOf<BlockPos>()
             for (entity in entities) {
                 if (entity !is LivingEntity) continue
-                
-                val headDisplays = MobHeadDisplayDetector.getHeadDisplays(entity)
-                if (headDisplays.totalDisplays > 0) {
-                    npcPos = entity.blockPosition()
-                    val names = headDisplays.textDisplays.joinToString(", ") { it.string }
-                    LOGGER.info("[ThreeWeirdos] Используем НПС с текстом '$names' на позиции $npcPos")
-                    break
+                // Исключаем игроков и мобов которые явно не NPC
+                if (entity is net.minecraft.world.entity.player.Player) continue
+                npcPositions.add(entity.blockPosition())
+            }
+
+            if (npcPositions.size >= 3 && strangerOrder.size >= 3) {
+                // Сортируем NPC по координате X (предполагаем что они стоят в линию)
+                npcPositions.sortBy { it.x }
+
+                // Находим индекс правильного NPC в порядке из чата
+                val correctIndex = strangerOrder.indexOf(correctName)
+                if (correctIndex >= 0 && correctIndex < npcPositions.size) {
+                    npcPos = npcPositions[correctIndex]
+                    LOGGER.info("[ThreeWeirdos] Выбран NPC на позиции $npcPos по порядку из чата (индекс $correctIndex из ${strangerOrder.joinToString()})")
+                } else {
+                    LOGGER.warn("[ThreeWeirdos] Не удалось определить индекс NPC: $correctName не найден в порядке ${strangerOrder.joinToString()}")
                 }
+            } else {
+                LOGGER.warn("[ThreeWeirdos] Недостаточно NPC или данных о порядке: NPC=${npcPositions.size}, order=${strangerOrder.size}")
             }
         }
         
@@ -210,13 +232,13 @@ object ThreeWeirdos {
         
         foundNpcPos = npcPos
         
-        // Ищем ближайший сундук/бочку к НПС в радиусе 3 блоков (маленький радиус!)
+        // Ищем ближайший сундук/бочку к НПС в радиусе 3 блоков
         var nearestChest: BlockPos? = null
         var nearestDist = Double.MAX_VALUE
 
         val searchRadius = 3
         for (x in npcPos.x - searchRadius..npcPos.x + searchRadius) {
-            for (y in npcPos.y - 2..npcPos.y + 2) {
+            for (y in npcPos.y - 1..npcPos.y + 1) {
                 for (z in npcPos.z - searchRadius..npcPos.z + searchRadius) {
                     val pos = BlockPos(x, y, z)
                     val state = level.getBlockState(pos)
@@ -237,7 +259,7 @@ object ThreeWeirdos {
             LOGGER.info("[ThreeWeirdos] Найден сундук на позиции $nearestChest, дистанция: ${String.format("%.2f", Math.sqrt(nearestDist))} блоков")
             player.displayClientMessage(Component.literal("§c§l[Три незнакомца] §cСундук подсвечен!"), false)
         } else {
-            LOGGER.warn("[ThreeWeirdos] Сундук не найден в радиусе 3 блоков от НПС")
+            LOGGER.warn("[ThreeWeirdos] Сундук не найден в радиусе 5 блоков от НПС на позиции $npcPos")
             player.displayClientMessage(Component.literal("§e§l[Три незнакомца] §eСундук не найден рядом с НПС"), false)
         }
     }
@@ -248,6 +270,7 @@ object ThreeWeirdos {
     fun resetFound() {
         foundNpcPos = null
         foundChestPos = null
+        strangerOrder.clear()
     }
     
     /**

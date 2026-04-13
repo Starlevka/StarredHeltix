@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:(skeleton_helmet|guardian_chestplate|creeper_leggings|spider_boots)"
+  }
+}

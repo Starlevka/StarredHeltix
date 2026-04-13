@@ -28,11 +28,6 @@ class MiscConfig {
         var autoSprint = false
 
         @Expose
-        @ConfigOption(name = "Инфо HUD", desc = "FPS, Ping, CPS и BPS на HUD и в Scoreboard.")
-        @Accordion
-        var hudStats = HudStatsConfig()
-
-        @Expose
         @ConfigOption(name = "Лог предметов", desc = "Отображает историю изменения предметов в инвентаре.")
         @Accordion
         var inventoryHistory = VisualsConfig.InventoryHistoryConfig()
@@ -46,6 +41,9 @@ class MiscConfig {
 
         @Expose
         var migratedInventoryHistoryToMisc = false
+
+        @Expose
+        var migratedInfoHudToScoreboard = false
     }
 
     class MouseLockConfig {
@@ -131,115 +129,6 @@ class MiscConfig {
     @Expose
     var hasShownWelcome014 = false
 
-    class HudStatsConfig {
-        @Expose
-        @ConfigOption(name = "ФПС", desc = "Настройки отображения FPS.")
-        @Accordion
-        var fps = FpsConfig()
-
-        @Expose
-        @ConfigOption(name = "Пинг", desc = "Настройки отображения Ping.")
-        @Accordion
-        var ping = PingConfig()
-
-        @Expose
-        @ConfigOption(name = "КПС", desc = "Настройки отображения кликов в секунду (CPS).")
-        @Accordion
-        var cps = CpsConfig()
-
-        @Expose
-        @ConfigOption(name = "БПС", desc = "Настройки отображения ломаемых блоков в секунду (BPS).")
-        @Accordion
-        var bps = BpsConfig()
-
-        class FpsConfig {
-            @Expose
-            @ConfigOption(name = "HUD", desc = "Отображать FPS отдельным HUD элементом.")
-            @ConfigEditorBoolean
-            var hud = false
-
-            @Expose
-            @ConfigOption(name = "Scoreboard", desc = "Добавлять FPS в кастомный Scoreboard.")
-            @ConfigEditorBoolean
-            var scoreboard = false
-
-            @Expose
-            @ConfigOption(name = "Цвет", desc = "Цвет текста.")
-            @ConfigEditorColour
-            var colorV2 = "0:255:255:255:255"
-
-            @Expose
-            @ConfigOption(name = "Фон HUD", desc = "Отображает фон у HUD элемента.")
-            @ConfigEditorBoolean
-            var showBackground = true
-        }
-
-        class PingConfig {
-            @Expose
-            @ConfigOption(name = "HUD", desc = "Отображать Ping отдельным HUD элементом.")
-            @ConfigEditorBoolean
-            var hud = false
-
-            @Expose
-            @ConfigOption(name = "Scoreboard", desc = "Добавлять Ping в кастомный Scoreboard.")
-            @ConfigEditorBoolean
-            var scoreboard = false
-            @Expose
-            @ConfigOption(name = "Цвет", desc = "Цвет текста.")
-            @ConfigEditorColour
-            var colorV2 = "0:255:255:255:255"
-
-            @Expose
-            @ConfigOption(name = "Фон HUD", desc = "Отображает фон у HUD элемента.")
-            @ConfigEditorBoolean
-            var showBackground = true
-        }
-
-        class CpsConfig {
-            @Expose
-            @ConfigOption(name = "HUD", desc = "Отображать CPS отдельным HUD элементом.")
-            @ConfigEditorBoolean
-            var hud = false
-
-            @Expose
-            @ConfigOption(name = "Scoreboard", desc = "Добавлять CPS в кастомный Scoreboard.")
-            @ConfigEditorBoolean
-            var scoreboard = false
-
-            @Expose
-            @ConfigOption(name = "Цвет", desc = "Цвет текста.")
-            @ConfigEditorColour
-            var colorV2 = "0:255:255:255:255"
-
-            @Expose
-            @ConfigOption(name = "Фон HUD", desc = "Отображает фон у HUD элемента.")
-            @ConfigEditorBoolean
-            var showBackground = true
-        }
-
-        class BpsConfig {
-            @Expose
-            @ConfigOption(name = "HUD", desc = "Отображать BPS отдельным HUD элементом.")
-            @ConfigEditorBoolean
-            var hud = false
-
-            @Expose
-            @ConfigOption(name = "Scoreboard", desc = "Добавлять BPS в кастомный Scoreboard.")
-            @ConfigEditorBoolean
-            var scoreboard = false
-
-            @Expose
-            @ConfigOption(name = "Цвет", desc = "Цвет текста.")
-            @ConfigEditorColour
-            var colorV2 = "0:255:255:255:255"
-
-            @Expose
-            @ConfigOption(name = "Фон HUD", desc = "Отображает фон у HUD элемента.")
-            @ConfigEditorBoolean
-            var showBackground = true
-        }
-    }
-
     class InventoryButtonsConfig {
         @Expose
         @ConfigOption(name = "Включить?", desc = "Включает кастомные кнопки в инвентаре.")
@@ -250,6 +139,26 @@ class MiscConfig {
         @ConfigOption(name = "Только инвентарь", desc = "Показывать кнопки только в инвентаре игрока, а не в сундуках.")
         @ConfigEditorBoolean
         var onlyInventory = true
+
+        @Expose
+        @ConfigOption(name = "Фон кнопки", desc = "Цвет фона кнопок /sh buttons.")
+        @ConfigEditorColour
+        var tabBackgroundColorV2 = "0:128:0:0:0"
+
+        @Expose
+        @ConfigOption(name = "Фон кнопки (наведение)", desc = "Цвет фона при наведении на кнопку.")
+        @ConfigEditorColour
+        var tabHoverBackgroundColorV2 = "0:192:58:175:217"
+
+        @Expose
+        @ConfigOption(name = "Рамка кнопки", desc = "Цвет рамки кнопки.")
+        @ConfigEditorColour
+        var tabBorderColorV2 = "0:255:170:170:170"
+
+        @Expose
+        @ConfigOption(name = "Рамка кнопки (наведение)", desc = "Цвет рамки при наведении.")
+        @ConfigEditorColour
+        var tabHoverBorderColorV2 = "0:255:255:255:255"
 
         @ConfigOption(name = "Настроить кнопки", desc = "Открывает меню настройки кнопок инвентаря.")
         @ConfigEditorButton(buttonText = "Открыть")

@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:emerald_armor_(helmet|chestplate|leggings|boots)"
+  }
+}

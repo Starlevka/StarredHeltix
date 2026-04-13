@@ -1,0 +1,400 @@
+package net.minecraft.client.gui;
+
+import com.ibm.icu.text.ArabicShaping;
+import com.ibm.icu.text.ArabicShapingException;
+import com.ibm.icu.text.Bidi;
+import com.mojang.blaze3d.font.GlyphInfo;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import javax.annotation.Nullable;
+import net.minecraft.client.StringSplitter;
+import net.minecraft.client.gui.font.TextRenderable;
+import net.minecraft.client.gui.font.glyphs.BakedGlyph;
+import net.minecraft.client.gui.font.glyphs.EffectGlyph;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.locale.Language;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.util.ARGB;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.FormattedCharSink;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.util.StringDecomposer;
+import org.joml.Matrix4f;
+
+public class Font {
+   private static final float EFFECT_DEPTH = 0.01F;
+   private static final float OVER_EFFECT_DEPTH = 0.01F;
+   private static final float UNDER_EFFECT_DEPTH = -0.01F;
+   public static final float SHADOW_DEPTH = 0.03F;
+   public static final int NO_SHADOW = 0;
+   public final int lineHeight = 9;
+   private final RandomSource random = RandomSource.create();
+   final Font.Provider provider;
+   private final StringSplitter splitter;
+
+   public Font(Font.Provider var1) {
+      super();
+      this.provider = var1;
+      this.splitter = new StringSplitter((var1x, var2) -> {
+         return this.getGlyphSource(var2.getFont()).getGlyph(var1x).info().getAdvance(var2.isBold());
+      });
+   }
+
+   private GlyphSource getGlyphSource(FontDescription var1) {
+      return this.provider.glyphs(var1);
+   }
+
+   public String bidirectionalShaping(String var1) {
+      try {
+         Bidi var2 = new Bidi((new ArabicShaping(8)).shape(var1), 127);
+         var2.setReorderingMode(0);
+         return var2.writeReordered(2);
+      } catch (ArabicShapingException var3) {
+         return var1;
+      }
+   }
+
+   public void drawInBatch(String var1, float var2, float var3, int var4, boolean var5, Matrix4f var6, MultiBufferSource var7, Font.DisplayMode var8, int var9, int var10) {
+      Font.PreparedText var11 = this.prepareText(var1, var2, var3, var4, var5, var9);
+      var11.visit(Font.GlyphVisitor.forMultiBufferSource(var7, var6, var8, var10));
+   }
+
+   public void drawInBatch(Component var1, float var2, float var3, int var4, boolean var5, Matrix4f var6, MultiBufferSource var7, Font.DisplayMode var8, int var9, int var10) {
+      Font.PreparedText var11 = this.prepareText(var1.getVisualOrderText(), var2, var3, var4, var5, var9);
+      var11.visit(Font.GlyphVisitor.forMultiBufferSource(var7, var6, var8, var10));
+   }
+
+   public void drawInBatch(FormattedCharSequence var1, float var2, float var3, int var4, boolean var5, Matrix4f var6, MultiBufferSource var7, Font.DisplayMode var8, int var9, int var10) {
+      Font.PreparedText var11 = this.prepareText(var1, var2, var3, var4, var5, var9);
+      var11.visit(Font.GlyphVisitor.forMultiBufferSource(var7, var6, var8, var10));
+   }
+
+   public void drawInBatch8xOutline(FormattedCharSequence var1, float var2, float var3, int var4, int var5, Matrix4f var6, MultiBufferSource var7, int var8) {
+      Font.PreparedTextBuilder var9 = new Font.PreparedTextBuilder(0.0F, 0.0F, var5, false);
+
+      for(int var10 = -1; var10 <= 1; ++var10) {
+         for(int var11 = -1; var11 <= 1; ++var11) {
+            if (var10 != 0 || var11 != 0) {
+               float[] var12 = new float[]{var2};
+               var1.accept((var7x, var8x, var9x) -> {
+                  boolean var10x = var8x.isBold();
+                  BakedGlyph var11x = this.getGlyph(var9x, var8x);
+                  var9.x = var12[0] + (float)var10 * var11x.info().getShadowOffset();
+                  var9.y = var3 + (float)var11 * var11x.info().getShadowOffset();
+                  var12[0] += var11x.info().getAdvance(var10x);
+                  return var9.accept(var7x, var8x.withColor(var5), var11x);
+               });
+            }
+         }
+      }
+
+      Font.GlyphVisitor var15 = Font.GlyphVisitor.forMultiBufferSource(var7, var6, Font.DisplayMode.NORMAL, var8);
+      Iterator var16 = var9.glyphs.iterator();
+
+      while(var16.hasNext()) {
+         TextRenderable var18 = (TextRenderable)var16.next();
+         var15.acceptGlyph(var18);
+      }
+
+      Font.PreparedTextBuilder var17 = new Font.PreparedTextBuilder(var2, var3, var4, false);
+      var1.accept(var17);
+      var17.visit(Font.GlyphVisitor.forMultiBufferSource(var7, var6, Font.DisplayMode.POLYGON_OFFSET, var8));
+   }
+
+   BakedGlyph getGlyph(int var1, Style var2) {
+      GlyphSource var3 = this.getGlyphSource(var2.getFont());
+      BakedGlyph var4 = var3.getGlyph(var1);
+      if (var2.isObfuscated() && var1 != 32) {
+         int var5 = Mth.ceil(var4.info().getAdvance(false));
+         var4 = var3.getRandomGlyph(this.random, var5);
+      }
+
+      return var4;
+   }
+
+   public Font.PreparedText prepareText(String var1, float var2, float var3, int var4, boolean var5, int var6) {
+      if (this.isBidirectional()) {
+         var1 = this.bidirectionalShaping(var1);
+      }
+
+      Font.PreparedTextBuilder var7 = new Font.PreparedTextBuilder(var2, var3, var4, var6, var5);
+      StringDecomposer.iterateFormatted((String)var1, Style.EMPTY, var7);
+      return var7;
+   }
+
+   public Font.PreparedText prepareText(FormattedCharSequence var1, float var2, float var3, int var4, boolean var5, int var6) {
+      Font.PreparedTextBuilder var7 = new Font.PreparedTextBuilder(var2, var3, var4, var6, var5);
+      var1.accept(var7);
+      return var7;
+   }
+
+   public int width(String var1) {
+      return Mth.ceil(this.splitter.stringWidth(var1));
+   }
+
+   public int width(FormattedText var1) {
+      return Mth.ceil(this.splitter.stringWidth(var1));
+   }
+
+   public int width(FormattedCharSequence var1) {
+      return Mth.ceil(this.splitter.stringWidth(var1));
+   }
+
+   public String plainSubstrByWidth(String var1, int var2, boolean var3) {
+      return var3 ? this.splitter.plainTailByWidth(var1, var2, Style.EMPTY) : this.splitter.plainHeadByWidth(var1, var2, Style.EMPTY);
+   }
+
+   public String plainSubstrByWidth(String var1, int var2) {
+      return this.splitter.plainHeadByWidth(var1, var2, Style.EMPTY);
+   }
+
+   public FormattedText substrByWidth(FormattedText var1, int var2) {
+      return this.splitter.headByWidth(var1, var2, Style.EMPTY);
+   }
+
+   public int wordWrapHeight(String var1, int var2) {
+      return 9 * this.splitter.splitLines(var1, var2, Style.EMPTY).size();
+   }
+
+   public int wordWrapHeight(FormattedText var1, int var2) {
+      return 9 * this.splitter.splitLines(var1, var2, Style.EMPTY).size();
+   }
+
+   public List<FormattedCharSequence> split(FormattedText var1, int var2) {
+      return Language.getInstance().getVisualOrder(this.splitter.splitLines(var1, var2, Style.EMPTY));
+   }
+
+   public List<FormattedText> splitIgnoringLanguage(FormattedText var1, int var2) {
+      return this.splitter.splitLines(var1, var2, Style.EMPTY);
+   }
+
+   public boolean isBidirectional() {
+      return Language.getInstance().isDefaultRightToLeft();
+   }
+
+   public StringSplitter getSplitter() {
+      return this.splitter;
+   }
+
+   public interface Provider {
+      GlyphSource glyphs(FontDescription var1);
+
+      EffectGlyph effect();
+   }
+
+   public interface PreparedText {
+      void visit(Font.GlyphVisitor var1);
+
+      @Nullable
+      ScreenRectangle bounds();
+   }
+
+   public interface GlyphVisitor {
+      static Font.GlyphVisitor forMultiBufferSource(final MultiBufferSource var0, final Matrix4f var1, final Font.DisplayMode var2, final int var3) {
+         return new Font.GlyphVisitor() {
+            public void acceptGlyph(TextRenderable var1x) {
+               this.render(var1x);
+            }
+
+            public void acceptEffect(TextRenderable var1x) {
+               this.render(var1x);
+            }
+
+            private void render(TextRenderable var1x) {
+               VertexConsumer var2x = var0.getBuffer(var1x.renderType(var2));
+               var1x.render(var1, var2x, var3, false);
+            }
+         };
+      }
+
+      void acceptGlyph(TextRenderable var1);
+
+      void acceptEffect(TextRenderable var1);
+   }
+
+   public static enum DisplayMode {
+      NORMAL,
+      SEE_THROUGH,
+      POLYGON_OFFSET;
+
+      private DisplayMode() {
+      }
+
+      // $FF: synthetic method
+      private static Font.DisplayMode[] $values() {
+         return new Font.DisplayMode[]{NORMAL, SEE_THROUGH, POLYGON_OFFSET};
+      }
+   }
+
+   class PreparedTextBuilder implements FormattedCharSink, Font.PreparedText {
+      private final boolean drawShadow;
+      private final int color;
+      private final int backgroundColor;
+      float x;
+      float y;
+      private float left;
+      private float top;
+      private float right;
+      private float bottom;
+      private float backgroundLeft;
+      private float backgroundTop;
+      private float backgroundRight;
+      private float backgroundBottom;
+      final List<TextRenderable> glyphs;
+      @Nullable
+      private List<TextRenderable> effects;
+
+      public PreparedTextBuilder(final float param2, final float param3, final int param4, final boolean param5) {
+         this(var2, var3, var4, 0, var5);
+      }
+
+      public PreparedTextBuilder(final float param2, final float param3, final int param4, final int param5, final boolean param6) {
+         super();
+         this.left = 3.4028235E38F;
+         this.top = 3.4028235E38F;
+         this.right = -3.4028235E38F;
+         this.bottom = -3.4028235E38F;
+         this.backgroundLeft = 3.4028235E38F;
+         this.backgroundTop = 3.4028235E38F;
+         this.backgroundRight = -3.4028235E38F;
+         this.backgroundBottom = -3.4028235E38F;
+         this.glyphs = new ArrayList();
+         this.x = var2;
+         this.y = var3;
+         this.drawShadow = var6;
+         this.color = var4;
+         this.backgroundColor = var5;
+         this.markBackground(var2, var3, 0.0F);
+      }
+
+      private void markSize(float var1, float var2, float var3, float var4) {
+         this.left = Math.min(this.left, var1);
+         this.top = Math.min(this.top, var2);
+         this.right = Math.max(this.right, var3);
+         this.bottom = Math.max(this.bottom, var4);
+      }
+
+      private void markBackground(float var1, float var2, float var3) {
+         if (ARGB.alpha(this.backgroundColor) != 0) {
+            this.backgroundLeft = Math.min(this.backgroundLeft, var1 - 1.0F);
+            this.backgroundTop = Math.min(this.backgroundTop, var2 - 1.0F);
+            this.backgroundRight = Math.max(this.backgroundRight, var1 + var3);
+            this.backgroundBottom = Math.max(this.backgroundBottom, var2 + 9.0F);
+            this.markSize(this.backgroundLeft, this.backgroundTop, this.backgroundRight, this.backgroundBottom);
+         }
+      }
+
+      private void addGlyph(TextRenderable var1) {
+         this.glyphs.add(var1);
+         this.markSize(var1.left(), var1.top(), var1.right(), var1.bottom());
+      }
+
+      private void addEffect(TextRenderable var1) {
+         if (this.effects == null) {
+            this.effects = new ArrayList();
+         }
+
+         this.effects.add(var1);
+         this.markSize(var1.left(), var1.top(), var1.right(), var1.bottom());
+      }
+
+      public boolean accept(int var1, Style var2, int var3) {
+         BakedGlyph var4 = Font.this.getGlyph(var3, var2);
+         return this.accept(var1, var2, var4);
+      }
+
+      public boolean accept(int var1, Style var2, BakedGlyph var3) {
+         GlyphInfo var4 = var3.info();
+         boolean var5 = var2.isBold();
+         TextColor var6 = var2.getColor();
+         int var7 = this.getTextColor(var6);
+         int var8 = this.getShadowColor(var2, var7);
+         float var9 = var4.getAdvance(var5);
+         float var10 = var1 == 0 ? this.x - 1.0F : this.x;
+         float var11 = var4.getShadowOffset();
+         float var12 = var5 ? var4.getBoldOffset() : 0.0F;
+         TextRenderable var13 = var3.createGlyph(this.x, this.y, var7, var8, var2, var12, var11);
+         if (var13 != null) {
+            this.addGlyph(var13);
+         }
+
+         this.markBackground(this.x, this.y, var9);
+         if (var2.isStrikethrough()) {
+            this.addEffect(Font.this.provider.effect().createEffect(var10, this.y + 4.5F - 1.0F, this.x + var9, this.y + 4.5F, 0.01F, var7, var8, var11));
+         }
+
+         if (var2.isUnderlined()) {
+            this.addEffect(Font.this.provider.effect().createEffect(var10, this.y + 9.0F - 1.0F, this.x + var9, this.y + 9.0F, 0.01F, var7, var8, var11));
+         }
+
+         this.x += var9;
+         return true;
+      }
+
+      public void visit(Font.GlyphVisitor var1) {
+         if (ARGB.alpha(this.backgroundColor) != 0) {
+            var1.acceptEffect(Font.this.provider.effect().createEffect(this.backgroundLeft, this.backgroundTop, this.backgroundRight, this.backgroundBottom, -0.01F, this.backgroundColor, 0, 0.0F));
+         }
+
+         Iterator var2 = this.glyphs.iterator();
+
+         TextRenderable var3;
+         while(var2.hasNext()) {
+            var3 = (TextRenderable)var2.next();
+            var1.acceptGlyph(var3);
+         }
+
+         if (this.effects != null) {
+            var2 = this.effects.iterator();
+
+            while(var2.hasNext()) {
+               var3 = (TextRenderable)var2.next();
+               var1.acceptEffect(var3);
+            }
+         }
+
+      }
+
+      private int getTextColor(@Nullable TextColor var1) {
+         if (var1 != null) {
+            int var2 = ARGB.alpha(this.color);
+            int var3 = var1.getValue();
+            return ARGB.color(var2, var3);
+         } else {
+            return this.color;
+         }
+      }
+
+      private int getShadowColor(Style var1, int var2) {
+         Integer var3 = var1.getShadowColor();
+         if (var3 != null) {
+            float var4 = ARGB.alphaFloat(var2);
+            float var5 = ARGB.alphaFloat(var3);
+            return var4 != 1.0F ? ARGB.color(ARGB.as8BitChannel(var4 * var5), var3) : var3;
+         } else {
+            return this.drawShadow ? ARGB.scaleRGB(var2, 0.25F) : 0;
+         }
+      }
+
+      @Nullable
+      public ScreenRectangle bounds() {
+         if (!(this.left >= this.right) && !(this.top >= this.bottom)) {
+            int var1 = Mth.floor(this.left);
+            int var2 = Mth.floor(this.top);
+            int var3 = Mth.ceil(this.right);
+            int var4 = Mth.ceil(this.bottom);
+            return new ScreenRectangle(var1, var2, var3 - var1, var4 - var2);
+         } else {
+            return null;
+         }
+      }
+   }
+}

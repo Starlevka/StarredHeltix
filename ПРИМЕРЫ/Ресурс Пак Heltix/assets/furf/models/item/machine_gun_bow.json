@@ -1,0 +1,1 @@
+{"textures":{"layer0":"furf:item/machine_gun_bow"},"parent":"item/handheld","display":{"thirdperson_righthand":{"rotation":[-80,260,-40],"translation":[-1,-2,2.5]},"thirdperson_lefthand":{"rotation":[-80,-260,40],"translation":[-1,-2,2.5]}}}

@@ -1,0 +1,222 @@
+package net.minecraft.client.renderer;
+
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.Std140Builder;
+import com.mojang.blaze3d.buffers.Std140SizeCalculator;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.blaze3d.textures.TextureFormat;
+import java.util.OptionalInt;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.util.profiling.Profiler;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.dimension.DimensionType;
+import org.joml.Vector3f;
+
+public class LightTexture implements AutoCloseable {
+   public static final int FULL_BRIGHT = 15728880;
+   public static final int FULL_SKY = 15728640;
+   public static final int FULL_BLOCK = 240;
+   private static final int TEXTURE_SIZE = 16;
+   private static final int LIGHTMAP_UBO_SIZE = (new Std140SizeCalculator()).putFloat().putFloat().putFloat().putFloat().putFloat().putFloat().putFloat().putVec3().putVec3().get();
+   private static final Vector3f END_FLASH_SKY_LIGHT_COLOR = new Vector3f(0.9F, 0.5F, 1.0F);
+   private final GpuTexture texture;
+   private final GpuTextureView textureView;
+   private boolean updateLightTexture;
+   private float blockLightRedFlicker;
+   private final GameRenderer renderer;
+   private final Minecraft minecraft;
+   private final MappableRingBuffer ubo;
+
+   public LightTexture(GameRenderer var1, Minecraft var2) {
+      super();
+      this.renderer = var1;
+      this.minecraft = var2;
+      GpuDevice var3 = RenderSystem.getDevice();
+      this.texture = var3.createTexture((String)"Light Texture", 12, TextureFormat.RGBA8, 16, 16, 1, 1);
+      this.texture.setTextureFilter(FilterMode.LINEAR, false);
+      this.textureView = var3.createTextureView(this.texture);
+      var3.createCommandEncoder().clearColorTexture(this.texture, -1);
+      this.ubo = new MappableRingBuffer(() -> {
+         return "Lightmap UBO";
+      }, 130, LIGHTMAP_UBO_SIZE);
+   }
+
+   public GpuTextureView getTextureView() {
+      return this.textureView;
+   }
+
+   public void close() {
+      this.texture.close();
+      this.textureView.close();
+      this.ubo.close();
+   }
+
+   public void tick() {
+      this.blockLightRedFlicker += (float)((Math.random() - Math.random()) * Math.random() * Math.random() * 0.1D);
+      this.blockLightRedFlicker *= 0.9F;
+      this.updateLightTexture = true;
+   }
+
+   public void turnOffLightLayer() {
+      RenderSystem.setShaderTexture(2, (GpuTextureView)null);
+   }
+
+   public void turnOnLightLayer() {
+      RenderSystem.setShaderTexture(2, this.textureView);
+   }
+
+   private float calculateDarknessScale(LivingEntity var1, float var2, float var3) {
+      float var4 = 0.45F * var2;
+      return Math.max(0.0F, Mth.cos(((float)var1.tickCount - var3) * 3.1415927F * 0.025F) * var4);
+   }
+
+   public void updateLightTexture(float var1) {
+      if (this.updateLightTexture) {
+         this.updateLightTexture = false;
+         ProfilerFiller var2 = Profiler.get();
+         var2.push("lightTex");
+         ClientLevel var3 = this.minecraft.level;
+         if (var3 != null) {
+            float var4 = var3.getSkyDarken(1.0F);
+            float var5;
+            Vector3f var6;
+            float var8;
+            if (var3.effects().hasEndFlashes()) {
+               var6 = new Vector3f(0.99F, 1.12F, 1.0F);
+               EndFlashState var7 = var3.endFlashState();
+               if (var7 != null && !(Boolean)this.minecraft.options.hideLightningFlash().get()) {
+                  var8 = var7.getIntensity(var1);
+                  if (this.minecraft.gui.getBossOverlay().shouldCreateWorldFog()) {
+                     var5 = var8 / 3.0F;
+                  } else {
+                     var5 = var8;
+                  }
+               } else {
+                  var5 = 0.0F;
+               }
+            } else {
+               var6 = new Vector3f(1.0F, 1.0F, 1.0F);
+               if (var3.getSkyFlashTime() > 0) {
+                  var5 = 1.0F;
+               } else {
+                  var5 = var4 * 0.95F + 0.05F;
+               }
+            }
+
+            float var24 = ((Double)this.minecraft.options.darknessEffectScale().get()).floatValue();
+            var8 = this.minecraft.player.getEffectBlendFactor(MobEffects.DARKNESS, var1) * var24;
+            float var9 = this.calculateDarknessScale(this.minecraft.player, var8, var1) * var24;
+            float var11 = this.minecraft.player.getWaterVision();
+            float var10;
+            if (this.minecraft.player.hasEffect(MobEffects.NIGHT_VISION)) {
+               var10 = GameRenderer.getNightVisionScale(this.minecraft.player, var1);
+            } else if (var11 > 0.0F && this.minecraft.player.hasEffect(MobEffects.CONDUIT_POWER)) {
+               var10 = var11;
+            } else {
+               var10 = 0.0F;
+            }
+
+            Vector3f var12;
+            if (var3.effects().hasEndFlashes()) {
+               var12 = END_FLASH_SKY_LIGHT_COLOR;
+            } else {
+               var12 = (new Vector3f(var4, var4, 1.0F)).lerp(new Vector3f(1.0F, 1.0F, 1.0F), 0.35F);
+            }
+
+            float var13 = this.blockLightRedFlicker + 1.5F;
+            float var14 = var3.dimensionType().ambientLight();
+            float var15 = ((Double)this.minecraft.options.gamma().get()).floatValue();
+            CommandEncoder var16 = RenderSystem.getDevice().createCommandEncoder();
+            GpuBuffer.MappedView var17 = var16.mapBuffer(this.ubo.currentBuffer(), false, true);
+
+            try {
+               Std140Builder.intoBuffer(var17.data()).putFloat(var14).putFloat(var5).putFloat(var13).putFloat(var10).putFloat(var9).putFloat(this.renderer.getDarkenWorldAmount(var1)).putFloat(Math.max(0.0F, var15 - var8)).putVec3(var12).putVec3(var6);
+            } catch (Throwable var22) {
+               if (var17 != null) {
+                  try {
+                     var17.close();
+                  } catch (Throwable var20) {
+                     var22.addSuppressed(var20);
+                  }
+               }
+
+               throw var22;
+            }
+
+            if (var17 != null) {
+               var17.close();
+            }
+
+            RenderPass var25 = var16.createRenderPass(() -> {
+               return "Update light";
+            }, this.textureView, OptionalInt.empty());
+
+            try {
+               var25.setPipeline(RenderPipelines.LIGHTMAP);
+               RenderSystem.bindDefaultUniforms(var25);
+               var25.setUniform("LightmapInfo", this.ubo.currentBuffer());
+               var25.draw(0, 3);
+            } catch (Throwable var23) {
+               if (var25 != null) {
+                  try {
+                     var25.close();
+                  } catch (Throwable var21) {
+                     var23.addSuppressed(var21);
+                  }
+               }
+
+               throw var23;
+            }
+
+            if (var25 != null) {
+               var25.close();
+            }
+
+            this.ubo.rotate();
+            var2.pop();
+         }
+      }
+   }
+
+   public static float getBrightness(DimensionType var0, int var1) {
+      return getBrightness(var0.ambientLight(), var1);
+   }
+
+   public static float getBrightness(float var0, int var1) {
+      float var2 = (float)var1 / 15.0F;
+      float var3 = var2 / (4.0F - 3.0F * var2);
+      return Mth.lerp(var0, var3, 1.0F);
+   }
+
+   public static int pack(int var0, int var1) {
+      return var0 << 4 | var1 << 20;
+   }
+
+   public static int block(int var0) {
+      return var0 >>> 4 & 15;
+   }
+
+   public static int sky(int var0) {
+      return var0 >>> 20 & 15;
+   }
+
+   public static int lightCoordsWithEmission(int var0, int var1) {
+      if (var1 == 0) {
+         return var0;
+      } else {
+         int var2 = Math.max(sky(var0), var1);
+         int var3 = Math.max(block(var0), var1);
+         return pack(var3, var2);
+      }
+   }
+}

@@ -24,7 +24,7 @@ object WelcomeMessage {
 
     private fun sendWelcomeMessage() {
         val messages = listOf(
-            Component.literal("§b§lДобро пожаловать в §6StarredHeltix! §6§l(версия 0.1.0)"),
+            Component.literal("§b§lДобро пожаловать в §6StarredHeltix! §6§l(версия 0.1.1)"),
             Component.literal("§d§lНовое в этой версии:"),
             Component.literal("§b• Музыкальная система §e- разная музыка в зависимости от локации"),
             Component.literal("§b• Система инвентаря §e- кастомные кнопки и оверлей экипировки"),

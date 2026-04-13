@@ -1,0 +1,42 @@
+[
+  {
+    "id": "bank",
+    "anchor": "BOTTOM",
+    "order": 5
+  },
+  {
+    "id": "bps",
+    "anchor": "BOTTOM",
+    "order": 3
+  },
+  {
+    "id": "cookie",
+    "anchor": "BOTTOM",
+    "order": 6
+  },
+  {
+    "id": "cps",
+    "anchor": "BOTTOM",
+    "order": 2
+  },
+  {
+    "id": "fps",
+    "anchor": "BOTTOM",
+    "order": 0
+  },
+  {
+    "id": "gems",
+    "anchor": "BOTTOM",
+    "order": 4
+  },
+  {
+    "id": "ping",
+    "anchor": "BOTTOM",
+    "order": 1
+  },
+  {
+    "id": "slayer",
+    "anchor": "AFTER_XP",
+    "order": 0
+  }
+]

@@ -19,6 +19,12 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
     private var draggingElement: HudElement? = null
     private var dragOffsetX = 0
     private var dragOffsetY = 0
+    private var guideX: Int? = null
+    private var guideY: Int? = null
+
+    companion object {
+        private const val SNAP_DISTANCE = 6
+    }
 
     override fun init() {
         super.init()
@@ -48,7 +54,7 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
         // Отрисовать справку
         guiGraphics.drawCenteredString(
             this.font,
-            Component.literal("§7ЛКМ: Перемещение | ПКМ: Фон | Скролл: Масштаб"),
+            Component.literal("§7ЛКМ: Перемещение | ПКМ: Фон | Скролл: Масштаб | Притягивание включено"),
             this.width / 2,
             10,
             0xFFFFFF
@@ -60,9 +66,12 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
             22,
             0xAAAAAA
         )
+
+        guideX?.let { x -> guiGraphics.fill(x, 0, x + 1, height, 0xAA55FFFF.toInt()) }
+        guideY?.let { y -> guiGraphics.fill(0, y, width, y + 1, 0xAA55FFFF.toInt()) }
         
         // Показать масштаб наведённого элемента
-        for ((_, element) in HudManager.getAllElements()) {
+        for (element in HudManager.getEditorElements()) {
             if (element.isHovered(mouseX, mouseY)) {
                 val scalePercent = (element.scale * 100).toInt()
                 guiGraphics.drawString(
@@ -89,7 +98,7 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
 
     override fun mouseClicked(event: MouseButtonEvent, isDoubleClick: Boolean): Boolean {
         if (event.button() == 0) { // ЛКМ - Перетаскивание
-            for ((_, element) in HudManager.getAllElements()) {
+            for (element in HudManager.getEditorElements()) {
                 if (element.isHovered(event.x().toInt(), event.y().toInt())) {
                     draggingElement = element
                     dragOffsetX = event.x().toInt() - element.x
@@ -98,7 +107,7 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
                 }
             }
         } else if (event.button() == 1) { // ПКМ - Вкл/Выкл фона
-            for ((_, element) in HudManager.getAllElements()) {
+            for (element in HudManager.getEditorElements()) {
                 if (element.isHovered(event.x().toInt(), event.y().toInt())) {
                     element.showBackground = !element.showBackground
                     return true
@@ -110,10 +119,11 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
 
     override fun mouseDragged(event: MouseButtonEvent, offsetX: Double, offsetY: Double): Boolean {
         draggingElement?.let { element ->
-            val newX = event.x().toInt() - dragOffsetX
-            val newY = event.y().toInt() - dragOffsetY
-            element.x = newX.coerceAtLeast(0).coerceAtMost((this.width - element.getScaledWidth()).coerceAtLeast(0))
-            element.y = newY.coerceAtLeast(0).coerceAtMost((this.height - element.getScaledHeight()).coerceAtLeast(0))
+            val rawX = event.x().toInt() - dragOffsetX
+            val rawY = event.y().toInt() - dragOffsetY
+            val snapped = applySnap(element, rawX, rawY)
+            element.x = snapped.first.coerceAtLeast(0).coerceAtMost((this.width - element.getScaledWidth()).coerceAtLeast(0))
+            element.y = snapped.second.coerceAtLeast(0).coerceAtMost((this.height - element.getScaledHeight()).coerceAtLeast(0))
             return true
         }
         return super.mouseDragged(event, offsetX, offsetY)
@@ -123,6 +133,8 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
         // Отпустить левую кнопку мыши
         if (event.button() == 0 && draggingElement != null) {
             draggingElement = null
+            guideX = null
+            guideY = null
             return true
         }
         return super.mouseReleased(event)
@@ -135,7 +147,7 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
         verticalAmount: Double
     ): Boolean {
         // Найти элемент под курсором и изменить его параметры
-        for ((_, element) in HudManager.getAllElements()) {
+        for (element in HudManager.getEditorElements()) {
             if (element.isHovered(mouseX.toInt(), mouseY.toInt())) {
                 val delta = if (verticalAmount > 0) 1 else -1
                 
@@ -167,6 +179,78 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
     private fun isControlDown(): Boolean {
         val window = Minecraft.getInstance().window
         return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL)
+    }
+
+    private fun applySnap(element: HudElement, rawX: Int, rawY: Int): Pair<Int, Int> {
+        val elementW = element.getScaledWidth().coerceAtLeast(1)
+        val elementH = element.getScaledHeight().coerceAtLeast(1)
+
+        var bestX = rawX
+        var bestY = rawY
+        var bestDX = SNAP_DISTANCE + 1
+        var bestDY = SNAP_DISTANCE + 1
+        guideX = null
+        guideY = null
+
+        fun trySnapX(targetX: Int, snappedX: Int) {
+            val delta = kotlin.math.abs(rawX - snappedX)
+            if (delta < bestDX && delta <= SNAP_DISTANCE) {
+                bestDX = delta
+                bestX = snappedX
+                guideX = targetX.coerceIn(0, width)
+            }
+        }
+
+        fun trySnapY(targetY: Int, snappedY: Int) {
+            val delta = kotlin.math.abs(rawY - snappedY)
+            if (delta < bestDY && delta <= SNAP_DISTANCE) {
+                bestDY = delta
+                bestY = snappedY
+                guideY = targetY.coerceIn(0, height)
+            }
+        }
+
+        val selfLeft = rawX
+        val selfCenterX = rawX + elementW / 2
+        val selfTop = rawY
+        val selfCenterY = rawY + elementH / 2
+
+        // Притягивание к экрану
+        trySnapX(0, 0)
+        trySnapX(width / 2, width / 2 - elementW / 2)
+        trySnapX(width, width - elementW)
+        trySnapY(0, 0)
+        trySnapY(height / 2, height / 2 - elementH / 2)
+        trySnapY(height, height - elementH)
+
+        // Притягивание к другим HUD элементам
+        for (other in HudManager.getEditorElements()) {
+            if (other === element) continue
+            val left = other.x
+            val centerX = other.x + other.getScaledWidth() / 2
+            val right = other.x + other.getScaledWidth()
+            val top = other.y
+            val centerY = other.y + other.getScaledHeight() / 2
+            val bottom = other.y + other.getScaledHeight()
+
+            // X ось
+            trySnapX(left, left)
+            trySnapX(centerX, centerX - elementW / 2)
+            trySnapX(right, right - elementW)
+            trySnapX(left, left - elementW)
+            trySnapX(right, right)
+            trySnapX(centerX, centerX - (selfCenterX - selfLeft))
+
+            // Y ось
+            trySnapY(top, top)
+            trySnapY(centerY, centerY - elementH / 2)
+            trySnapY(bottom, bottom - elementH)
+            trySnapY(top, top - elementH)
+            trySnapY(bottom, bottom)
+            trySnapY(centerY, centerY - (selfCenterY - selfTop))
+        }
+
+        return bestX to bestY
     }
 
     override fun renderBackground(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {

@@ -1,0 +1,679 @@
+package net.minecraft.client;
+
+import com.google.common.base.MoreObjects;
+import com.mojang.blaze3d.Blaze3D;
+import com.mojang.blaze3d.platform.ClipboardManager;
+import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.platform.Window;
+import com.mojang.logging.LogUtils;
+import java.nio.file.Path;
+import java.text.MessageFormat;
+import java.util.Locale;
+import javax.annotation.Nullable;
+import net.minecraft.ChatFormatting;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
+import net.minecraft.ReportedException;
+import net.minecraft.SharedConstants;
+import net.minecraft.Util;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.debug.DebugScreenEntries;
+import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.WinScreen;
+import net.minecraft.client.gui.screens.debug.DebugOptionsScreen;
+import net.minecraft.client.gui.screens.debug.GameModeSwitcherScreen;
+import net.minecraft.client.gui.screens.options.VideoSettingsScreen;
+import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.fog.FogRenderer;
+import net.minecraft.commands.arguments.blocks.BlockStateParser;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.protocol.game.ServerboundChangeGameModePacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.commands.VersionCommand;
+import net.minecraft.util.Mth;
+import net.minecraft.util.NativeModuleLister;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.feature.FeatureCountTracker;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import org.slf4j.Logger;
+
+public class KeyboardHandler {
+   private static final Logger LOGGER = LogUtils.getLogger();
+   public static final int DEBUG_CRASH_TIME = 10000;
+   private final Minecraft minecraft;
+   private final ClipboardManager clipboardManager = new ClipboardManager();
+   private long debugCrashKeyTime = -1L;
+   private long debugCrashKeyReportedTime = -1L;
+   private long debugCrashKeyReportedCount = -1L;
+   private boolean handledDebugKey;
+
+   public KeyboardHandler(Minecraft var1) {
+      super();
+      this.minecraft = var1;
+   }
+
+   private boolean handleChunkDebugKeys(KeyEvent var1) {
+      switch(var1.key()) {
+      case 69:
+         if (this.minecraft.player == null) {
+            return false;
+         }
+
+         boolean var2 = this.minecraft.debugEntries.toggleStatus(DebugScreenEntries.CHUNK_SECTION_PATHS);
+         this.debugFeedbackFormatted("SectionPath: {0}", var2 ? "shown" : "hidden");
+         return true;
+      case 70:
+         boolean var4 = FogRenderer.toggleFog();
+         this.debugFeedbackFormatted("Fog: {0}", var4 ? "enabled" : "disabled");
+         return true;
+      case 71:
+      case 72:
+      case 73:
+      case 74:
+      case 75:
+      case 77:
+      case 78:
+      case 80:
+      case 81:
+      case 82:
+      case 83:
+      case 84:
+      default:
+         return false;
+      case 76:
+         this.minecraft.smartCull = !this.minecraft.smartCull;
+         this.debugFeedbackFormatted("SmartCull: {0}", this.minecraft.smartCull ? "enabled" : "disabled");
+         return true;
+      case 79:
+         if (this.minecraft.player == null) {
+            return false;
+         }
+
+         boolean var3 = this.minecraft.debugEntries.toggleStatus(DebugScreenEntries.CHUNK_SECTION_OCTREE);
+         this.debugFeedbackFormatted("Frustum culling Octree: {0}", var3 ? "enabled" : "disabled");
+         return true;
+      case 85:
+         if (var1.hasShiftDown()) {
+            this.minecraft.levelRenderer.killFrustum();
+            this.debugFeedbackFormatted("Killed frustum");
+         } else {
+            this.minecraft.levelRenderer.captureFrustum();
+            this.debugFeedbackFormatted("Captured frustum");
+         }
+
+         return true;
+      case 86:
+         if (this.minecraft.player == null) {
+            return false;
+         }
+
+         boolean var5 = this.minecraft.debugEntries.toggleStatus(DebugScreenEntries.CHUNK_SECTION_VISIBILITY);
+         this.debugFeedbackFormatted("SectionVisibility: {0}", var5 ? "enabled" : "disabled");
+         return true;
+      case 87:
+         this.minecraft.wireframe = !this.minecraft.wireframe;
+         this.debugFeedbackFormatted("WireFrame: {0}", this.minecraft.wireframe ? "enabled" : "disabled");
+         return true;
+      }
+   }
+
+   private void showDebugChat(Component var1) {
+      this.minecraft.gui.getChat().addMessage(var1);
+      this.minecraft.getNarrator().saySystemQueued(var1);
+   }
+
+   private static Component decorateDebugComponent(ChatFormatting var0, Component var1) {
+      return Component.empty().append((Component)Component.translatable("debug.prefix").withStyle(var0, ChatFormatting.BOLD)).append(CommonComponents.SPACE).append(var1);
+   }
+
+   private void debugWarningComponent(Component var1) {
+      this.showDebugChat(decorateDebugComponent(ChatFormatting.RED, var1));
+   }
+
+   private void debugFeedbackComponent(Component var1) {
+      this.showDebugChat(decorateDebugComponent(ChatFormatting.YELLOW, var1));
+   }
+
+   private void debugFeedbackTranslated(String var1) {
+      this.debugFeedbackComponent(Component.translatable(var1));
+   }
+
+   private void debugFeedbackFormatted(String var1, Object... var2) {
+      this.debugFeedbackComponent(Component.literal(MessageFormat.format(var1, var2)));
+   }
+
+   private boolean handleDebugKeys(KeyEvent var1) {
+      if (this.debugCrashKeyTime > 0L && this.debugCrashKeyTime < Util.getMillis() - 100L) {
+         return true;
+      } else if (SharedConstants.DEBUG_HOTKEYS && this.handleChunkDebugKeys(var1)) {
+         return true;
+      } else {
+         if (SharedConstants.DEBUG_FEATURE_COUNT) {
+            switch(var1.key()) {
+            case 76:
+               FeatureCountTracker.logCounts();
+               return true;
+            case 82:
+               FeatureCountTracker.clearCounts();
+               return true;
+            }
+         }
+
+         switch(var1.key()) {
+         case 49:
+            this.minecraft.getDebugOverlay().toggleProfilerChart();
+            return true;
+         case 50:
+            this.minecraft.getDebugOverlay().toggleFpsCharts();
+            return true;
+         case 51:
+            this.minecraft.getDebugOverlay().toggleNetworkCharts();
+            return true;
+         case 65:
+            this.minecraft.levelRenderer.allChanged();
+            this.debugFeedbackTranslated("debug.reload_chunks.message");
+            return true;
+         case 66:
+            if (this.minecraft.player != null && !this.minecraft.player.isReducedDebugInfo()) {
+               boolean var2 = this.minecraft.debugEntries.toggleStatus(DebugScreenEntries.ENTITY_HITBOXES);
+               this.debugFeedbackTranslated(var2 ? "debug.show_hitboxes.on" : "debug.show_hitboxes.off");
+               return true;
+            }
+
+            return false;
+         case 67:
+            if (this.minecraft.player != null && !this.minecraft.player.isReducedDebugInfo()) {
+               ClientPacketListener var7 = this.minecraft.player.connection;
+               if (var7 == null) {
+                  return false;
+               }
+
+               this.debugFeedbackTranslated("debug.copy_location.message");
+               this.setClipboard(String.format(Locale.ROOT, "/execute in %s run tp @s %.2f %.2f %.2f %.2f %.2f", this.minecraft.player.level().dimension().location(), this.minecraft.player.getX(), this.minecraft.player.getY(), this.minecraft.player.getZ(), this.minecraft.player.getYRot(), this.minecraft.player.getXRot()));
+               return true;
+            }
+
+            return false;
+         case 68:
+            if (this.minecraft.gui != null) {
+               this.minecraft.gui.getChat().clearMessages(false);
+            }
+
+            return true;
+         case 71:
+            if (this.minecraft.player != null && !this.minecraft.player.isReducedDebugInfo()) {
+               boolean var3 = this.minecraft.debugEntries.toggleStatus(DebugScreenEntries.CHUNK_BORDERS);
+               this.debugFeedbackTranslated(var3 ? "debug.chunk_boundaries.on" : "debug.chunk_boundaries.off");
+               return true;
+            }
+
+            return false;
+         case 72:
+            this.minecraft.options.advancedItemTooltips = !this.minecraft.options.advancedItemTooltips;
+            this.debugFeedbackTranslated(this.minecraft.options.advancedItemTooltips ? "debug.advanced_tooltips.on" : "debug.advanced_tooltips.off");
+            this.minecraft.options.save();
+            return true;
+         case 73:
+            if (this.minecraft.player != null && !this.minecraft.player.isReducedDebugInfo()) {
+               this.copyRecreateCommand(this.minecraft.player.hasPermissions(2), !var1.hasShiftDown());
+            }
+
+            return true;
+         case 76:
+            if (this.minecraft.debugClientMetricsStart(this::debugFeedbackComponent)) {
+               this.debugFeedbackComponent(Component.translatable("debug.profiling.start", 10));
+            }
+
+            return true;
+         case 78:
+            if (this.minecraft.player != null && this.minecraft.player.hasPermissions(2)) {
+               if (!this.minecraft.player.isSpectator()) {
+                  this.minecraft.player.connection.send(new ServerboundChangeGameModePacket(GameType.SPECTATOR));
+               } else {
+                  GameType var8 = (GameType)MoreObjects.firstNonNull(this.minecraft.gameMode.getPreviousPlayerMode(), GameType.CREATIVE);
+                  this.minecraft.player.connection.send(new ServerboundChangeGameModePacket(var8));
+               }
+            } else {
+               this.debugFeedbackTranslated("debug.creative_spectator.error");
+            }
+
+            return true;
+         case 80:
+            this.minecraft.options.pauseOnLostFocus = !this.minecraft.options.pauseOnLostFocus;
+            this.minecraft.options.save();
+            this.debugFeedbackTranslated(this.minecraft.options.pauseOnLostFocus ? "debug.pause_focus.on" : "debug.pause_focus.off");
+            return true;
+         case 81:
+            this.debugFeedbackTranslated("debug.help.message");
+            this.showDebugChat(Component.translatable("debug.reload_chunks.help"));
+            this.showDebugChat(Component.translatable("debug.show_hitboxes.help"));
+            this.showDebugChat(Component.translatable("debug.copy_location.help"));
+            this.showDebugChat(Component.translatable("debug.clear_chat.help"));
+            this.showDebugChat(Component.translatable("debug.chunk_boundaries.help"));
+            this.showDebugChat(Component.translatable("debug.advanced_tooltips.help"));
+            this.showDebugChat(Component.translatable("debug.inspect.help"));
+            this.showDebugChat(Component.translatable("debug.profiling.help"));
+            this.showDebugChat(Component.translatable("debug.creative_spectator.help"));
+            this.showDebugChat(Component.translatable("debug.pause_focus.help"));
+            this.showDebugChat(Component.translatable("debug.help.help"));
+            this.showDebugChat(Component.translatable("debug.dump_dynamic_textures.help"));
+            this.showDebugChat(Component.translatable("debug.reload_resourcepacks.help"));
+            this.showDebugChat(Component.translatable("debug.version.help"));
+            this.showDebugChat(Component.translatable("debug.pause.help"));
+            this.showDebugChat(Component.translatable("debug.gamemodes.help"));
+            this.showDebugChat(Component.translatable("debug.options.help"));
+            return true;
+         case 83:
+            Path var4 = this.minecraft.gameDirectory.toPath().toAbsolutePath();
+            Path var5 = TextureUtil.getDebugTexturePath(var4);
+            this.minecraft.getTextureManager().dumpAllSheets(var5);
+            MutableComponent var6 = Component.literal(var4.relativize(var5).toString()).withStyle(ChatFormatting.UNDERLINE).withStyle((var1x) -> {
+               return var1x.withClickEvent(new ClickEvent.OpenFile(var5));
+            });
+            this.debugFeedbackComponent(Component.translatable("debug.dump_dynamic_textures", var6));
+            return true;
+         case 84:
+            this.debugFeedbackTranslated("debug.reload_resourcepacks.message");
+            this.minecraft.reloadResourcePacks();
+            return true;
+         case 86:
+            this.debugFeedbackTranslated("debug.version.header");
+            VersionCommand.dumpVersion(this::showDebugChat);
+            return true;
+         case 293:
+            if (this.minecraft.canSwitchGameMode() && this.minecraft.player.hasPermissions(2)) {
+               if (!(this.minecraft.screen instanceof WinScreen)) {
+                  this.minecraft.setScreen(new GameModeSwitcherScreen());
+               }
+            } else {
+               this.debugFeedbackTranslated("debug.gamemodes.error");
+            }
+
+            return true;
+         case 295:
+            if (this.minecraft.screen instanceof DebugOptionsScreen) {
+               this.minecraft.screen.onClose();
+            } else if (this.minecraft.canInterruptScreen()) {
+               if (this.minecraft.screen != null) {
+                  this.minecraft.screen.onClose();
+               }
+
+               this.minecraft.setScreen(new DebugOptionsScreen());
+            }
+
+            return true;
+         default:
+            return false;
+         }
+      }
+   }
+
+   private void copyRecreateCommand(boolean var1, boolean var2) {
+      HitResult var3 = this.minecraft.hitResult;
+      if (var3 != null) {
+         switch(var3.getType()) {
+         case BLOCK:
+            BlockPos var11 = ((BlockHitResult)var3).getBlockPos();
+            Level var12 = this.minecraft.player.level();
+            BlockState var13 = var12.getBlockState(var11);
+            if (var1) {
+               if (var2) {
+                  this.minecraft.player.connection.getDebugQueryHandler().queryBlockEntityTag(var11, (var3x) -> {
+                     this.copyCreateBlockCommand(var13, var11, var3x);
+                     this.debugFeedbackTranslated("debug.inspect.server.block");
+                  });
+               } else {
+                  BlockEntity var14 = var12.getBlockEntity(var11);
+                  CompoundTag var8 = var14 != null ? var14.saveWithoutMetadata((HolderLookup.Provider)var12.registryAccess()) : null;
+                  this.copyCreateBlockCommand(var13, var11, var8);
+                  this.debugFeedbackTranslated("debug.inspect.client.block");
+               }
+            } else {
+               this.copyCreateBlockCommand(var13, var11, (CompoundTag)null);
+               this.debugFeedbackTranslated("debug.inspect.client.block");
+            }
+            break;
+         case ENTITY:
+            Entity var4 = ((EntityHitResult)var3).getEntity();
+            ResourceLocation var5 = BuiltInRegistries.ENTITY_TYPE.getKey(var4.getType());
+            if (var1) {
+               if (var2) {
+                  this.minecraft.player.connection.getDebugQueryHandler().queryEntityTag(var4.getId(), (var3x) -> {
+                     this.copyCreateEntityCommand(var5, var4.position(), var3x);
+                     this.debugFeedbackTranslated("debug.inspect.server.entity");
+                  });
+               } else {
+                  ProblemReporter.ScopedCollector var6 = new ProblemReporter.ScopedCollector(var4.problemPath(), LOGGER);
+
+                  try {
+                     TagValueOutput var7 = TagValueOutput.createWithContext(var6, var4.registryAccess());
+                     var4.saveWithoutId(var7);
+                     this.copyCreateEntityCommand(var5, var4.position(), var7.buildResult());
+                  } catch (Throwable var10) {
+                     try {
+                        var6.close();
+                     } catch (Throwable var9) {
+                        var10.addSuppressed(var9);
+                     }
+
+                     throw var10;
+                  }
+
+                  var6.close();
+                  this.debugFeedbackTranslated("debug.inspect.client.entity");
+               }
+            } else {
+               this.copyCreateEntityCommand(var5, var4.position(), (CompoundTag)null);
+               this.debugFeedbackTranslated("debug.inspect.client.entity");
+            }
+         }
+
+      }
+   }
+
+   private void copyCreateBlockCommand(BlockState var1, BlockPos var2, @Nullable CompoundTag var3) {
+      StringBuilder var4 = new StringBuilder(BlockStateParser.serialize(var1));
+      if (var3 != null) {
+         var4.append(var3);
+      }
+
+      String var5 = String.format(Locale.ROOT, "/setblock %d %d %d %s", var2.getX(), var2.getY(), var2.getZ(), var4);
+      this.setClipboard(var5);
+   }
+
+   private void copyCreateEntityCommand(ResourceLocation var1, Vec3 var2, @Nullable CompoundTag var3) {
+      String var4;
+      if (var3 != null) {
+         var3.remove("UUID");
+         var3.remove("Pos");
+         String var5 = NbtUtils.toPrettyComponent(var3).getString();
+         var4 = String.format(Locale.ROOT, "/summon %s %.2f %.2f %.2f %s", var1, var2.x, var2.y, var2.z, var5);
+      } else {
+         var4 = String.format(Locale.ROOT, "/summon %s %.2f %.2f %.2f", var1, var2.x, var2.y, var2.z);
+      }
+
+      this.setClipboard(var4);
+   }
+
+   private void keyPress(long var1, int var3, KeyEvent var4) {
+      Window var5 = this.minecraft.getWindow();
+      if (var1 == var5.handle()) {
+         this.minecraft.getFramerateLimitTracker().onInputReceived();
+         boolean var6 = InputConstants.isKeyDown(var5, 292);
+         if (this.debugCrashKeyTime > 0L) {
+            if (!InputConstants.isKeyDown(var5, 67) || !var6) {
+               this.debugCrashKeyTime = -1L;
+            }
+         } else if (InputConstants.isKeyDown(var5, 67) && var6) {
+            this.handledDebugKey = true;
+            this.debugCrashKeyTime = Util.getMillis();
+            this.debugCrashKeyReportedTime = Util.getMillis();
+            this.debugCrashKeyReportedCount = 0L;
+         }
+
+         Screen var7 = this.minecraft.screen;
+         if (var7 != null) {
+            switch(var4.key()) {
+            case 258:
+               this.minecraft.setLastInputType(InputType.KEYBOARD_TAB);
+            case 259:
+            case 260:
+            case 261:
+            default:
+               break;
+            case 262:
+            case 263:
+            case 264:
+            case 265:
+               this.minecraft.setLastInputType(InputType.KEYBOARD_ARROW);
+            }
+         }
+
+         boolean var8;
+         if (var3 == 1 && (!(this.minecraft.screen instanceof KeyBindsScreen) || ((KeyBindsScreen)var7).lastKeySelection <= Util.getMillis() - 20L)) {
+            if (this.minecraft.options.keyFullscreen.matches(var4)) {
+               var5.toggleFullScreen();
+               var8 = var5.isFullscreen();
+               this.minecraft.options.fullscreen().set(var8);
+               this.minecraft.options.save();
+               Screen var19 = this.minecraft.screen;
+               if (var19 instanceof VideoSettingsScreen) {
+                  VideoSettingsScreen var17 = (VideoSettingsScreen)var19;
+                  var17.updateFullscreenButton(var8);
+               }
+
+               return;
+            }
+
+            if (this.minecraft.options.keyScreenshot.matches(var4)) {
+               if (var4.hasControlDown() && SharedConstants.DEBUG_PANORAMA_SCREENSHOT) {
+                  this.showDebugChat(this.minecraft.grabPanoramixScreenshot(this.minecraft.gameDirectory));
+               } else {
+                  Screenshot.grab(this.minecraft.gameDirectory, this.minecraft.getMainRenderTarget(), (var1x) -> {
+                     this.minecraft.execute(() -> {
+                        this.showDebugChat(var1x);
+                     });
+                  });
+               }
+
+               return;
+            }
+         }
+
+         boolean var9;
+         if (var3 != 0) {
+            var8 = var7 == null || !(var7.getFocused() instanceof EditBox) || !((EditBox)var7.getFocused()).canConsumeInput();
+            if (var8) {
+               if (var4.hasControlDown() && var4.key() == 66 && this.minecraft.getNarrator().isActive() && (Boolean)this.minecraft.options.narratorHotkey().get()) {
+                  var9 = this.minecraft.options.narrator().get() == NarratorStatus.OFF;
+                  this.minecraft.options.narrator().set(NarratorStatus.byId(((NarratorStatus)this.minecraft.options.narrator().get()).getId() + 1));
+                  this.minecraft.options.save();
+                  if (var7 != null) {
+                     var7.updateNarratorStatus(var9);
+                  }
+               }
+
+               LocalPlayer var15 = this.minecraft.player;
+            }
+         }
+
+         InputConstants.Key var14;
+         if (var7 != null) {
+            try {
+               if (var3 != 1 && var3 != 2) {
+                  if (var3 == 0 && var7.keyReleased(var4)) {
+                     return;
+                  }
+               } else {
+                  var7.afterKeyboardAction();
+                  if (var7.keyPressed(var4)) {
+                     if (this.minecraft.screen == null) {
+                        var14 = InputConstants.getKey(var4);
+                        KeyMapping.set(var14, false);
+                     }
+
+                     return;
+                  }
+               }
+            } catch (Throwable var13) {
+               CrashReport var16 = CrashReport.forThrowable(var13, "keyPressed event handler");
+               var7.fillCrashDetails(var16);
+               CrashReportCategory var10 = var16.addCategory("Key");
+               var10.setDetail("Key", (Object)var4.key());
+               var10.setDetail("Scancode", (Object)var4.scancode());
+               var10.setDetail("Mods", (Object)var4.modifiers());
+               throw new ReportedException(var16);
+            }
+         }
+
+         boolean var10000;
+         label165: {
+            var14 = InputConstants.getKey(var4);
+            var9 = this.minecraft.screen == null;
+            if (!var9) {
+               label163: {
+                  Screen var12 = this.minecraft.screen;
+                  if (var12 instanceof PauseScreen) {
+                     PauseScreen var11 = (PauseScreen)var12;
+                     if (!var11.showsPauseMenu()) {
+                        break label163;
+                     }
+                  }
+
+                  if (!(this.minecraft.screen instanceof GameModeSwitcherScreen)) {
+                     var10000 = false;
+                     break label165;
+                  }
+               }
+            }
+
+            var10000 = true;
+         }
+
+         boolean var18 = var10000;
+         if (var3 == 0) {
+            KeyMapping.set(var14, false);
+            if (var4.key() == 292) {
+               if (this.handledDebugKey) {
+                  this.handledDebugKey = false;
+               } else {
+                  this.minecraft.debugEntries.toggleF3Visible();
+               }
+            }
+
+         } else {
+            boolean var20 = false;
+            if (var18 && var4.isEscape()) {
+               this.minecraft.pauseGame(var6);
+               var20 = var6;
+            } else if (var6) {
+               var20 = this.handleDebugKeys(var4);
+            } else if (var18 && var4.key() == 290) {
+               this.minecraft.options.hideGui = !this.minecraft.options.hideGui;
+            } else if (var18 && var4.key() == 293) {
+               this.minecraft.gameRenderer.togglePostEffect();
+            }
+
+            this.handledDebugKey |= var20;
+            if (this.minecraft.getDebugOverlay().showProfilerChart() && !var6) {
+               int var21 = var4.getDigit();
+               if (var21 != -1) {
+                  this.minecraft.getDebugOverlay().getProfilerPieChart().profilerPieChartKeyPress(var21);
+               }
+            }
+
+            if (var9) {
+               if (var20) {
+                  KeyMapping.set(var14, false);
+               } else {
+                  KeyMapping.set(var14, true);
+                  KeyMapping.click(var14);
+               }
+            }
+
+         }
+      }
+   }
+
+   private void charTyped(long var1, CharacterEvent var3) {
+      if (var1 == this.minecraft.getWindow().handle()) {
+         Screen var4 = this.minecraft.screen;
+         if (var4 != null && this.minecraft.getOverlay() == null) {
+            try {
+               var4.charTyped(var3);
+            } catch (Throwable var8) {
+               CrashReport var6 = CrashReport.forThrowable(var8, "charTyped event handler");
+               var4.fillCrashDetails(var6);
+               CrashReportCategory var7 = var6.addCategory("Key");
+               var7.setDetail("Codepoint", (Object)var3.codepoint());
+               var7.setDetail("Mods", (Object)var3.modifiers());
+               throw new ReportedException(var6);
+            }
+         }
+      }
+   }
+
+   public void setup(Window var1) {
+      InputConstants.setupKeyboardCallbacks(var1, (var1x, var3, var4, var5, var6) -> {
+         KeyEvent var7 = new KeyEvent(var3, var4, var6);
+         this.minecraft.execute(() -> {
+            this.keyPress(var1x, var5, var7);
+         });
+      }, (var1x, var3, var4) -> {
+         CharacterEvent var5 = new CharacterEvent(var3, var4);
+         this.minecraft.execute(() -> {
+            this.charTyped(var1x, var5);
+         });
+      });
+   }
+
+   public String getClipboard() {
+      return this.clipboardManager.getClipboard(this.minecraft.getWindow(), (var1, var2) -> {
+         if (var1 != 65545) {
+            this.minecraft.getWindow().defaultErrorCallback(var1, var2);
+         }
+
+      });
+   }
+
+   public void setClipboard(String var1) {
+      if (!var1.isEmpty()) {
+         this.clipboardManager.setClipboard(this.minecraft.getWindow(), var1);
+      }
+
+   }
+
+   public void tick() {
+      if (this.debugCrashKeyTime > 0L) {
+         long var1 = Util.getMillis();
+         long var3 = 10000L - (var1 - this.debugCrashKeyTime);
+         long var5 = var1 - this.debugCrashKeyReportedTime;
+         if (var3 < 0L) {
+            if (this.minecraft.hasControlDown()) {
+               Blaze3D.youJustLostTheGame();
+            }
+
+            String var7 = "Manually triggered debug crash";
+            CrashReport var8 = new CrashReport("Manually triggered debug crash", new Throwable("Manually triggered debug crash"));
+            CrashReportCategory var9 = var8.addCategory("Manual crash details");
+            NativeModuleLister.addCrashSection(var9);
+            throw new ReportedException(var8);
+         }
+
+         if (var5 >= 1000L) {
+            if (this.debugCrashKeyReportedCount == 0L) {
+               this.debugFeedbackTranslated("debug.crash.message");
+            } else {
+               this.debugWarningComponent(Component.translatable("debug.crash.warning", Mth.ceil((float)var3 / 1000.0F)));
+            }
+
+            this.debugCrashKeyReportedTime = var1;
+            ++this.debugCrashKeyReportedCount;
+         }
+      }
+
+   }
+}

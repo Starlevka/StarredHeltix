@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:infernal_terror_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:infernal_terror_armor"
+      }
+    ]
+  }
+}

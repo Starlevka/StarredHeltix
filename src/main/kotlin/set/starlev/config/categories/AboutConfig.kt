@@ -32,7 +32,7 @@ class AboutModConfig {
         val mc = Minecraft.getInstance()
         val version = FabricLoader.getInstance().getModContainer("starredheltix")
             .map { it.metadata.version.friendlyString }
-            .orElse("0.1.0")
+            .orElse("0.1.1")
         mc.player?.displayClientMessage(Component.literal("§6§lStarredHeltix §b✪✪✪✪✪ §r§fИнформация:"), false)
         mc.player?.displayClientMessage(Component.literal("§6Версия мода: §f$version"), false)
         mc.player?.displayClientMessage(Component.literal("§6Лицензия мода: §fLGPL-3.0"), false)

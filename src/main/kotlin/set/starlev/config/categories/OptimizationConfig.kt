@@ -17,6 +17,11 @@ class OptimizationConfig {
     @Accordion
     var renderOptimizations = RenderOptimizationsConfig()
 
+    @Expose
+    @ConfigOption(name = "FastBoot", desc = "Оптимизации быстрого запуска игры: убирает задержки, ускоряет загрузку ресурсов.")
+    @Accordion
+    var fastBoot = FastBootConfig()
+
     class VisualOptimizationsConfig {
         @Expose
         @ConfigOption(name = "Убрать анимацию после смерти", desc = "Мгновенно убирает модель моба после его смерти.")
@@ -74,5 +79,43 @@ class OptimizationConfig {
         @ConfigOption(name = "Оптимизация погоды", desc = "Отключает рендер дождя и снега для повышения FPS.")
         @ConfigEditorBoolean
         var weatherOptimization = false
+    }
+
+    class FastBootConfig {
+        @Expose
+        @ConfigOption(name = "Включить FastBoot", desc = "Включает все оптимизации быстрого запуска игры.")
+        @ConfigEditorBoolean
+        @JvmField
+        var enabled = true
+
+        @Expose
+        @ConfigOption(name = "Убрать анимации загрузки", desc = "Убирает fade-анимации на загрузочном экране и главном меню.")
+        @ConfigEditorBoolean
+        @JvmField
+        var skipFadeAnimations = true
+
+        @Expose
+        @ConfigOption(name = "Пропуск Vec3f Interner", desc = "Пропускает Guava Strong Interner для ускорения на многоядерных CPU (жертвует несколькими МБ RAM).")
+        @ConfigEditorBoolean
+        @JvmField
+        var skipVec3fInterner = true
+
+        @Expose
+        @ConfigOption(name = "Максимизация потоков", desc = "Использует все ядра CPU для фоновых задач загрузки.")
+        @ConfigEditorBoolean
+        @JvmField
+        var maximizeThreads = true
+
+        @Expose
+        @ConfigOption(name = "Пропуск оптимизации DFU", desc = "Пропускает предварительную оптимизацию DataFixerUpper для ускорения запуска. Безопасно для новых миров.")
+        @ConfigEditorBoolean
+        @JvmField
+        var skipDfuOptimization = true
+
+        @Expose
+        @ConfigOption(name = "Отключить DFU на клиенте", desc = "Полностью отключает maksimwain на клиенте. §cТОЛЬКО ДЛЯ ИГРЫ НА СЕРВЕРАХ!")
+        @ConfigEditorBoolean
+        @JvmField
+        var disableDfuOnClient = false
     }
 }

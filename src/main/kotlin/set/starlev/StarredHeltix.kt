@@ -42,7 +42,6 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.features.chat.CustomBindManager.init()
         set.starlev.features.misc.MouseLock.init()
         set.starlev.features.combat.slayer.SlayerHud.init()
-        set.starlev.features.combat.slayer.SlayerScoreboard.init()
         WelcomeMessage.init()
         set.starlev.features.visual.GhostFrameFeature.init()
         // set.starlev.features.visual.GhostNPCHandler.init() - Удалено из меню

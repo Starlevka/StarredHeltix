@@ -1,0 +1,13 @@
+{
+   "providers": [
+           {
+         "type": "bitmap",
+         "file": "minecraft:item/stick.png",
+         "ascent": 0,
+         "height": 32,
+         "chars": [
+            "\u095c"
+         ]
+      }
+   ]
+}

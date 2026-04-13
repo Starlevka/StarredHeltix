@@ -1,0 +1,100 @@
+package net.minecraft.commands.arguments.coordinates;
+
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
+
+public record WorldCoordinates(WorldCoordinate x, WorldCoordinate y, WorldCoordinate z) implements Coordinates {
+   public static final WorldCoordinates ZERO_ROTATION = absolute(new Vec2(0.0F, 0.0F));
+
+   public WorldCoordinates(WorldCoordinate param1, WorldCoordinate param2, WorldCoordinate param3) {
+      super();
+      this.x = var1;
+      this.y = var2;
+      this.z = var3;
+   }
+
+   public Vec3 getPosition(CommandSourceStack var1) {
+      Vec3 var2 = var1.getPosition();
+      return new Vec3(this.x.get(var2.x), this.y.get(var2.y), this.z.get(var2.z));
+   }
+
+   public Vec2 getRotation(CommandSourceStack var1) {
+      Vec2 var2 = var1.getRotation();
+      return new Vec2((float)this.x.get((double)var2.x), (float)this.y.get((double)var2.y));
+   }
+
+   public boolean isXRelative() {
+      return this.x.isRelative();
+   }
+
+   public boolean isYRelative() {
+      return this.y.isRelative();
+   }
+
+   public boolean isZRelative() {
+      return this.z.isRelative();
+   }
+
+   public static WorldCoordinates parseInt(StringReader var0) throws CommandSyntaxException {
+      int var1 = var0.getCursor();
+      WorldCoordinate var2 = WorldCoordinate.parseInt(var0);
+      if (var0.canRead() && var0.peek() == ' ') {
+         var0.skip();
+         WorldCoordinate var3 = WorldCoordinate.parseInt(var0);
+         if (var0.canRead() && var0.peek() == ' ') {
+            var0.skip();
+            WorldCoordinate var4 = WorldCoordinate.parseInt(var0);
+            return new WorldCoordinates(var2, var3, var4);
+         } else {
+            var0.setCursor(var1);
+            throw Vec3Argument.ERROR_NOT_COMPLETE.createWithContext(var0);
+         }
+      } else {
+         var0.setCursor(var1);
+         throw Vec3Argument.ERROR_NOT_COMPLETE.createWithContext(var0);
+      }
+   }
+
+   public static WorldCoordinates parseDouble(StringReader var0, boolean var1) throws CommandSyntaxException {
+      int var2 = var0.getCursor();
+      WorldCoordinate var3 = WorldCoordinate.parseDouble(var0, var1);
+      if (var0.canRead() && var0.peek() == ' ') {
+         var0.skip();
+         WorldCoordinate var4 = WorldCoordinate.parseDouble(var0, false);
+         if (var0.canRead() && var0.peek() == ' ') {
+            var0.skip();
+            WorldCoordinate var5 = WorldCoordinate.parseDouble(var0, var1);
+            return new WorldCoordinates(var3, var4, var5);
+         } else {
+            var0.setCursor(var2);
+            throw Vec3Argument.ERROR_NOT_COMPLETE.createWithContext(var0);
+         }
+      } else {
+         var0.setCursor(var2);
+         throw Vec3Argument.ERROR_NOT_COMPLETE.createWithContext(var0);
+      }
+   }
+
+   public static WorldCoordinates absolute(double var0, double var2, double var4) {
+      return new WorldCoordinates(new WorldCoordinate(false, var0), new WorldCoordinate(false, var2), new WorldCoordinate(false, var4));
+   }
+
+   public static WorldCoordinates absolute(Vec2 var0) {
+      return new WorldCoordinates(new WorldCoordinate(false, (double)var0.x), new WorldCoordinate(false, (double)var0.y), new WorldCoordinate(true, 0.0D));
+   }
+
+   public WorldCoordinate x() {
+      return this.x;
+   }
+
+   public WorldCoordinate y() {
+      return this.y;
+   }
+
+   public WorldCoordinate z() {
+      return this.z;
+   }
+}

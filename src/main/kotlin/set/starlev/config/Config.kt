@@ -22,6 +22,14 @@ object ConfigManager {
 
     lateinit var features: Features
 
+    fun getFeaturesSafe(): Features {
+        return if (this::features.isInitialized) {
+            features
+        } else {
+            Features()
+        }
+    }
+
     private var configDirectory = File("config/starredheltix")
     private var configFile: File? = null
     lateinit var processor: MoulConfigProcessor<Features>

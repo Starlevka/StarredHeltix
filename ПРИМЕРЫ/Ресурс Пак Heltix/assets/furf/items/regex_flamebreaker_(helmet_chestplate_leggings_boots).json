@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:flamebreaker_(helmet|chestplate|leggings|boots)"
+  }
+}

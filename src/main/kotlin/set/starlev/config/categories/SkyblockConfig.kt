@@ -63,12 +63,55 @@ class SkyblockConfig {
         @ConfigEditorDraggableList
         var scoreboardEntries: MutableList<ScoreboardConfigElement> = ScoreboardConfigElement.defaultOptions.toMutableList()
 
+        @Expose
+        @ConfigOption(name = "Инфо элементы", desc = "Настройки FPS/Ping/CPS/BPS внутри кастомного scoreboard.")
+        @Accordion
+        var infoElements = ScoreboardInfoElementsConfig()
+
         @ConfigOption(name = "Сбросить внешний вид", desc = "Возвращает порядок элементов к стандартному.")
         @ConfigEditorButton(buttonText = "Сброс")
         val resetAppearance: Runnable = Runnable {
             scoreboardEntries.clear()
             scoreboardEntries.addAll(ScoreboardConfigElement.defaultOptions)
         }
+    }
+
+    class ScoreboardInfoElementsConfig {
+        @Expose
+        @ConfigOption(name = "ФПС", desc = "Настройки строки FPS в кастомном scoreboard.")
+        @Accordion
+        var fps = InfoElementConfig(enabled = false)
+
+        @Expose
+        @ConfigOption(name = "Пинг", desc = "Настройки строки Ping в кастомном scoreboard.")
+        @Accordion
+        var ping = InfoElementConfig(enabled = false)
+
+        @Expose
+        @ConfigOption(name = "КПС", desc = "Настройки строки CPS в кастомном scoreboard.")
+        @Accordion
+        var cps = InfoElementConfig(enabled = false)
+
+        @Expose
+        @ConfigOption(name = "БПС", desc = "Настройки строки BPS в кастомном scoreboard.")
+        @Accordion
+        var bps = InfoElementConfig(enabled = false)
+
+    }
+
+    open class InfoElementConfig(
+        defaultColor: String = "0:255:85:255:85",
+        enabled: Boolean = true
+    ) {
+        @Expose
+        @ConfigOption(name = "Показывать?", desc = "Добавлять элемент в кастомный scoreboard.")
+        @ConfigEditorBoolean
+        var enabled = enabled
+
+        @Expose
+        @ConfigOption(name = "Цвет значения", desc = "Цвет числового значения элемента.")
+        @ConfigEditorColour
+        var valueColorV2 = defaultColor
     }
 
     class SmoothAoteConfig {
@@ -212,6 +255,26 @@ class SkyblockConfig {
         @ConfigOption(name = "Включить?", desc = "Показывает экипировку рядом с инвентарём.")
         @ConfigEditorBoolean
         var enabled = true
+
+        @Expose
+        @ConfigOption(name = "Фон", desc = "Цвет фона меню экипировки.")
+        @ConfigEditorColour
+        var backgroundColorV2 = "0:224:29:29:43"
+
+        @Expose
+        @ConfigOption(name = "Акцент", desc = "Цвет верхней полоски и рамки меню экипировки.")
+        @ConfigEditorColour
+        var accentColorV2 = "0:255:58:175:217"
+
+        @Expose
+        @ConfigOption(name = "Фон слота", desc = "Цвет фона слотов экипировки.")
+        @ConfigEditorColour
+        var slotColorV2 = "0:96:255:255:255"
+
+        @Expose
+        @ConfigOption(name = "Подсветка слота", desc = "Цвет при наведении на слот экипировки.")
+        @ConfigEditorColour
+        var slotHoverColorV2 = "0:170:58:175:217"
 
         @Expose
         var cachedEquipment: List<String> = emptyList()

@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:flamebreaker_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:flamebreaker_armor"
+      }
+    ]
+  }
+}

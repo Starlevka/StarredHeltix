@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:hot_aurora_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:hot_aurora_armor"
+      }
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+package net.minecraft.client.renderer.item.properties.select;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import javax.annotation.Nullable;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
+
+public record ContextEntityType() implements SelectItemModelProperty<ResourceKey<EntityType<?>>> {
+   public static final Codec<ResourceKey<EntityType<?>>> VALUE_CODEC;
+   public static final SelectItemModelProperty.Type<ContextEntityType, ResourceKey<EntityType<?>>> TYPE;
+
+   public ContextEntityType() {
+      super();
+   }
+
+   @Nullable
+   public ResourceKey<EntityType<?>> get(ItemStack var1, @Nullable ClientLevel var2, @Nullable LivingEntity var3, int var4, ItemDisplayContext var5) {
+      return var3 == null ? null : var3.getType().builtInRegistryHolder().key();
+   }
+
+   public SelectItemModelProperty.Type<ContextEntityType, ResourceKey<EntityType<?>>> type() {
+      return TYPE;
+   }
+
+   public Codec<ResourceKey<EntityType<?>>> valueCodec() {
+      return VALUE_CODEC;
+   }
+
+   // $FF: synthetic method
+   @Nullable
+   public Object get(final ItemStack param1, @Nullable final ClientLevel param2, @Nullable final LivingEntity param3, final int param4, final ItemDisplayContext param5) {
+      return this.get(var1, var2, var3, var4, var5);
+   }
+
+   static {
+      VALUE_CODEC = ResourceKey.codec(Registries.ENTITY_TYPE);
+      TYPE = SelectItemModelProperty.Type.create(MapCodec.unit(new ContextEntityType()), VALUE_CODEC);
+   }
+}

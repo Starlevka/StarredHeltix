@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:green_armor_of_the_pack_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:green_armor_of_the_pack_armor"
+      }
+    ]
+  }
+}

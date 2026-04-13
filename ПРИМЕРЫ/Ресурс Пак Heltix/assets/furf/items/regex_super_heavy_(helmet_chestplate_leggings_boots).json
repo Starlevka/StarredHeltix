@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:super_heavy_(helmet|chestplate|leggings|boots)"
+  }
+}

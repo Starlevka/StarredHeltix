@@ -1,0 +1,71 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "custom/dialogue/quest_book/left_up_corner.png",
+      "ascent": 0,
+      "height" : 235,
+      "chars": [
+       "0"
+      ]
+    },
+     {
+      "type": "bitmap",
+      "file": "custom/dialogue/quest_book/right_up_corner.png",
+      "ascent": 0,
+      "height" : 235,
+      "chars": [
+       "1"
+      ]
+    },
+      {
+      "type": "bitmap",
+      "file": "custom/dialogue/quest_book/left_down_corner.png",
+      "ascent": 0,
+      "height" : 235,
+      "chars": [
+       "2"
+      ]
+    },
+      {
+      "type": "bitmap",
+      "file": "custom/dialogue/quest_book/right_down_corner.png",
+      "ascent": 0,
+      "height" : 235,
+      "chars": [
+       "3"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/dialogue/quest_book/book_delimiter.png",
+      "ascent": 0,
+      "height" : 200,
+      "chars": [
+       "⑱"
+      ]
+    },
+      {
+      "type": "bitmap",
+      "file": "custom/dialogue/quest_book/button.png",
+      "ascent": -369,
+      "height" : 17,
+      "chars": [
+       "╾"
+      ]
+    },
+          {
+      "type": "bitmap",
+      "file": "custom/dialogue/quest_book/button_inactive.png",
+      "ascent": -369,
+      "height" : 17,
+      "chars": [
+       "᯼"
+      ]
+    },
+             {
+      "type": "reference",
+      "id": "space:default"
+    }
+  ]
+}

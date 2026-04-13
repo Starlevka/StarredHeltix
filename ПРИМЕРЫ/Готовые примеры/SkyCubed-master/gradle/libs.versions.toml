@@ -1,0 +1,49 @@
+[versions]
+
+fabric-loader = "0.17.3"
+fabric-language-kotlin = "1.13.4+kotlin.2.2.0"
+fabric-api = "0.133.4"
+
+kotlin = "2.2.20"
+kotlin-symbol-processor = "2.2.20-2.0.2"
+
+resourceful-config-kotlin = "3.5.15"
+
+skyblockapi = "4.0.0"
+
+meowdding-lib = "4.0.1"
+meowdding-auto-mixins = "1.0.3"
+meowdding-remote-repo = "1.0.4"
+meowdding-resources = "1.0.17"
+meowdding-ktmodules = "1.0.5"
+meowdding-ktcodecs = "1.0.25"
+
+hypixel-modapi-fabric = "1.0.1+build.1+mc1.21"
+
+gson = "2.12.1"
+
+
+[libraries]
+fabric-language-kotlin = { module = "net.fabricmc:fabric-language-kotlin", version.ref = "fabric-language-kotlin" }
+fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }
+
+skyblockapi = { module = "tech.thatgravyboat:skyblock-api", version.ref = "skyblockapi" }
+
+resourceful-config-kotlin = { module = "com.teamresourceful.resourcefulconfigkt:resourcefulconfigkt-fabric-1.21.5", version.ref = "resourceful-config-kotlin" }
+
+meowdding-lib = { module = "me.owdding.meowdding-lib:meowdding-lib", version.ref = "meowdding-lib" }
+meowdding-remote-repo = { module = "me.owdding.repo:remote-repo", version.ref = "meowdding-remote-repo" }
+meowdding-ktmodules = { module = "me.owdding.ktmodules:KtModules", version.ref = "meowdding-ktmodules" }
+meowdding-ktcodecs = { module = "me.owdding.ktcodecs:KtCodecs", version.ref = "meowdding-ktcodecs" }
+meowdding-resources = { module = "me.owdding.repo:compacting-resources", version.ref = "meowdding-resources" }
+
+hypixel-modapi-fabric = { module = "maven.modrinth:hypixel-mod-api", version.ref = "hypixel-modapi-fabric" }
+
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+
+[plugins]
+
+meowdding-resources = { id = "me.owdding.resources" }
+meowdding-auto-mixins = { id = "me.owdding.auto-mixins", version.ref = "meowdding-auto-mixins" }
+kotlin-symbol-processor = { id = "com.google.devtools.ksp", version.ref = "kotlin-symbol-processor" }

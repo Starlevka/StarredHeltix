@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:ghostly_boots_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:ghostly_boots_armor"
+      }
+    ]
+  }
+}

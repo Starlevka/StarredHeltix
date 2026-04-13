@@ -1,0 +1,32 @@
+package net.minecraft.network.protocol.game;
+
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.PacketType;
+import net.minecraft.world.level.storage.LevelData;
+
+public record ClientboundSetDefaultSpawnPositionPacket(LevelData.RespawnData respawnData) implements Packet<ClientGamePacketListener> {
+   public static final StreamCodec<FriendlyByteBuf, ClientboundSetDefaultSpawnPositionPacket> STREAM_CODEC;
+
+   public ClientboundSetDefaultSpawnPositionPacket(LevelData.RespawnData param1) {
+      super();
+      this.respawnData = var1;
+   }
+
+   public PacketType<ClientboundSetDefaultSpawnPositionPacket> type() {
+      return GamePacketTypes.CLIENTBOUND_SET_DEFAULT_SPAWN_POSITION;
+   }
+
+   public void handle(ClientGamePacketListener var1) {
+      var1.handleSetSpawn(this);
+   }
+
+   public LevelData.RespawnData respawnData() {
+      return this.respawnData;
+   }
+
+   static {
+      STREAM_CODEC = StreamCodec.composite(LevelData.RespawnData.STREAM_CODEC, ClientboundSetDefaultSpawnPositionPacket::respawnData, ClientboundSetDefaultSpawnPositionPacket::new);
+   }
+}

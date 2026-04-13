@@ -1,0 +1,44 @@
+package net.minecraft.world.level.block;
+
+import com.mojang.serialization.MapCodec;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
+
+public class BushBlock extends VegetationBlock implements BonemealableBlock {
+   public static final MapCodec<BushBlock> CODEC = simpleCodec(BushBlock::new);
+   private static final VoxelShape SHAPE = Block.column(16.0D, 0.0D, 13.0D);
+
+   public MapCodec<BushBlock> codec() {
+      return CODEC;
+   }
+
+   protected BushBlock(BlockBehaviour.Properties var1) {
+      super(var1);
+   }
+
+   protected VoxelShape getShape(BlockState var1, BlockGetter var2, BlockPos var3, CollisionContext var4) {
+      return SHAPE;
+   }
+
+   public boolean isValidBonemealTarget(LevelReader var1, BlockPos var2, BlockState var3) {
+      return BonemealableBlock.hasSpreadableNeighbourPos(var1, var2, var3);
+   }
+
+   public boolean isBonemealSuccess(Level var1, RandomSource var2, BlockPos var3, BlockState var4) {
+      return true;
+   }
+
+   public void performBonemeal(ServerLevel var1, RandomSource var2, BlockPos var3, BlockState var4) {
+      BonemealableBlock.findSpreadableNeighbourPos(var1, var3, var4).ifPresent((var2x) -> {
+         var1.setBlockAndUpdate(var2x, this.defaultBlockState());
+      });
+   }
+}

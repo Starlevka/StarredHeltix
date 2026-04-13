@@ -1,0 +1,339 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/space.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        " "
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/pixel.png",
+      "ascent": 9,
+      "height": 16,
+      "chars": [
+        "-"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/a.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "А"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/b.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Б"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/v.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "В"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/g.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Г"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/d.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Д"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/e.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Е"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/e.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ё"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/j.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ж"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/z.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "З"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/i.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "И"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/i2.png",
+      "ascent": 9,
+      "height": 14,
+      "chars": [
+        "Й"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/k.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "К"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/l.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Л"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/m.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "М"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/n.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Н"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/o.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "О"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/p.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "П"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/r.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Р"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/s.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "С"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/t.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Т"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/y.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "У"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/f.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ф"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/h.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Х"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/c.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ц"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/ch.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ч"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/sh.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ш"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/sch.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Щ"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/tverd.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ъ"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/ib.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ы"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/mgk.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ь"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/etverd.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Э"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/yu.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Ю"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/hfont/ya.png",
+      "ascent": 8,
+      "height": 14,
+      "chars": [
+        "Я"
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "": -1,
+        "‌": 0,
+        "": -1,
+        "": -1.1,
+        "": -3,
+        "": -4,
+        "": -5,
+        "": -6,
+        "": -7,
+        "": -8,
+        "": -9
+      }
+    },
+    {
+      "type": "reference",
+      "id": "space:default"
+    }
+  ]
+}

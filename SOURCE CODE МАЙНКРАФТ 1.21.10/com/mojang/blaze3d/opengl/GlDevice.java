@@ -1,0 +1,434 @@
+package com.mojang.blaze3d.opengl;
+
+import com.mojang.blaze3d.GpuOutOfMemoryException;
+import com.mojang.blaze3d.GraphicsWorkarounds;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.pipeline.CompiledRenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.preprocessor.GlslPreprocessor;
+import com.mojang.blaze3d.shaders.ShaderType;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.blaze3d.textures.TextureFormat;
+import com.mojang.logging.LogUtils;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import net.minecraft.client.renderer.ShaderDefines;
+import net.minecraft.client.renderer.ShaderManager;
+import net.minecraft.resources.ResourceLocation;
+import org.apache.commons.lang3.StringUtils;
+import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GLCapabilities;
+import org.slf4j.Logger;
+
+public class GlDevice implements GpuDevice {
+   private static final Logger LOGGER = LogUtils.getLogger();
+   protected static boolean USE_GL_ARB_vertex_attrib_binding = true;
+   protected static boolean USE_GL_KHR_debug = true;
+   protected static boolean USE_GL_EXT_debug_label = true;
+   protected static boolean USE_GL_ARB_debug_output = true;
+   protected static boolean USE_GL_ARB_direct_state_access = true;
+   protected static boolean USE_GL_ARB_buffer_storage = true;
+   private final CommandEncoder encoder;
+   @Nullable
+   private final GlDebug debugLog;
+   private final GlDebugLabel debugLabels;
+   private final int maxSupportedTextureSize;
+   private final DirectStateAccess directStateAccess;
+   private final BiFunction<ResourceLocation, ShaderType, String> defaultShaderSource;
+   private final Map<RenderPipeline, GlRenderPipeline> pipelineCache = new IdentityHashMap();
+   private final Map<GlDevice.ShaderCompilationKey, GlShaderModule> shaderCache = new HashMap();
+   private final VertexArrayCache vertexArrayCache;
+   private final BufferStorage bufferStorage;
+   private final Set<String> enabledExtensions = new HashSet();
+   private final int uniformOffsetAlignment;
+
+   public GlDevice(long var1, int var3, boolean var4, BiFunction<ResourceLocation, ShaderType, String> var5, boolean var6) {
+      super();
+      GLFW.glfwMakeContextCurrent(var1);
+      GLCapabilities var7 = GL.createCapabilities();
+      int var8 = getMaxSupportedTextureSize();
+      GLFW.glfwSetWindowSizeLimits(var1, -1, -1, var8, var8);
+      GraphicsWorkarounds var9 = GraphicsWorkarounds.get(this);
+      this.debugLog = GlDebug.enableDebugCallback(var3, var4, this.enabledExtensions);
+      this.debugLabels = GlDebugLabel.create(var7, var6, this.enabledExtensions);
+      this.vertexArrayCache = VertexArrayCache.create(var7, this.debugLabels, this.enabledExtensions);
+      this.bufferStorage = BufferStorage.create(var7, this.enabledExtensions);
+      this.directStateAccess = DirectStateAccess.create(var7, this.enabledExtensions, var9);
+      this.maxSupportedTextureSize = var8;
+      this.defaultShaderSource = var5;
+      this.encoder = new GlCommandEncoder(this);
+      this.uniformOffsetAlignment = GL11.glGetInteger(35380);
+      GL11.glEnable(34895);
+   }
+
+   public GlDebugLabel debugLabels() {
+      return this.debugLabels;
+   }
+
+   public CommandEncoder createCommandEncoder() {
+      return this.encoder;
+   }
+
+   public GpuTexture createTexture(@Nullable Supplier<String> var1, int var2, TextureFormat var3, int var4, int var5, int var6, int var7) {
+      return this.createTexture(this.debugLabels.exists() && var1 != null ? (String)var1.get() : null, var2, var3, var4, var5, var6, var7);
+   }
+
+   public GpuTexture createTexture(@Nullable String var1, int var2, TextureFormat var3, int var4, int var5, int var6, int var7) {
+      if (var7 < 1) {
+         throw new IllegalArgumentException("mipLevels must be at least 1");
+      } else if (var6 < 1) {
+         throw new IllegalArgumentException("depthOrLayers must be at least 1");
+      } else {
+         boolean var8 = (var2 & 16) != 0;
+         if (var8) {
+            if (var4 != var5) {
+               throw new IllegalArgumentException("Cubemap compatible textures must be square, but size is " + var4 + "x" + var5);
+            }
+
+            if (var6 % 6 != 0) {
+               throw new IllegalArgumentException("Cubemap compatible textures must have a layer count with a multiple of 6, was " + var6);
+            }
+
+            if (var6 > 6) {
+               throw new UnsupportedOperationException("Array textures are not yet supported");
+            }
+         } else if (var6 > 1) {
+            throw new UnsupportedOperationException("Array or 3D textures are not yet supported");
+         }
+
+         GlStateManager.clearGlErrors();
+         int var9 = GlStateManager._genTexture();
+         if (var1 == null) {
+            var1 = String.valueOf(var9);
+         }
+
+         char var10;
+         if (var8) {
+            GL11.glBindTexture(34067, var9);
+            var10 = '\u8513';
+         } else {
+            GlStateManager._bindTexture(var9);
+            var10 = 3553;
+         }
+
+         GlStateManager._texParameter(var10, 33085, var7 - 1);
+         GlStateManager._texParameter(var10, 33082, 0);
+         GlStateManager._texParameter(var10, 33083, var7 - 1);
+         if (var3.hasDepthAspect()) {
+            GlStateManager._texParameter(var10, 34892, 0);
+         }
+
+         int var16;
+         if (var8) {
+            int[] var11 = GlConst.CUBEMAP_TARGETS;
+            int var12 = var11.length;
+
+            for(int var13 = 0; var13 < var12; ++var13) {
+               int var14 = var11[var13];
+
+               for(int var15 = 0; var15 < var7; ++var15) {
+                  GlStateManager._texImage2D(var14, var15, GlConst.toGlInternalId(var3), var4 >> var15, var5 >> var15, 0, GlConst.toGlExternalId(var3), GlConst.toGlType(var3), (ByteBuffer)null);
+               }
+            }
+         } else {
+            for(var16 = 0; var16 < var7; ++var16) {
+               GlStateManager._texImage2D(var10, var16, GlConst.toGlInternalId(var3), var4 >> var16, var5 >> var16, 0, GlConst.toGlExternalId(var3), GlConst.toGlType(var3), (ByteBuffer)null);
+            }
+         }
+
+         var16 = GlStateManager._getError();
+         if (var16 == 1285) {
+            throw new GpuOutOfMemoryException("Could not allocate texture of " + var4 + "x" + var5 + " for " + var1);
+         } else if (var16 != 0) {
+            throw new IllegalStateException("OpenGL error " + var16);
+         } else {
+            GlTexture var17 = new GlTexture(var2, var1, var3, var4, var5, var6, var7, var9);
+            this.debugLabels.applyLabel(var17);
+            return var17;
+         }
+      }
+   }
+
+   public GpuTextureView createTextureView(GpuTexture var1) {
+      return this.createTextureView(var1, 0, var1.getMipLevels());
+   }
+
+   public GpuTextureView createTextureView(GpuTexture var1, int var2, int var3) {
+      if (var1.isClosed()) {
+         throw new IllegalArgumentException("Can't create texture view with closed texture");
+      } else if (var2 >= 0 && var2 + var3 <= var1.getMipLevels()) {
+         return new GlTextureView((GlTexture)var1, var2, var3);
+      } else {
+         throw new IllegalArgumentException(var3 + " mip levels starting from " + var2 + " would be out of range for texture with only " + var1.getMipLevels() + " mip levels");
+      }
+   }
+
+   public GpuBuffer createBuffer(@Nullable Supplier<String> var1, int var2, int var3) {
+      if (var3 <= 0) {
+         throw new IllegalArgumentException("Buffer size must be greater than zero");
+      } else {
+         GlStateManager.clearGlErrors();
+         GlBuffer var4 = this.bufferStorage.createBuffer(this.directStateAccess, var1, var2, var3);
+         int var5 = GlStateManager._getError();
+         if (var5 == 1285) {
+            throw new GpuOutOfMemoryException("Could not allocate buffer of " + var3 + " for " + String.valueOf(var1));
+         } else if (var5 != 0) {
+            throw new IllegalStateException("OpenGL error " + var5);
+         } else {
+            this.debugLabels.applyLabel(var4);
+            return var4;
+         }
+      }
+   }
+
+   public GpuBuffer createBuffer(@Nullable Supplier<String> var1, int var2, ByteBuffer var3) {
+      if (!var3.hasRemaining()) {
+         throw new IllegalArgumentException("Buffer source must not be empty");
+      } else {
+         GlStateManager.clearGlErrors();
+         long var4 = (long)var3.remaining();
+         GlBuffer var6 = this.bufferStorage.createBuffer(this.directStateAccess, var1, var2, var3);
+         int var7 = GlStateManager._getError();
+         if (var7 == 1285) {
+            throw new GpuOutOfMemoryException("Could not allocate buffer of " + var4 + " for " + String.valueOf(var1));
+         } else if (var7 != 0) {
+            throw new IllegalStateException("OpenGL error " + var7);
+         } else {
+            this.debugLabels.applyLabel(var6);
+            return var6;
+         }
+      }
+   }
+
+   public String getImplementationInformation() {
+      if (GLFW.glfwGetCurrentContext() == 0L) {
+         return "NO CONTEXT";
+      } else {
+         String var10000 = GlStateManager._getString(7937);
+         return var10000 + " GL version " + GlStateManager._getString(7938) + ", " + GlStateManager._getString(7936);
+      }
+   }
+
+   public List<String> getLastDebugMessages() {
+      return this.debugLog == null ? Collections.emptyList() : this.debugLog.getLastOpenGlDebugMessages();
+   }
+
+   public boolean isDebuggingEnabled() {
+      return this.debugLog != null;
+   }
+
+   public String getRenderer() {
+      return GlStateManager._getString(7937);
+   }
+
+   public String getVendor() {
+      return GlStateManager._getString(7936);
+   }
+
+   public String getBackendName() {
+      return "OpenGL";
+   }
+
+   public String getVersion() {
+      return GlStateManager._getString(7938);
+   }
+
+   private static int getMaxSupportedTextureSize() {
+      int var0 = GlStateManager._getInteger(3379);
+
+      int var1;
+      for(var1 = Math.max(32768, var0); var1 >= 1024; var1 >>= 1) {
+         GlStateManager._texImage2D(32868, 0, 6408, var1, var1, 0, 6408, 5121, (ByteBuffer)null);
+         int var2 = GlStateManager._getTexLevelParameter(32868, 0, 4096);
+         if (var2 != 0) {
+            return var1;
+         }
+      }
+
+      var1 = Math.max(var0, 1024);
+      LOGGER.info("Failed to determine maximum texture size by probing, trying GL_MAX_TEXTURE_SIZE = {}", var1);
+      return var1;
+   }
+
+   public int getMaxTextureSize() {
+      return this.maxSupportedTextureSize;
+   }
+
+   public int getUniformOffsetAlignment() {
+      return this.uniformOffsetAlignment;
+   }
+
+   public void clearPipelineCache() {
+      Iterator var1 = this.pipelineCache.values().iterator();
+
+      while(var1.hasNext()) {
+         GlRenderPipeline var2 = (GlRenderPipeline)var1.next();
+         if (var2.program() != GlProgram.INVALID_PROGRAM) {
+            var2.program().close();
+         }
+      }
+
+      this.pipelineCache.clear();
+      var1 = this.shaderCache.values().iterator();
+
+      while(var1.hasNext()) {
+         GlShaderModule var4 = (GlShaderModule)var1.next();
+         if (var4 != GlShaderModule.INVALID_SHADER) {
+            var4.close();
+         }
+      }
+
+      this.shaderCache.clear();
+      String var3 = GlStateManager._getString(7937);
+      if (var3.contains("AMD")) {
+         sacrificeShaderToOpenGlAndAmd();
+      }
+
+   }
+
+   private static void sacrificeShaderToOpenGlAndAmd() {
+      int var0 = GlStateManager.glCreateShader(35633);
+      int var1 = GlStateManager.glCreateProgram();
+      GlStateManager.glAttachShader(var1, var0);
+      GlStateManager.glDeleteShader(var0);
+      GlStateManager.glDeleteProgram(var1);
+   }
+
+   public List<String> getEnabledExtensions() {
+      return new ArrayList(this.enabledExtensions);
+   }
+
+   public void close() {
+      this.clearPipelineCache();
+   }
+
+   public DirectStateAccess directStateAccess() {
+      return this.directStateAccess;
+   }
+
+   protected GlRenderPipeline getOrCompilePipeline(RenderPipeline var1) {
+      return (GlRenderPipeline)this.pipelineCache.computeIfAbsent(var1, (var2) -> {
+         return this.compilePipeline(var1, this.defaultShaderSource);
+      });
+   }
+
+   protected GlShaderModule getOrCompileShader(ResourceLocation var1, ShaderType var2, ShaderDefines var3, BiFunction<ResourceLocation, ShaderType, String> var4) {
+      GlDevice.ShaderCompilationKey var5 = new GlDevice.ShaderCompilationKey(var1, var2, var3);
+      return (GlShaderModule)this.shaderCache.computeIfAbsent(var5, (var3x) -> {
+         return this.compileShader(var5, var4);
+      });
+   }
+
+   public GlRenderPipeline precompilePipeline(RenderPipeline var1, @Nullable BiFunction<ResourceLocation, ShaderType, String> var2) {
+      BiFunction var3 = var2 == null ? this.defaultShaderSource : var2;
+      return (GlRenderPipeline)this.pipelineCache.computeIfAbsent(var1, (var3x) -> {
+         return this.compilePipeline(var1, var3);
+      });
+   }
+
+   private GlShaderModule compileShader(GlDevice.ShaderCompilationKey var1, BiFunction<ResourceLocation, ShaderType, String> var2) {
+      String var3 = (String)var2.apply(var1.id, var1.type);
+      if (var3 == null) {
+         LOGGER.error("Couldn't find source for {} shader ({})", var1.type, var1.id);
+         return GlShaderModule.INVALID_SHADER;
+      } else {
+         String var4 = GlslPreprocessor.injectDefines(var3, var1.defines);
+         int var5 = GlStateManager.glCreateShader(GlConst.toGl(var1.type));
+         GlStateManager.glShaderSource(var5, var4);
+         GlStateManager.glCompileShader(var5);
+         if (GlStateManager.glGetShaderi(var5, 35713) == 0) {
+            String var7 = StringUtils.trim(GlStateManager.glGetShaderInfoLog(var5, 32768));
+            LOGGER.error("Couldn't compile {} shader ({}): {}", new Object[]{var1.type.getName(), var1.id, var7});
+            return GlShaderModule.INVALID_SHADER;
+         } else {
+            GlShaderModule var6 = new GlShaderModule(var5, var1.id, var1.type);
+            this.debugLabels.applyLabel(var6);
+            return var6;
+         }
+      }
+   }
+
+   private GlRenderPipeline compilePipeline(RenderPipeline var1, BiFunction<ResourceLocation, ShaderType, String> var2) {
+      GlShaderModule var3 = this.getOrCompileShader(var1.getVertexShader(), ShaderType.VERTEX, var1.getShaderDefines(), var2);
+      GlShaderModule var4 = this.getOrCompileShader(var1.getFragmentShader(), ShaderType.FRAGMENT, var1.getShaderDefines(), var2);
+      if (var3 == GlShaderModule.INVALID_SHADER) {
+         LOGGER.error("Couldn't compile pipeline {}: vertex shader {} was invalid", var1.getLocation(), var1.getVertexShader());
+         return new GlRenderPipeline(var1, GlProgram.INVALID_PROGRAM);
+      } else if (var4 == GlShaderModule.INVALID_SHADER) {
+         LOGGER.error("Couldn't compile pipeline {}: fragment shader {} was invalid", var1.getLocation(), var1.getFragmentShader());
+         return new GlRenderPipeline(var1, GlProgram.INVALID_PROGRAM);
+      } else {
+         GlProgram var5;
+         try {
+            var5 = GlProgram.link(var3, var4, var1.getVertexFormat(), var1.getLocation().toString());
+         } catch (ShaderManager.CompilationException var7) {
+            LOGGER.error("Couldn't compile program for pipeline {}: {}", var1.getLocation(), var7);
+            return new GlRenderPipeline(var1, GlProgram.INVALID_PROGRAM);
+         }
+
+         var5.setupUniforms(var1.getUniforms(), var1.getSamplers());
+         this.debugLabels.applyLabel(var5);
+         return new GlRenderPipeline(var1, var5);
+      }
+   }
+
+   public VertexArrayCache vertexArrayCache() {
+      return this.vertexArrayCache;
+   }
+
+   public BufferStorage getBufferStorage() {
+      return this.bufferStorage;
+   }
+
+   // $FF: synthetic method
+   public CompiledRenderPipeline precompilePipeline(final RenderPipeline param1, @Nullable final BiFunction param2) {
+      return this.precompilePipeline(var1, var2);
+   }
+
+   static record ShaderCompilationKey(ResourceLocation id, ShaderType type, ShaderDefines defines) {
+      final ResourceLocation id;
+      final ShaderType type;
+      final ShaderDefines defines;
+
+      ShaderCompilationKey(ResourceLocation param1, ShaderType param2, ShaderDefines param3) {
+         super();
+         this.id = var1;
+         this.type = var2;
+         this.defines = var3;
+      }
+
+      public String toString() {
+         String var10000 = String.valueOf(this.id);
+         String var1 = var10000 + " (" + String.valueOf(this.type) + ")";
+         return !this.defines.isEmpty() ? var1 + " with " + String.valueOf(this.defines) : var1;
+      }
+
+      public ResourceLocation id() {
+         return this.id;
+      }
+
+      public ShaderType type() {
+         return this.type;
+      }
+
+      public ShaderDefines defines() {
+         return this.defines;
+      }
+   }
+}

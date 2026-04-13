@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:rosetta_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:rosetta_armor"
+      }
+    ]
+  }
+}

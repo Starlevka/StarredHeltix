@@ -1,0 +1,175 @@
+package net.minecraft.world.entity;
+
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ProjectileItem;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.Vec3;
+
+public class OminousItemSpawner extends Entity {
+   private static final int SPAWN_ITEM_DELAY_MIN = 60;
+   private static final int SPAWN_ITEM_DELAY_MAX = 120;
+   private static final String TAG_SPAWN_ITEM_AFTER_TICKS = "spawn_item_after_ticks";
+   private static final String TAG_ITEM = "item";
+   private static final EntityDataAccessor<ItemStack> DATA_ITEM;
+   public static final int TICKS_BEFORE_ABOUT_TO_SPAWN_SOUND = 36;
+   private long spawnItemAfterTicks;
+
+   public OminousItemSpawner(EntityType<? extends OminousItemSpawner> var1, Level var2) {
+      super(var1, var2);
+      this.noPhysics = true;
+   }
+
+   public static OminousItemSpawner create(Level var0, ItemStack var1) {
+      OminousItemSpawner var2 = new OminousItemSpawner(EntityType.OMINOUS_ITEM_SPAWNER, var0);
+      var2.spawnItemAfterTicks = (long)var0.random.nextIntBetweenInclusive(60, 120);
+      var2.setItem(var1);
+      return var2;
+   }
+
+   public void tick() {
+      super.tick();
+      Level var2 = this.level();
+      if (var2 instanceof ServerLevel) {
+         ServerLevel var1 = (ServerLevel)var2;
+         this.tickServer(var1);
+      } else {
+         this.tickClient();
+      }
+
+   }
+
+   private void tickServer(ServerLevel var1) {
+      if ((long)this.tickCount == this.spawnItemAfterTicks - 36L) {
+         var1.playSound((Entity)null, this.blockPosition(), SoundEvents.TRIAL_SPAWNER_ABOUT_TO_SPAWN_ITEM, SoundSource.NEUTRAL);
+      }
+
+      if ((long)this.tickCount >= this.spawnItemAfterTicks) {
+         this.spawnItem();
+         this.kill(var1);
+      }
+
+   }
+
+   private void tickClient() {
+      if (this.level().getGameTime() % 5L == 0L) {
+         this.addParticles();
+      }
+
+   }
+
+   private void spawnItem() {
+      Level var2 = this.level();
+      if (var2 instanceof ServerLevel) {
+         ServerLevel var1 = (ServerLevel)var2;
+         ItemStack var6 = this.getItem();
+         if (!var6.isEmpty()) {
+            Item var5 = var6.getItem();
+            Object var3;
+            if (var5 instanceof ProjectileItem) {
+               ProjectileItem var4 = (ProjectileItem)var5;
+               var3 = this.spawnProjectile(var1, var4, var6);
+            } else {
+               var3 = new ItemEntity(var1, this.getX(), this.getY(), this.getZ(), var6);
+               var1.addFreshEntity((Entity)var3);
+            }
+
+            var1.levelEvent(3021, this.blockPosition(), 1);
+            var1.gameEvent((Entity)var3, GameEvent.ENTITY_PLACE, this.position());
+            this.setItem(ItemStack.EMPTY);
+         }
+      }
+   }
+
+   private Entity spawnProjectile(ServerLevel var1, ProjectileItem var2, ItemStack var3) {
+      ProjectileItem.DispenseConfig var4 = var2.createDispenseConfig();
+      var4.overrideDispenseEvent().ifPresent((var2x) -> {
+         var1.levelEvent(var2x, this.blockPosition(), 0);
+      });
+      Direction var5 = Direction.DOWN;
+      Projectile var6 = Projectile.spawnProjectileUsingShoot(var2.asProjectile(var1, this.position(), var3, var5), var1, var3, (double)var5.getStepX(), (double)var5.getStepY(), (double)var5.getStepZ(), var4.power(), var4.uncertainty());
+      var6.setOwner((Entity)this);
+      return var6;
+   }
+
+   protected void defineSynchedData(SynchedEntityData.Builder var1) {
+      var1.define(DATA_ITEM, ItemStack.EMPTY);
+   }
+
+   protected void readAdditionalSaveData(ValueInput var1) {
+      this.setItem((ItemStack)var1.read("item", ItemStack.CODEC).orElse(ItemStack.EMPTY));
+      this.spawnItemAfterTicks = var1.getLongOr("spawn_item_after_ticks", 0L);
+   }
+
+   protected void addAdditionalSaveData(ValueOutput var1) {
+      if (!this.getItem().isEmpty()) {
+         var1.store("item", ItemStack.CODEC, this.getItem());
+      }
+
+      var1.putLong("spawn_item_after_ticks", this.spawnItemAfterTicks);
+   }
+
+   protected boolean canAddPassenger(Entity var1) {
+      return false;
+   }
+
+   protected boolean couldAcceptPassenger() {
+      return false;
+   }
+
+   protected void addPassenger(Entity var1) {
+      throw new IllegalStateException("Should never addPassenger without checking couldAcceptPassenger()");
+   }
+
+   public PushReaction getPistonPushReaction() {
+      return PushReaction.IGNORE;
+   }
+
+   public boolean isIgnoringBlockTriggers() {
+      return true;
+   }
+
+   public void addParticles() {
+      Vec3 var1 = this.position();
+      int var2 = this.random.nextIntBetweenInclusive(1, 3);
+
+      for(int var3 = 0; var3 < var2; ++var3) {
+         double var4 = 0.4D;
+         Vec3 var6 = new Vec3(this.getX() + 0.4D * (this.random.nextGaussian() - this.random.nextGaussian()), this.getY() + 0.4D * (this.random.nextGaussian() - this.random.nextGaussian()), this.getZ() + 0.4D * (this.random.nextGaussian() - this.random.nextGaussian()));
+         Vec3 var7 = var1.vectorTo(var6);
+         this.level().addParticle(ParticleTypes.OMINOUS_SPAWNING, var1.x(), var1.y(), var1.z(), var7.x(), var7.y(), var7.z());
+      }
+
+   }
+
+   public ItemStack getItem() {
+      return (ItemStack)this.getEntityData().get(DATA_ITEM);
+   }
+
+   private void setItem(ItemStack var1) {
+      this.getEntityData().set(DATA_ITEM, var1);
+   }
+
+   public final boolean hurtServer(ServerLevel var1, DamageSource var2, float var3) {
+      return false;
+   }
+
+   static {
+      DATA_ITEM = SynchedEntityData.defineId(OminousItemSpawner.class, EntityDataSerializers.ITEM_STACK);
+   }
+}

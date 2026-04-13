@@ -1,0 +1,118 @@
+package net.minecraft.client.gui.font;
+
+import com.mojang.blaze3d.font.GlyphBitmap;
+import com.mojang.blaze3d.font.GlyphInfo;
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.TextureFormat;
+import java.nio.file.Path;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import net.minecraft.client.gui.font.glyphs.BakedSheetGlyph;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.Dumpable;
+import net.minecraft.resources.ResourceLocation;
+
+public class FontTexture extends AbstractTexture implements Dumpable {
+   private static final int SIZE = 256;
+   private final GlyphRenderTypes renderTypes;
+   private final boolean colored;
+   private final FontTexture.Node root;
+
+   public FontTexture(Supplier<String> var1, GlyphRenderTypes var2, boolean var3) {
+      super();
+      this.colored = var3;
+      this.root = new FontTexture.Node(0, 0, 256, 256);
+      GpuDevice var4 = RenderSystem.getDevice();
+      this.texture = var4.createTexture((Supplier)var1, 7, var3 ? TextureFormat.RGBA8 : TextureFormat.RED8, 256, 256, 1, 1);
+      this.texture.setTextureFilter(FilterMode.NEAREST, false);
+      this.textureView = var4.createTextureView(this.texture);
+      this.renderTypes = var2;
+   }
+
+   @Nullable
+   public BakedSheetGlyph add(GlyphInfo var1, GlyphBitmap var2) {
+      if (var2.isColored() != this.colored) {
+         return null;
+      } else {
+         FontTexture.Node var3 = this.root.insert(var2);
+         if (var3 != null) {
+            var2.upload(var3.x, var3.y, this.getTexture());
+            float var4 = 256.0F;
+            float var5 = 256.0F;
+            float var6 = 0.01F;
+            return new BakedSheetGlyph(var1, this.renderTypes, this.getTextureView(), ((float)var3.x + 0.01F) / 256.0F, ((float)var3.x - 0.01F + (float)var2.getPixelWidth()) / 256.0F, ((float)var3.y + 0.01F) / 256.0F, ((float)var3.y - 0.01F + (float)var2.getPixelHeight()) / 256.0F, var2.getLeft(), var2.getRight(), var2.getTop(), var2.getBottom());
+         } else {
+            return null;
+         }
+      }
+   }
+
+   public void dumpContents(ResourceLocation var1, Path var2) {
+      if (this.texture != null) {
+         String var3 = var1.toDebugFileName();
+         TextureUtil.writeAsPNG(var2, var3, this.texture, 0, (var0) -> {
+            return (var0 & -16777216) == 0 ? -16777216 : var0;
+         });
+      }
+   }
+
+   static class Node {
+      final int x;
+      final int y;
+      private final int width;
+      private final int height;
+      @Nullable
+      private FontTexture.Node left;
+      @Nullable
+      private FontTexture.Node right;
+      private boolean occupied;
+
+      Node(int var1, int var2, int var3, int var4) {
+         super();
+         this.x = var1;
+         this.y = var2;
+         this.width = var3;
+         this.height = var4;
+      }
+
+      @Nullable
+      FontTexture.Node insert(GlyphBitmap var1) {
+         if (this.left != null && this.right != null) {
+            FontTexture.Node var6 = this.left.insert(var1);
+            if (var6 == null) {
+               var6 = this.right.insert(var1);
+            }
+
+            return var6;
+         } else if (this.occupied) {
+            return null;
+         } else {
+            int var2 = var1.getPixelWidth();
+            int var3 = var1.getPixelHeight();
+            if (var2 <= this.width && var3 <= this.height) {
+               if (var2 == this.width && var3 == this.height) {
+                  this.occupied = true;
+                  return this;
+               } else {
+                  int var4 = this.width - var2;
+                  int var5 = this.height - var3;
+                  if (var4 > var5) {
+                     this.left = new FontTexture.Node(this.x, this.y, var2, this.height);
+                     this.right = new FontTexture.Node(this.x + var2 + 1, this.y, this.width - var2 - 1, this.height);
+                  } else {
+                     this.left = new FontTexture.Node(this.x, this.y, this.width, var3);
+                     this.right = new FontTexture.Node(this.x, this.y + var3 + 1, this.width, this.height - var3 - 1);
+                  }
+
+                  return this.left.insert(var1);
+               }
+            } else {
+               return null;
+            }
+         }
+      }
+   }
+}

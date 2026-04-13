@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:magma_lord_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:magma_lord_armor"
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:reaper_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:reaper_armor"
+      }
+    ]
+  }
+}

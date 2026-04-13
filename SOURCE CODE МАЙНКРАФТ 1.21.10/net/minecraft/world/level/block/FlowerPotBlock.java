@@ -1,0 +1,142 @@
+package net.minecraft.world.level.block;
+
+import com.google.common.collect.Maps;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.pathfinder.PathComputationType;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
+
+public class FlowerPotBlock extends Block {
+   public static final MapCodec<FlowerPotBlock> CODEC = RecordCodecBuilder.mapCodec((var0) -> {
+      return var0.group(BuiltInRegistries.BLOCK.byNameCodec().fieldOf("potted").forGetter((var0x) -> {
+         return var0x.potted;
+      }), propertiesCodec()).apply(var0, FlowerPotBlock::new);
+   });
+   private static final Map<Block, Block> POTTED_BY_CONTENT = Maps.newHashMap();
+   private static final VoxelShape SHAPE = Block.column(6.0D, 0.0D, 6.0D);
+   private final Block potted;
+
+   public MapCodec<FlowerPotBlock> codec() {
+      return CODEC;
+   }
+
+   public FlowerPotBlock(Block var1, BlockBehaviour.Properties var2) {
+      super(var2);
+      this.potted = var1;
+      POTTED_BY_CONTENT.put(var1, this);
+   }
+
+   protected VoxelShape getShape(BlockState var1, BlockGetter var2, BlockPos var3, CollisionContext var4) {
+      return SHAPE;
+   }
+
+   protected InteractionResult useItemOn(ItemStack var1, BlockState var2, Level var3, BlockPos var4, Player var5, InteractionHand var6, BlockHitResult var7) {
+      Item var10 = var1.getItem();
+      Block var10000;
+      if (var10 instanceof BlockItem) {
+         BlockItem var9 = (BlockItem)var10;
+         var10000 = (Block)POTTED_BY_CONTENT.getOrDefault(var9.getBlock(), Blocks.AIR);
+      } else {
+         var10000 = Blocks.AIR;
+      }
+
+      BlockState var8 = var10000.defaultBlockState();
+      if (var8.isAir()) {
+         return InteractionResult.TRY_WITH_EMPTY_HAND;
+      } else if (!this.isEmpty()) {
+         return InteractionResult.CONSUME;
+      } else {
+         var3.setBlock(var4, var8, 3);
+         var3.gameEvent(var5, GameEvent.BLOCK_CHANGE, var4);
+         var5.awardStat(Stats.POT_FLOWER);
+         var1.consume(1, var5);
+         return InteractionResult.SUCCESS;
+      }
+   }
+
+   protected InteractionResult useWithoutItem(BlockState var1, Level var2, BlockPos var3, Player var4, BlockHitResult var5) {
+      if (this.isEmpty()) {
+         return InteractionResult.CONSUME;
+      } else {
+         ItemStack var6 = new ItemStack(this.potted);
+         if (!var4.addItem(var6)) {
+            var4.drop(var6, false);
+         }
+
+         var2.setBlock(var3, Blocks.FLOWER_POT.defaultBlockState(), 3);
+         var2.gameEvent(var4, GameEvent.BLOCK_CHANGE, var3);
+         return InteractionResult.SUCCESS;
+      }
+   }
+
+   protected ItemStack getCloneItemStack(LevelReader var1, BlockPos var2, BlockState var3, boolean var4) {
+      return this.isEmpty() ? super.getCloneItemStack(var1, var2, var3, var4) : new ItemStack(this.potted);
+   }
+
+   private boolean isEmpty() {
+      return this.potted == Blocks.AIR;
+   }
+
+   protected BlockState updateShape(BlockState var1, LevelReader var2, ScheduledTickAccess var3, BlockPos var4, Direction var5, BlockPos var6, BlockState var7, RandomSource var8) {
+      return var5 == Direction.DOWN && !var1.canSurvive(var2, var4) ? Blocks.AIR.defaultBlockState() : super.updateShape(var1, var2, var3, var4, var5, var6, var7, var8);
+   }
+
+   public Block getPotted() {
+      return this.potted;
+   }
+
+   protected boolean isPathfindable(BlockState var1, PathComputationType var2) {
+      return false;
+   }
+
+   protected boolean isRandomlyTicking(BlockState var1) {
+      return var1.is(Blocks.POTTED_OPEN_EYEBLOSSOM) || var1.is(Blocks.POTTED_CLOSED_EYEBLOSSOM);
+   }
+
+   protected void randomTick(BlockState var1, ServerLevel var2, BlockPos var3, RandomSource var4) {
+      if (this.isRandomlyTicking(var1) && var2.dimensionType().natural()) {
+         boolean var5 = this.potted == Blocks.OPEN_EYEBLOSSOM;
+         boolean var6 = CreakingHeartBlock.isNaturalNight(var2);
+         if (var5 != var6) {
+            var2.setBlock(var3, this.opposite(var1), 3);
+            EyeblossomBlock.Type var7 = EyeblossomBlock.Type.fromBoolean(var5).transform();
+            var7.spawnTransformParticle(var2, var3, var4);
+            var2.playSound((Entity)null, var3, var7.longSwitchSound(), SoundSource.BLOCKS, 1.0F, 1.0F);
+         }
+      }
+
+      super.randomTick(var1, var2, var3, var4);
+   }
+
+   public BlockState opposite(BlockState var1) {
+      if (var1.is(Blocks.POTTED_OPEN_EYEBLOSSOM)) {
+         return Blocks.POTTED_CLOSED_EYEBLOSSOM.defaultBlockState();
+      } else {
+         return var1.is(Blocks.POTTED_CLOSED_EYEBLOSSOM) ? Blocks.POTTED_OPEN_EYEBLOSSOM.defaultBlockState() : var1;
+      }
+   }
+}

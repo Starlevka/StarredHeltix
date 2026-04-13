@@ -3,6 +3,8 @@ package set.starlev.features.inventory
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import set.starlev.StarredHeltix
+import set.starlev.utils.ColorUtils
 
 /**
  * Кнопка-таб в инвентаре (как в Skyblocker).
@@ -44,13 +46,22 @@ data class InventoryButton(
     fun render(graphics: GuiGraphics, guiLeft: Int, guiWidth: Int, guiTop: Int, guiHeight: Int, hovered: Boolean) {
         val sx = getX(guiLeft, guiWidth)
         val sy = getY(guiTop, guiHeight)
+        val config = StarredHeltix.feature.misc.general.inventoryButtons
 
         // Фон таба
-        val bgColor = if (hovered) 0xC0000000.toInt() else 0x80000000.toInt()
+        val bgColor = if (hovered) {
+            ColorUtils.parseColor(config.tabHoverBackgroundColorV2, 0xC03AAFD9.toInt())
+        } else {
+            ColorUtils.parseColor(config.tabBackgroundColorV2, 0x80000000.toInt())
+        }
         graphics.fill(sx, sy, sx + TAB_WIDTH, sy + TAB_HEIGHT, bgColor)
 
         // Рамка
-        val borderColor = if (hovered) 0xFFDDDDDD.toInt() else 0xFFAAAAAA.toInt()
+        val borderColor = if (hovered) {
+            ColorUtils.parseColor(config.tabHoverBorderColorV2, 0xFFFFFFFF.toInt())
+        } else {
+            ColorUtils.parseColor(config.tabBorderColorV2, 0xFFAAAAAA.toInt())
+        }
         graphics.fill(sx, sy, sx + TAB_WIDTH, sy + 1, borderColor)
         graphics.fill(sx, sy + TAB_HEIGHT - 1, sx + TAB_WIDTH, sy + TAB_HEIGHT, 0xFF555555.toInt())
         graphics.fill(sx, sy, sx + 1, sy + TAB_HEIGHT, borderColor)

@@ -1,0 +1,33 @@
+package net.minecraft.client.renderer.entity;
+
+import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+
+public abstract class MobRenderer<T extends Mob, S extends LivingEntityRenderState, M extends EntityModel<? super S>> extends LivingEntityRenderer<T, S, M> {
+   public MobRenderer(EntityRendererProvider.Context var1, M var2, float var3) {
+      super(var1, var2, var3);
+   }
+
+   protected boolean shouldShowName(T var1, double var2) {
+      return super.shouldShowName((LivingEntity)var1, var2) && (var1.shouldShowName() || var1.hasCustomName() && var1 == this.entityRenderDispatcher.crosshairPickEntity);
+   }
+
+   protected float getShadowRadius(S var1) {
+      return super.getShadowRadius(var1) * var1.ageScale;
+   }
+
+   protected static boolean checkMagicName(Entity var0, String var1) {
+      Component var2 = var0.getCustomName();
+      return var2 != null && var1.equals(var2.getString());
+   }
+
+   // $FF: synthetic method
+   protected float getShadowRadius(final EntityRenderState param1) {
+      return this.getShadowRadius((LivingEntityRenderState)var1);
+   }
+}

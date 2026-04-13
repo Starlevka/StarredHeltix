@@ -1,0 +1,278 @@
+package net.minecraft.gametest.framework;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.mojang.logging.LogUtils;
+import it.unimi.dsi.fastutil.longs.LongArraySet;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import net.minecraft.Util;
+import net.minecraft.core.Holder;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.entity.TestInstanceBlockEntity;
+import org.slf4j.Logger;
+
+public class GameTestRunner {
+   public static final int DEFAULT_TESTS_PER_ROW = 8;
+   private static final Logger LOGGER = LogUtils.getLogger();
+   final ServerLevel level;
+   private final GameTestTicker testTicker;
+   private final List<GameTestInfo> allTestInfos;
+   private ImmutableList<GameTestBatch> batches;
+   final List<GameTestBatchListener> batchListeners = Lists.newArrayList();
+   private final List<GameTestInfo> scheduledForRerun = Lists.newArrayList();
+   private final GameTestRunner.GameTestBatcher testBatcher;
+   private boolean stopped = true;
+   @Nullable
+   private Holder<TestEnvironmentDefinition> currentEnvironment;
+   private final GameTestRunner.StructureSpawner existingStructureSpawner;
+   private final GameTestRunner.StructureSpawner newStructureSpawner;
+   final boolean haltOnError;
+   private final boolean clearBetweenBatches;
+
+   protected GameTestRunner(GameTestRunner.GameTestBatcher var1, Collection<GameTestBatch> var2, ServerLevel var3, GameTestTicker var4, GameTestRunner.StructureSpawner var5, GameTestRunner.StructureSpawner var6, boolean var7, boolean var8) {
+      super();
+      this.level = var3;
+      this.testTicker = var4;
+      this.testBatcher = var1;
+      this.existingStructureSpawner = var5;
+      this.newStructureSpawner = var6;
+      this.batches = ImmutableList.copyOf(var2);
+      this.haltOnError = var7;
+      this.clearBetweenBatches = var8;
+      this.allTestInfos = (List)this.batches.stream().flatMap((var0) -> {
+         return var0.gameTestInfos().stream();
+      }).collect(Util.toMutableList());
+      var4.setRunner(this);
+      this.allTestInfos.forEach((var0) -> {
+         var0.addListener(new ReportGameListener());
+      });
+   }
+
+   public List<GameTestInfo> getTestInfos() {
+      return this.allTestInfos;
+   }
+
+   public void start() {
+      this.stopped = false;
+      this.runBatch(0);
+   }
+
+   public void stop() {
+      this.stopped = true;
+      if (this.currentEnvironment != null) {
+         this.endCurrentEnvironment();
+      }
+
+   }
+
+   public void rerunTest(GameTestInfo var1) {
+      GameTestInfo var2 = var1.copyReset();
+      var1.getListeners().forEach((var3) -> {
+         var3.testAddedForRerun(var1, var2, this);
+      });
+      this.allTestInfos.add(var2);
+      this.scheduledForRerun.add(var2);
+      if (this.stopped) {
+         this.runScheduledRerunTests();
+      }
+
+   }
+
+   void runBatch(final int var1) {
+      if (var1 >= this.batches.size()) {
+         this.endCurrentEnvironment();
+         this.runScheduledRerunTests();
+      } else {
+         final GameTestBatch var2;
+         if (var1 > 0 && this.clearBetweenBatches) {
+            var2 = (GameTestBatch)this.batches.get(var1 - 1);
+            var2.gameTestInfos().forEach((var1x) -> {
+               TestInstanceBlockEntity var2 = var1x.getTestInstanceBlockEntity();
+               StructureUtils.clearSpaceForStructure(var2.getStructureBoundingBox(), this.level);
+               this.level.destroyBlock(var2.getBlockPos(), false);
+            });
+         }
+
+         var2 = (GameTestBatch)this.batches.get(var1);
+         this.existingStructureSpawner.onBatchStart(this.level);
+         this.newStructureSpawner.onBatchStart(this.level);
+         Collection var3 = this.createStructuresForBatch(var2.gameTestInfos());
+         LOGGER.info("Running test environment '{}' batch {} ({} tests)...", new Object[]{var2.environment().getRegisteredName(), var2.index(), var3.size()});
+         this.endCurrentEnvironment();
+         this.currentEnvironment = var2.environment();
+         ((TestEnvironmentDefinition)this.currentEnvironment.value()).setup(this.level);
+         this.batchListeners.forEach((var1x) -> {
+            var1x.testBatchStarting(var2);
+         });
+         final MultipleTestTracker var4 = new MultipleTestTracker();
+         Objects.requireNonNull(var4);
+         var3.forEach(var4::addTestToTrack);
+         var4.addListener(new GameTestListener() {
+            private void testCompleted(GameTestInfo var1x) {
+               var1x.getTestInstanceBlockEntity().removeBarriers();
+               if (var4.isDone()) {
+                  GameTestRunner.this.batchListeners.forEach((var1xx) -> {
+                     var1xx.testBatchFinished(var2);
+                  });
+                  LongArraySet var2x = new LongArraySet(GameTestRunner.this.level.getForceLoadedChunks());
+                  var2x.forEach((var1xx) -> {
+                     GameTestRunner.this.level.setChunkForced(ChunkPos.getX(var1xx), ChunkPos.getZ(var1xx), false);
+                  });
+                  GameTestRunner.this.runBatch(var1 + 1);
+               }
+
+            }
+
+            public void testStructureLoaded(GameTestInfo var1x) {
+            }
+
+            public void testPassed(GameTestInfo var1x, GameTestRunner var2x) {
+               this.testCompleted(var1x);
+            }
+
+            public void testFailed(GameTestInfo var1x, GameTestRunner var2x) {
+               if (GameTestRunner.this.haltOnError) {
+                  GameTestRunner.this.endCurrentEnvironment();
+                  LongArraySet var3 = new LongArraySet(GameTestRunner.this.level.getForceLoadedChunks());
+                  var3.forEach((var1xx) -> {
+                     GameTestRunner.this.level.setChunkForced(ChunkPos.getX(var1xx), ChunkPos.getZ(var1xx), false);
+                  });
+                  GameTestTicker.SINGLETON.clear();
+                  var1x.getTestInstanceBlockEntity().removeBarriers();
+               } else {
+                  this.testCompleted(var1x);
+               }
+
+            }
+
+            public void testAddedForRerun(GameTestInfo var1x, GameTestInfo var2x, GameTestRunner var3) {
+            }
+         });
+         GameTestTicker var10001 = this.testTicker;
+         Objects.requireNonNull(var10001);
+         var3.forEach(var10001::add);
+      }
+   }
+
+   void endCurrentEnvironment() {
+      if (this.currentEnvironment != null) {
+         ((TestEnvironmentDefinition)this.currentEnvironment.value()).teardown(this.level);
+         this.currentEnvironment = null;
+      }
+
+   }
+
+   private void runScheduledRerunTests() {
+      if (!this.scheduledForRerun.isEmpty()) {
+         LOGGER.info("Starting re-run of tests: {}", this.scheduledForRerun.stream().map((var0) -> {
+            return var0.id().toString();
+         }).collect(Collectors.joining(", ")));
+         this.batches = ImmutableList.copyOf(this.testBatcher.batch(this.scheduledForRerun));
+         this.scheduledForRerun.clear();
+         this.stopped = false;
+         this.runBatch(0);
+      } else {
+         this.batches = ImmutableList.of();
+         this.stopped = true;
+      }
+
+   }
+
+   public void addListener(GameTestBatchListener var1) {
+      this.batchListeners.add(var1);
+   }
+
+   private Collection<GameTestInfo> createStructuresForBatch(Collection<GameTestInfo> var1) {
+      return var1.stream().map(this::spawn).flatMap(Optional::stream).toList();
+   }
+
+   private Optional<GameTestInfo> spawn(GameTestInfo var1) {
+      return var1.getTestBlockPos() == null ? this.newStructureSpawner.spawnStructure(var1) : this.existingStructureSpawner.spawnStructure(var1);
+   }
+
+   public interface GameTestBatcher {
+      Collection<GameTestBatch> batch(Collection<GameTestInfo> var1);
+   }
+
+   public interface StructureSpawner {
+      GameTestRunner.StructureSpawner IN_PLACE = (var0) -> {
+         return Optional.ofNullable(var0.prepareTestStructure()).map((var0x) -> {
+            return var0x.startExecution(1);
+         });
+      };
+      GameTestRunner.StructureSpawner NOT_SET = (var0) -> {
+         return Optional.empty();
+      };
+
+      Optional<GameTestInfo> spawnStructure(GameTestInfo var1);
+
+      default void onBatchStart(ServerLevel var1) {
+      }
+   }
+
+   public static class Builder {
+      private final ServerLevel level;
+      private final GameTestTicker testTicker;
+      private GameTestRunner.GameTestBatcher batcher;
+      private GameTestRunner.StructureSpawner existingStructureSpawner;
+      private GameTestRunner.StructureSpawner newStructureSpawner;
+      private final Collection<GameTestBatch> batches;
+      private boolean haltOnError;
+      private boolean clearBetweenBatches;
+
+      private Builder(Collection<GameTestBatch> var1, ServerLevel var2) {
+         super();
+         this.testTicker = GameTestTicker.SINGLETON;
+         this.batcher = GameTestBatchFactory.fromGameTestInfo();
+         this.existingStructureSpawner = GameTestRunner.StructureSpawner.IN_PLACE;
+         this.newStructureSpawner = GameTestRunner.StructureSpawner.NOT_SET;
+         this.haltOnError = false;
+         this.clearBetweenBatches = false;
+         this.batches = var1;
+         this.level = var2;
+      }
+
+      public static GameTestRunner.Builder fromBatches(Collection<GameTestBatch> var0, ServerLevel var1) {
+         return new GameTestRunner.Builder(var0, var1);
+      }
+
+      public static GameTestRunner.Builder fromInfo(Collection<GameTestInfo> var0, ServerLevel var1) {
+         return fromBatches(GameTestBatchFactory.fromGameTestInfo().batch(var0), var1);
+      }
+
+      public GameTestRunner.Builder haltOnError() {
+         this.haltOnError = true;
+         return this;
+      }
+
+      public GameTestRunner.Builder clearBetweenBatches() {
+         this.clearBetweenBatches = true;
+         return this;
+      }
+
+      public GameTestRunner.Builder newStructureSpawner(GameTestRunner.StructureSpawner var1) {
+         this.newStructureSpawner = var1;
+         return this;
+      }
+
+      public GameTestRunner.Builder existingStructureSpawner(StructureGridSpawner var1) {
+         this.existingStructureSpawner = var1;
+         return this;
+      }
+
+      public GameTestRunner.Builder batcher(GameTestRunner.GameTestBatcher var1) {
+         this.batcher = var1;
+         return this;
+      }
+
+      public GameTestRunner build() {
+         return new GameTestRunner(this.batcher, this.batches, this.level, this.testTicker, this.existingStructureSpawner, this.newStructureSpawner, this.haltOnError, this.clearBetweenBatches);
+      }
+   }
+}

@@ -1,0 +1,155 @@
+package net.minecraft.client.particle;
+
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.particles.SimpleParticleType;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+
+public class GlowParticle extends SingleQuadParticle {
+   private final SpriteSet sprites;
+
+   GlowParticle(ClientLevel var1, double var2, double var4, double var6, double var8, double var10, double var12, SpriteSet var14) {
+      super(var1, var2, var4, var6, var8, var10, var12, var14.first());
+      this.friction = 0.96F;
+      this.speedUpWhenYMotionIsBlocked = true;
+      this.sprites = var14;
+      this.quadSize *= 0.75F;
+      this.hasPhysics = false;
+      this.setSpriteFromAge(var14);
+   }
+
+   public SingleQuadParticle.Layer getLayer() {
+      return SingleQuadParticle.Layer.TRANSLUCENT;
+   }
+
+   public int getLightColor(float var1) {
+      float var2 = ((float)this.age + var1) / (float)this.lifetime;
+      var2 = Mth.clamp(var2, 0.0F, 1.0F);
+      int var3 = super.getLightColor(var1);
+      int var4 = var3 & 255;
+      int var5 = var3 >> 16 & 255;
+      var4 += (int)(var2 * 15.0F * 16.0F);
+      if (var4 > 240) {
+         var4 = 240;
+      }
+
+      return var4 | var5 << 16;
+   }
+
+   public void tick() {
+      super.tick();
+      this.setSpriteFromAge(this.sprites);
+   }
+
+   public static class ScrapeProvider implements ParticleProvider<SimpleParticleType> {
+      private static final double SPEED_FACTOR = 0.01D;
+      private final SpriteSet sprite;
+
+      public ScrapeProvider(SpriteSet var1) {
+         super();
+         this.sprite = var1;
+      }
+
+      public Particle createParticle(SimpleParticleType var1, ClientLevel var2, double var3, double var5, double var7, double var9, double var11, double var13, RandomSource var15) {
+         GlowParticle var16 = new GlowParticle(var2, var3, var5, var7, 0.0D, 0.0D, 0.0D, this.sprite);
+         if (var15.nextBoolean()) {
+            var16.setColor(0.29F, 0.58F, 0.51F);
+         } else {
+            var16.setColor(0.43F, 0.77F, 0.62F);
+         }
+
+         var16.setParticleSpeed(var9 * 0.01D, var11 * 0.01D, var13 * 0.01D);
+         boolean var17 = true;
+         boolean var18 = true;
+         var16.setLifetime(var15.nextInt(30) + 10);
+         return var16;
+      }
+   }
+
+   public static class ElectricSparkProvider implements ParticleProvider<SimpleParticleType> {
+      private static final double SPEED_FACTOR = 0.25D;
+      private final SpriteSet sprite;
+
+      public ElectricSparkProvider(SpriteSet var1) {
+         super();
+         this.sprite = var1;
+      }
+
+      public Particle createParticle(SimpleParticleType var1, ClientLevel var2, double var3, double var5, double var7, double var9, double var11, double var13, RandomSource var15) {
+         GlowParticle var16 = new GlowParticle(var2, var3, var5, var7, 0.0D, 0.0D, 0.0D, this.sprite);
+         var16.setColor(1.0F, 0.9F, 1.0F);
+         var16.setParticleSpeed(var9 * 0.25D, var11 * 0.25D, var13 * 0.25D);
+         boolean var17 = true;
+         boolean var18 = true;
+         var16.setLifetime(var15.nextInt(2) + 2);
+         return var16;
+      }
+   }
+
+   public static class WaxOffProvider implements ParticleProvider<SimpleParticleType> {
+      private static final double SPEED_FACTOR = 0.01D;
+      private final SpriteSet sprite;
+
+      public WaxOffProvider(SpriteSet var1) {
+         super();
+         this.sprite = var1;
+      }
+
+      public Particle createParticle(SimpleParticleType var1, ClientLevel var2, double var3, double var5, double var7, double var9, double var11, double var13, RandomSource var15) {
+         GlowParticle var16 = new GlowParticle(var2, var3, var5, var7, 0.0D, 0.0D, 0.0D, this.sprite);
+         var16.setColor(1.0F, 0.9F, 1.0F);
+         var16.setParticleSpeed(var9 * 0.01D / 2.0D, var11 * 0.01D, var13 * 0.01D / 2.0D);
+         boolean var17 = true;
+         boolean var18 = true;
+         var16.setLifetime(var15.nextInt(30) + 10);
+         return var16;
+      }
+   }
+
+   public static class WaxOnProvider implements ParticleProvider<SimpleParticleType> {
+      private static final double SPEED_FACTOR = 0.01D;
+      private final SpriteSet sprite;
+
+      public WaxOnProvider(SpriteSet var1) {
+         super();
+         this.sprite = var1;
+      }
+
+      public Particle createParticle(SimpleParticleType var1, ClientLevel var2, double var3, double var5, double var7, double var9, double var11, double var13, RandomSource var15) {
+         GlowParticle var16 = new GlowParticle(var2, var3, var5, var7, 0.0D, 0.0D, 0.0D, this.sprite);
+         var16.setColor(0.91F, 0.55F, 0.08F);
+         var16.setParticleSpeed(var9 * 0.01D / 2.0D, var11 * 0.01D, var13 * 0.01D / 2.0D);
+         boolean var17 = true;
+         boolean var18 = true;
+         var16.setLifetime(var15.nextInt(30) + 10);
+         return var16;
+      }
+   }
+
+   public static class GlowSquidProvider implements ParticleProvider<SimpleParticleType> {
+      private final SpriteSet sprite;
+
+      public GlowSquidProvider(SpriteSet var1) {
+         super();
+         this.sprite = var1;
+      }
+
+      public Particle createParticle(SimpleParticleType var1, ClientLevel var2, double var3, double var5, double var7, double var9, double var11, double var13, RandomSource var15) {
+         GlowParticle var16 = new GlowParticle(var2, var3, var5, var7, 0.5D - var15.nextDouble(), var11, 0.5D - var15.nextDouble(), this.sprite);
+         if (var15.nextBoolean()) {
+            var16.setColor(0.6F, 1.0F, 0.8F);
+         } else {
+            var16.setColor(0.08F, 0.4F, 0.4F);
+         }
+
+         var16.yd *= 0.20000000298023224D;
+         if (var9 == 0.0D && var13 == 0.0D) {
+            var16.xd *= 0.10000000149011612D;
+            var16.zd *= 0.10000000149011612D;
+         }
+
+         var16.setLifetime((int)(8.0D / (var15.nextDouble() * 0.8D + 0.2D)));
+         return var16;
+      }
+   }
+}

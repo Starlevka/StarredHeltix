@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:fiery_fervor_(helmet|chestplate|leggings|boots)"
+  }
+}

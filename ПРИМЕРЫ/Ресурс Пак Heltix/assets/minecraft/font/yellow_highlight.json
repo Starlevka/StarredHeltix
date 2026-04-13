@@ -1,0 +1,58 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "custom/ui/yellow_highlight.png",
+      "ascent": -4,
+      "height": 18,
+      "chars": [
+        "0"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/ui/yellow_highlight.png",
+      "ascent": -22,
+      "height": 18,
+      "chars": [
+        "1"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/ui/yellow_highlight.png",
+      "ascent": -40,
+      "height": 18,
+      "chars": [
+        "2"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/ui/yellow_highlight.png",
+      "ascent": -58,
+      "height": 18,
+      "chars": [
+        "3"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/ui/yellow_highlight.png",
+      "ascent": -76,
+      "height": 18,
+      "chars": [
+        "4"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "custom/ui/yellow_highlight.png",
+      "ascent": -94,
+      "height": 18,
+      "chars": [
+        "5"
+      ]
+    }
+  ]
+}

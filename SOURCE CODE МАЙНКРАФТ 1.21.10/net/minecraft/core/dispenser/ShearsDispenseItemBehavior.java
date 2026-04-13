@@ -1,0 +1,83 @@
+package net.minecraft.core.dispenser;
+
+import java.util.Iterator;
+import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.world.entity.Shearable;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.BeehiveBlock;
+import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.phys.AABB;
+
+public class ShearsDispenseItemBehavior extends OptionalDispenseItemBehavior {
+   public ShearsDispenseItemBehavior() {
+      super();
+   }
+
+   protected ItemStack execute(BlockSource var1, ItemStack var2) {
+      ServerLevel var3 = var1.level();
+      if (!var3.isClientSide()) {
+         BlockPos var4 = var1.pos().relative((Direction)var1.state().getValue(DispenserBlock.FACING));
+         this.setSuccess(tryShearBeehive(var3, var2, var4) || tryShearEntity(var3, var4, var2));
+         if (this.isSuccess()) {
+            var2.hurtAndBreak(1, var3, (ServerPlayer)null, (var0) -> {
+            });
+         }
+      }
+
+      return var2;
+   }
+
+   private static boolean tryShearBeehive(ServerLevel var0, ItemStack var1, BlockPos var2) {
+      BlockState var3 = var0.getBlockState(var2);
+      if (var3.is(BlockTags.BEEHIVES, (var0x) -> {
+         return var0x.hasProperty(BeehiveBlock.HONEY_LEVEL) && var0x.getBlock() instanceof BeehiveBlock;
+      })) {
+         int var4 = (Integer)var3.getValue(BeehiveBlock.HONEY_LEVEL);
+         if (var4 >= 5) {
+            var0.playSound((Entity)null, var2, SoundEvents.BEEHIVE_SHEAR, SoundSource.BLOCKS, 1.0F, 1.0F);
+            BeehiveBlock.dropHoneycomb(var0, var1, var3, var0.getBlockEntity(var2), (Entity)null, var2);
+            ((BeehiveBlock)var3.getBlock()).releaseBeesAndResetHoneyLevel(var0, var3, var2, (Player)null, BeehiveBlockEntity.BeeReleaseStatus.BEE_RELEASED);
+            var0.gameEvent((Entity)null, GameEvent.SHEAR, var2);
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   private static boolean tryShearEntity(ServerLevel var0, BlockPos var1, ItemStack var2) {
+      List var3 = var0.getEntitiesOfClass(Entity.class, new AABB(var1), EntitySelector.NO_SPECTATORS);
+      Iterator var4 = var3.iterator();
+
+      while(var4.hasNext()) {
+         Entity var5 = (Entity)var4.next();
+         if (var5.shearOffAllLeashConnections((Player)null)) {
+            return true;
+         }
+
+         if (var5 instanceof Shearable) {
+            Shearable var6 = (Shearable)var5;
+            if (var6.readyForShearing()) {
+               var6.shear(var0, SoundSource.BLOCKS, var2);
+               var0.gameEvent((Entity)null, GameEvent.SHEAR, var1);
+               return true;
+            }
+         }
+      }
+
+      return false;
+   }
+}

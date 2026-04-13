@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:wise_dragon_(chestplate|leggings|boots)"
+  }
+}

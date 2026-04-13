@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:(helmet|chestplate|leggings|boots)_of_the_pack"
+  }
+}

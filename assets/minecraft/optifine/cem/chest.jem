@@ -1,0 +1,98 @@
+{
+	"credit": "Made with Blockbench",
+	"texture": "textures/entity/chest/chest.png",
+	"textureSize": [64, 64],
+	"models": [
+		{
+			"part": "base",
+			"id": "base",
+			"invertAxis": "xy",
+			"translate": [-8, 0, -8],
+			"rotate": [-180, 0, 0],
+			"submodels": [
+				{
+					"id": "body",
+					"invertAxis": "xy",
+					"translate": [0, -3.5, 16],
+					"boxes": [
+						{"coordinates": [-8, -3.5, -8, 16, 7, 16], "textureOffset": [0, 0]},
+						{"coordinates": [-8, 1.5, -8, 16, 0, 16], "textureOffset": [0, 0]}
+					],
+					"submodels": [
+						{
+							"id": "head",
+							"invertAxis": "xy",
+							"translate": [0, -5, -7],
+							"boxes": [
+								{"coordinates": [-8, -8.5, -1, 16, 13, 16], "textureOffset": [0, 23], "sizeAdd": 0.8},
+								{
+									"coordinates": [-8, -6.5, -1, 16, 0, 16],
+									"uvUp": [32, 39, 16, 23],
+									"uvDown": [48, 23, 32, 39],
+									"sizeAdd": 0.8
+								}
+							],
+							"submodels": [
+								{
+									"id": "handle",
+									"invertAxis": "xy",
+									"translate": [0, -9.3, 8],
+									"rotate": [22.5, 0, 0],
+									"boxes": [
+										{"coordinates": [-5, -6.5444, -2.34237, 2, 7, 3], "textureOffset": [0, 54]}
+									],
+									"submodels": [
+										{
+											"id": "base_sub_3",
+											"invertAxis": "xy",
+											"mirrorTexture": "u",
+											"translate": [0, 0, 0],
+											"boxes": [
+												{"coordinates": [3, -6.5444, -2.34237, 2, 7, 3], "textureOffset": [0, 54]},
+												{"coordinates": [-3, -6.5444, -2.34237, 6, 2, 3], "textureOffset": [11, 59]}
+											]
+										}
+									]
+								}
+							]
+						}
+					]
+				}
+			],
+			"animations": [
+				{
+					"var.time": "time - pi/random(id)",
+					"this.rx": 0,
+					"body.ty": "3.5 -lid.rx*4",
+					"body.rx": "-pow(cos(var.time/16+pi), 6)/16",
+					"handle.rx": "-pow(sin(var.time/16+pi/2), 6)/3 -torad(12)",
+					"head.rx": "lid.rx -pow(sin(var.time/16+pi/4), 6)/20"
+				}
+			]
+		},
+		{
+			"part": "lid",
+			"id": "lid",
+			"invertAxis": "xy",
+			"translate": [-8, -9, -7],
+			"rotate": [-180, 0, 0],
+			"animations": [
+				{
+					"this.rx": 0
+				}
+			]
+		},
+		{
+			"part": "knob",
+			"id": "knob",
+			"invertAxis": "xy",
+			"translate": [-8, -9, -7],
+			"rotate": [-180, 0, 0],
+			"animations": [
+				{
+					"this.rx": 0
+				}
+			]
+		}
+	]
+}

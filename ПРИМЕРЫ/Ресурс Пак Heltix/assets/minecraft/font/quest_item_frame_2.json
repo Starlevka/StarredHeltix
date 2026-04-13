@@ -1,0 +1,68 @@
+{
+   "providers": [
+           {
+         "type": "bitmap",
+         "file": "minecraft:custom/dialogue/quest_book/item_frame_1.png",
+         "ascent": -80,
+         "height": 48,
+         "chars": [
+            "ḱ"
+         ]
+      },
+                 {
+         "type": "bitmap",
+         "file": "minecraft:custom/dialogue/quest_book/item_frame_2.png",
+         "ascent": -80,
+         "height": 84,
+         "chars": [
+            "➣"
+         ]
+      },
+
+                 {
+         "type": "bitmap",
+         "file": "minecraft:custom/dialogue/quest_book/item_frame_3.png",
+         "ascent": -80,
+         "height": 120,
+         "chars": [
+            "ᱮ"
+         ]
+      },
+
+
+                 {
+         "type": "bitmap",
+         "file": "minecraft:custom/dialogue/quest_book/item_frame_4.png",
+         "ascent": -80,
+         "height": 156,
+         "chars": [
+            "ᄩ"
+         ]
+      },
+
+
+                 {
+         "type": "bitmap",
+         "file": "minecraft:custom/dialogue/quest_book/item_frame_5.png",
+         "ascent": -80,
+         "height": 192,
+         "chars": [
+            "ᅠ"
+         ]
+      },
+
+                 {
+         "type": "bitmap",
+         "file": "minecraft:custom/dialogue/quest_book/item_frame_6.png",
+         "ascent": -80,
+         "height": 228,
+         "chars": [
+            "⊶"
+         ]
+      },
+         {
+      "type": "reference",
+      "id": "space:default"
+    }
+   ]
+}

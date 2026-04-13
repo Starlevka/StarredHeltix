@@ -1,0 +1,158 @@
+package com.mojang.blaze3d.platform;
+
+import com.mojang.blaze3d.DontObfuscate;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.logging.LogUtils;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
+import org.lwjgl.system.MemoryUtil;
+import org.slf4j.Logger;
+
+@DontObfuscate
+public class TextureUtil {
+   private static final Logger LOGGER = LogUtils.getLogger();
+   public static final int MIN_MIPMAP_LEVEL = 0;
+   private static final int DEFAULT_IMAGE_BUFFER_SIZE = 8192;
+
+   public TextureUtil() {
+      super();
+   }
+
+   public static ByteBuffer readResource(InputStream var0) throws IOException {
+      ReadableByteChannel var1 = Channels.newChannel(var0);
+      if (var1 instanceof SeekableByteChannel) {
+         SeekableByteChannel var2 = (SeekableByteChannel)var1;
+         return readResource(var1, (int)var2.size() + 1);
+      } else {
+         return readResource(var1, 8192);
+      }
+   }
+
+   private static ByteBuffer readResource(ReadableByteChannel var0, int var1) throws IOException {
+      ByteBuffer var2 = MemoryUtil.memAlloc(var1);
+
+      try {
+         while(var0.read(var2) != -1) {
+            if (!var2.hasRemaining()) {
+               var2 = MemoryUtil.memRealloc(var2, var2.capacity() * 2);
+            }
+         }
+
+         return var2;
+      } catch (IOException var4) {
+         MemoryUtil.memFree(var2);
+         throw var4;
+      }
+   }
+
+   public static void writeAsPNG(Path var0, String var1, GpuTexture var2, int var3, IntUnaryOperator var4) {
+      RenderSystem.assertOnRenderThread();
+      int var5 = 0;
+
+      for(int var6 = 0; var6 <= var3; ++var6) {
+         var5 += var2.getFormat().pixelSize() * var2.getWidth(var6) * var2.getHeight(var6);
+      }
+
+      GpuBuffer var12 = RenderSystem.getDevice().createBuffer(() -> {
+         return "Texture output buffer";
+      }, 9, var5);
+      CommandEncoder var7 = RenderSystem.getDevice().createCommandEncoder();
+      Runnable var8 = () -> {
+         GpuBuffer.MappedView var7x = var7.mapBuffer(var12, true, false);
+
+         try {
+            int var8 = 0;
+
+            for(int var9 = 0; var9 <= var3; ++var9) {
+               int var10 = var2.getWidth(var9);
+               int var11 = var2.getHeight(var9);
+
+               try {
+                  NativeImage var12x = new NativeImage(var10, var11, false);
+
+                  try {
+                     int var13 = 0;
+
+                     while(true) {
+                        if (var13 >= var11) {
+                           Path var21 = var0.resolve(var1 + "_" + var9 + ".png");
+                           var12x.writeToFile(var21);
+                           LOGGER.debug("Exported png to: {}", var21.toAbsolutePath());
+                           break;
+                        }
+
+                        for(int var14 = 0; var14 < var10; ++var14) {
+                           int var15 = var7x.data().getInt(var8 + (var14 + var13 * var10) * var2.getFormat().pixelSize());
+                           var12x.setPixelABGR(var14, var13, var4.applyAsInt(var15));
+                        }
+
+                        ++var13;
+                     }
+                  } catch (Throwable var18) {
+                     try {
+                        var12x.close();
+                     } catch (Throwable var17) {
+                        var18.addSuppressed(var17);
+                     }
+
+                     throw var18;
+                  }
+
+                  var12x.close();
+               } catch (IOException var19) {
+                  LOGGER.debug("Unable to write: ", var19);
+               }
+
+               var8 += var2.getFormat().pixelSize() * var10 * var11;
+            }
+         } catch (Throwable var20) {
+            if (var7x != null) {
+               try {
+                  var7x.close();
+               } catch (Throwable var16) {
+                  var20.addSuppressed(var16);
+               }
+            }
+
+            throw var20;
+         }
+
+         if (var7x != null) {
+            var7x.close();
+         }
+
+         var12.close();
+      };
+      AtomicInteger var9 = new AtomicInteger();
+      int var10 = 0;
+
+      for(int var11 = 0; var11 <= var3; ++var11) {
+         var7.copyTextureToBuffer(var2, var12, var10, () -> {
+            if (var9.getAndIncrement() == var3) {
+               var8.run();
+            }
+
+         }, var11);
+         var10 += var2.getFormat().pixelSize() * var2.getWidth(var11) * var2.getHeight(var11);
+      }
+
+   }
+
+   public static Path getDebugTexturePath(Path var0) {
+      return var0.resolve("screenshots").resolve("debug");
+   }
+
+   public static Path getDebugTexturePath() {
+      return getDebugTexturePath(Path.of("."));
+   }
+}

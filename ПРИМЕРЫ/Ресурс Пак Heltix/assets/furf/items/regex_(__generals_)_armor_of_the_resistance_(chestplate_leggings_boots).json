@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:(?:generals_)?armor_of_the_resistance_(chestplate|leggings|boots)"
+  }
+}

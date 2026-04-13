@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:burning_terror_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:burning_terror_armor"
+      }
+    ]
+  }
+}

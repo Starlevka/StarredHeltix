@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:cheap_tuxedo_(chestplate|leggings|boots)"
+  }
+}

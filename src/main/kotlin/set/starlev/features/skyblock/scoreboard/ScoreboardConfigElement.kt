@@ -3,7 +3,6 @@ package set.starlev.features.skyblock.scoreboard
 import set.starlev.features.skyblock.scoreboard.elements.*
 
 enum class ScoreboardConfigElement(val element: ScoreboardElement) {
-    TITLE(ScoreboardElementTitle),
     PURSE(ScoreboardElementPurse),
     BANK(ScoreboardElementBank),
     GEMS(ScoreboardElementGems),
@@ -12,7 +11,6 @@ enum class ScoreboardConfigElement(val element: ScoreboardElement) {
     PING(ScoreboardElementPing),
     CPS(ScoreboardElementCPS),
     BPS(ScoreboardElementBPS),
-    SLAYER(ScoreboardElementSlayer),
     LOCATION(ScoreboardElementLocation),
     EMPTY_LINE(ScoreboardElementEmptyLine),
     EMPTY_LINE2(ScoreboardElementEmptyLine),
@@ -28,7 +26,6 @@ enum class ScoreboardConfigElement(val element: ScoreboardElement) {
 
         @JvmField
         val defaultOptions = listOf(
-            TITLE,
             EMPTY_LINE,
             LOCATION,
             EMPTY_LINE2,
@@ -42,8 +39,7 @@ enum class ScoreboardConfigElement(val element: ScoreboardElement) {
             BPS,
             EMPTY_LINE4,
             COOKIE,
-            EMPTY_LINE5,
-            SLAYER,
+            EMPTY_LINE5
         )
     }
 }

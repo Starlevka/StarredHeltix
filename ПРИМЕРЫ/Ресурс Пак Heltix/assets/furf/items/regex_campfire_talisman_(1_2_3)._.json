@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:campfire_talisman_(1|2|3).*"
+  }
+}

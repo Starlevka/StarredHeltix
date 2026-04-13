@@ -1,0 +1,14 @@
+accessWidener v2 named
+
+# Inventory access (используется в AutoCommissions.kt)
+accessible field net/minecraft/world/entity/player/Inventory items Lnet/minecraft/core/NonNullList;
+accessible field net/minecraft/world/entity/player/Inventory selected I
+
+# Avatar data access (используется в NPC.kt)
+accessible field net/minecraft/world/entity/Avatar DATA_PLAYER_MODE_CUSTOMISATION Lnet/minecraft/network/syncher/EntityDataAccessor;
+
+# Minecraft client access (используется в RenderContext.kt)
+accessible field net/minecraft/client/Minecraft levelRenderer Lnet/minecraft/client/renderer/LevelRenderer;
+
+# Level access (используется в LevelMixin.java)
+accessible field net/minecraft/world/level/Level isClientSide Z

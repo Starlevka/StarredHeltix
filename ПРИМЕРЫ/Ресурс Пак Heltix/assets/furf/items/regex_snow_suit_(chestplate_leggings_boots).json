@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "furf:item/regex:snow_suit_(chestplate|leggings|boots)"
+  }
+}

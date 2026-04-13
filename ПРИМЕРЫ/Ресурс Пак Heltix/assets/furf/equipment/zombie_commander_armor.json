@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:zombie_commander_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:zombie_commander_armor"
+      }
+    ]
+  }
+}

@@ -6,7 +6,6 @@ import net.minecraft.world.scores.DisplaySlot
 import net.minecraft.world.scores.PlayerTeam
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
-import set.starlev.features.misc.info.StatsTracker
 import set.starlev.hud.HudElement
 import java.nio.file.Files
 import java.nio.file.Path
@@ -255,8 +254,7 @@ object HudScoreboard : HudElement("Scoreboard") {
 
     fun getEditorLines(): List<ScoreboardLine> {
         ensureInitialized()
-        val includeSlayer = StarredHeltix.feature.slayer.slayerHud.slayerScoreboardHud
-        val base = buildBaseLines(includeSlayer = includeSlayer)
+        val base = buildBaseLines()
         if (base.isEmpty()) return emptyList()
         return applyStoredOrder(base)
     }
@@ -271,9 +269,9 @@ object HudScoreboard : HudElement("Scoreboard") {
         ScoreboardLinesOrderStore.save()
     }
 
-    private fun calculateSize(includeSlayer: Boolean = true): Pair<Int, Int> {
+    private fun calculateSize(): Pair<Int, Int> {
         val padding = 2
-        val lines = buildOrderedLines(includeSlayer = includeSlayer)
+        val lines = buildOrderedLines()
         if (lines.isEmpty()) {
             return 120 to 160
         }
@@ -282,22 +280,18 @@ object HudScoreboard : HudElement("Scoreboard") {
         return (maxWidth + padding * 2) to (totalHeight + padding * 2)
     }
 
-    private fun buildCustomLines(includeSlayer: Boolean): List<ScoreboardLine> {
-        val cfg = StarredHeltix.feature
-        val scoreboardCfg = cfg.skyblock.scoreboard
-        val slayerEnabled = includeSlayer && cfg.slayer.slayerHud.slayerScoreboardHud
+    private fun buildCustomLines(): List<ScoreboardLine> {
+        val scoreboardCfg = StarredHeltix.feature.skyblock.scoreboard
 
         // Получаем порядок элементов из конфига (ConfigEditorDraggableList)
         val orderedElements = scoreboardCfg.scoreboardEntries.toList()
 
         val out = mutableListOf<ScoreboardLine>()
         for (configElement in orderedElements) {
+            if (configElement == null) continue
             val element = configElement.element
             if (!element.showWhen()) continue
             if (!element.showIsland()) continue
-
-            // Пропускаем Slayer, если он отключен
-            if (configElement == set.starlev.features.skyblock.scoreboard.ScoreboardConfigElement.SLAYER && !slayerEnabled) continue
 
             val lines = element.getDisplay()
             if (lines.isEmpty()) continue
@@ -310,14 +304,14 @@ object HudScoreboard : HudElement("Scoreboard") {
         return out
     }
 
-    private fun buildOrderedLines(includeSlayer: Boolean): List<ScoreboardLine> {
-        val base = buildBaseLines(includeSlayer = includeSlayer)
+    private fun buildOrderedLines(): List<ScoreboardLine> {
+        val base = buildBaseLines()
         if (base.isEmpty()) return emptyList()
         val ordered = applyStoredOrder(base)
         return ordered
     }
 
-    private fun buildBaseLines(includeSlayer: Boolean): List<ScoreboardLine> {
+    private fun buildBaseLines(): List<ScoreboardLine> {
         val scoreboard = mc.level?.scoreboard
         val objective = scoreboard?.getDisplayObjective(DisplaySlot.SIDEBAR)
         if (objective == null) {
@@ -332,7 +326,6 @@ object HudScoreboard : HudElement("Scoreboard") {
         val lines = mutableListOf<ScoreboardLine>()
         val processedTitle = set.starlev.secret.features.SecretFunFeatures.processComponent(objective.displayName, true)
         lines.add(ScoreboardLine("title", processedTitle, centered = true))
-
         val scores = scoreboard.listPlayerScores(objective).sortedByDescending { it.value }
         val valueOrdinal = HashMap<Int, Int>()
         var didInsertAfterXp = false
@@ -366,14 +359,14 @@ object HudScoreboard : HudElement("Scoreboard") {
             if (!didInsertAfterXp) {
                 val text = lineComponent.string
                 if (text.contains("/") && (text.contains("опыта") || text.contains("XP") || text.contains("опыта Боя"))) {
-                    lines.addAll(buildCustomLines(includeSlayer = includeSlayer))
+                    lines.addAll(buildCustomLines())
                     didInsertAfterXp = true
                 }
             }
         }
 
         if (!didInsertAfterXp) {
-            lines.addAll(buildCustomLines(includeSlayer = includeSlayer))
+            lines.addAll(buildCustomLines())
         }
         return lines
     }
@@ -429,8 +422,7 @@ object HudScoreboard : HudElement("Scoreboard") {
         cachedGraphics = graphics
         
         // 1. Подготовка данных и расчет ширины
-        val includeSlayer = StarredHeltix.feature.slayer.slayerHud.slayerScoreboardHud
-        val lines = buildOrderedLines(includeSlayer = includeSlayer)
+        val lines = buildOrderedLines()
         cachedLines = lines
         
         if (lines.isNotEmpty()) {
@@ -501,14 +493,14 @@ object HudScoreboard : HudElement("Scoreboard") {
         }
     }
 
-    override fun getWidth(): Int = calculateSize(true).first
+    override fun getWidth(): Int = calculateSize().first
 
-    override fun getHeight(): Int = calculateSize(true).second
+    override fun getHeight(): Int = calculateSize().second
 
     override fun getDefaultX(): Int {
         val screenWidth = mc.window.guiScaledWidth
         if (screenWidth <= 0) return 500 // Разумное дефолтное значение если окно еще не готово
-        val baseSize = calculateSize(false)
+        val baseSize = calculateSize()
         return screenWidth - baseSize.first - 3
     }
 

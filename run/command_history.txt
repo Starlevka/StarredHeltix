@@ -1,0 +1,50 @@
+/sh code starl ai_unlock_heltix_2026
+/sh code starl
+/sh code starl ai_unlock_heltix_2026
+/tellraw Player466 "куу"
+/tellraw Player466 "MegaChromeX: Лева, привет!"
+/tellraw Player140 "MegaChromeX: Лева, привет!"
+/tellraw Player140 "MegaChromeX: Лева, а ты шаришь за Heltix?"
+/tellraw Player140 "MegaChromeX: Лева, сколько будет 2**20"
+/tellraw Player140 "MegaChromeX: Лева, сколько будет 2 * 20"
+/tellraw Player140 "MegaChromeX: Лева, сколько будет 2 + 20"
+/tellraw Player140 "MegaChromeX: Лева, привет!"
+/tellraw Player549 "MegaChromeX: Лева, привет!"
+/tellraw Player549 "MegaChromeX: Лева, знаешь что такое хелтикс?"
+/tellraw Player549 "MegaChromeX: Лева, привет!"
+/tellraw Player549 "MegaChromeX: Лева, знаешь что такое хелтикс?"
+/tellraw Player549 "MegaChromeX: Лева, сколько будет дважды два"
+/sh patches
+/sh patches fetch
+/sh update check
+/starredheltix update
+/sh update
+/time set day
+/sh megachest spawn
+/sh megachest
+/sh megachest spawn
+/sh megachest
+/sh megachest spawn
+/sh megachest
+/sh megachest spawn
+/gamemode survival
+/sh megachest spawn
+/gamemode creative
+/sh megachest
+/sh megachest spawn
+/gamemode survival
+/gamemode creative
+/sh megachest spawn
+/sh megachest
+/sh megachest spawn
+/playsound starredheltix:update_available
+/playsound starredheltix:voting_reminder
+/sh code starl heltix_code_ai
+/sh code starl
+/weather clear
+/summon minecraft:bat
+/sh secret
+/starredheltix secret
+/sh
+/sh code starl
+/kill

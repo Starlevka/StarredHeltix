@@ -1,0 +1,314 @@
+{
+  "misc": {
+    "general": {
+      "autoSprint": false,
+      "hudStats": {
+        "fps": {
+          "hud": true,
+          "scoreboard": true,
+          "colorV2": "0:255:255:255:255",
+          "showBackground": true
+        },
+        "ping": {
+          "hud": true,
+          "scoreboard": true,
+          "colorV2": "0:255:255:255:255",
+          "showBackground": true
+        },
+        "cps": {
+          "hud": true,
+          "scoreboard": true,
+          "colorV2": "0:255:255:255:255",
+          "showBackground": true
+        },
+        "bps": {
+          "hud": true,
+          "scoreboard": true,
+          "colorV2": "0:255:255:255:255",
+          "showBackground": true
+        }
+      },
+      "inventoryHistory": {
+        "enabled": false,
+        "duration": 5.0,
+        "maxEntries": 8.0,
+        "showBackground": false,
+        "ignoreEquipped": true
+      },
+      "migratedInventoryHistoryToMisc": true
+    },
+    "autoLogin": {
+      "password": ""
+    },
+    "mouselock": {
+      "showBackground": false
+    },
+    "waypoints": {
+      "enabled": true,
+      "parseFromChat": true,
+      "chatCreatesRegular": false,
+      "chatCreatesTemporary": true,
+      "defaultTemporarySeconds": 30.0,
+      "colorV2": "0:0:255:255:255",
+      "showBox": true,
+      "showBeam": true,
+      "showText": true
+    },
+    "hasShownWelcome013": true,
+    "hasShownWelcome014": true
+  },
+  "display": {},
+  "visuals": {
+    "animations": {
+      "swingAnimation": {
+        "enabled": false,
+        "noEquipAnimation": false,
+        "swingSpeed": 0.0,
+        "offX": 0.0,
+        "offY": 0.0,
+        "offZ": 0.0,
+        "swingX": 1.0,
+        "swingY": 1.0,
+        "swingZ": 1.0
+      }
+    },
+    "blockOverlay": {
+      "enabled": true,
+      "fillColor": "245:50:106:30:255"
+    },
+    "ghostFrames": {
+      "image1Enabled": true,
+      "image2Enabled": true
+    },
+    "megaChests": {
+      "enabled": true,
+      "spawnAtCoords": true
+    },
+    "inventoryHistory": {
+      "enabled": false,
+      "duration": 5.0,
+      "maxEntries": 8.0,
+      "showBackground": false,
+      "ignoreEquipped": true
+    }
+  },
+  "chat": {
+    "general": {
+      "messageFilter": {
+        "enabled": false,
+        "filters": []
+      }
+    },
+    "binds": {
+      "enabled": true,
+      "customBindsMap": {},
+      "customBindsKeys": {}
+    },
+    "party": {
+      "enabled": true,
+      "convertCommands": false,
+      "promote": true,
+      "kick": true,
+      "invite": true,
+      "ping": true,
+      "fps": true,
+      "time": true,
+      "coords": true,
+      "rng": true,
+      "dt": true,
+      "boykisser": true
+    }
+  },
+  "optimization": {
+    "visualOptimizations": {
+      "hideDeathAnimation": false,
+      "hideFireOverlay": false,
+      "hideStatusEffects": false,
+      "disableGlowing": false,
+      "fullbright": false,
+      "disableBlockBreakingParticles": false
+    },
+    "performance": {
+      "cacheScoreboard": true,
+      "cacheItemLore": true,
+      "cacheRegex": true
+    },
+    "entityOptimization": {
+      "cullArmorStands": false,
+      "armorStandDistance": 32.0,
+      "optimizeHolograms": false,
+      "cullDisplayEntities": false,
+      "displayEntityDistance": 64.0,
+      "optimizeParticles": false,
+      "particleDistance": 24.0
+    }
+  },
+  "skyblock": {
+    "skills": {
+      "enabled": true,
+      "showBackground": true,
+      "showCombat": true,
+      "showMining": true,
+      "showFarming": true,
+      "showForaging": true,
+      "showFishing": true,
+      "showEnchanting": true,
+      "showAlchemy": true,
+      "showTaming": true,
+      "showDungeons": true,
+      "textColor": "0:255:255:255:255",
+      "valuesColor": "0:255:255:85:255"
+    },
+    "museum": {
+      "enabled": true,
+      "showBackground": true
+    },
+    "pet": {
+      "enabled": true,
+      "showBackground": false
+    },
+    "npcDialogue": {
+      "enabled": true,
+      "hideMessages": true,
+      "showBackground": true,
+      "showOptions": true,
+      "compactMode": true,
+      "closeOnEsc": true,
+      "timeoutSeconds": 30.0
+    },
+    "smoothAote": {
+      "enabled": false,
+      "time": 150.0
+    },
+    "scoreboard": {
+      "enabled": true,
+      "showBackground": true,
+      "gems": {
+        "scoreboard": true
+      },
+      "bank": {
+        "scoreboard": true
+      },
+      "cookie": {
+        "scoreboard": true
+      }
+    }
+  },
+  "combat": {
+    "highlight": {
+      "enderman": {
+        "enabled": false,
+        "outline": false,
+        "colorV2": "0:255:255:0:255",
+        "transparency": 0.5
+      },
+      "creeper": {
+        "enabled": false,
+        "outline": false,
+        "colorV2": "0:255:0:255:255",
+        "transparency": 0.5
+      },
+      "wolf": {
+        "enabled": false,
+        "outline": false,
+        "colorV2": "0:255:0:255:0",
+        "transparency": 0.5
+      },
+      "spider": {
+        "enabled": false,
+        "outline": false,
+        "colorV2": "0:255:255:0:0",
+        "transparency": 0.5
+      },
+      "caveSpider": {
+        "enabled": false,
+        "outline": false,
+        "colorV2": "0:255:128:0:128",
+        "transparency": 0.5
+      },
+      "zombie": {
+        "enabled": false,
+        "outline": false,
+        "colorV2": "0:255:0:128:0",
+        "transparency": 0.5
+      }
+    }
+  },
+  "slayer": {
+    "slayerHud": {
+      "enabled": true,
+      "showBackground": true,
+      "bossTimer": true,
+      "personalBests": true,
+      "slayerScoreboardHud": true
+    }
+  },
+  "dungeons": {
+    "solvers": {
+      "threeWeirdos": true,
+      "creeperBeams": true
+    },
+    "bloodRoom": {
+      "enabled": true,
+      "message": "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ Кровавая комната готова!",
+      "showBackground": false
+    },
+    "autoReady": {
+      "enabled": true,
+      "readyMessage": "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ Я готов к подземельям!"
+    },
+    "deathCounter": {
+      "deathDetect": true,
+      "deathMessage": "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx | Кто погиб, тот ЛЛЛ"
+    },
+    "scoreCounter": {
+      "enabled": true,
+      "message": "sᴛᴀʀʀᴇᴅʜᴇʟᴛɪx ✪ Набрано 270+ очков! Можно идти к боссу.",
+      "showBackground": true,
+      "title270AndBlood": true
+    },
+    "visuals": {
+      "greenChests": true,
+      "greenBats": true
+    }
+  },
+  "farming": {},
+  "fishing": {
+    "notifications": {
+      "fishingNotifier": true,
+      "legendaryFishingNotifier": true,
+      "showBackground": false
+    }
+  },
+  "foraging": {
+    "axes": {
+      "treeCapCooldown": {
+        "enabled": true,
+        "cooldown": "2",
+        "showBackground": false
+      }
+    }
+  },
+  "mining": {
+    "commissions": {
+      "enabled": true,
+      "waypointsEnabled": true,
+      "autoCommissions": true,
+      "showTitle": true,
+      "accentColorV2": "0:255:255:170:0",
+      "showBackground": true
+    },
+    "abilities": {
+      "abilityCooldown": {
+        "pickaxeBoostEnabled": true,
+        "speedBoostEnabled": true,
+        "pickaxeBoostCooldown": "60",
+        "speedBoostCooldown": "120",
+        "showBackground": false
+      }
+    }
+  },
+  "about": {
+    "secretCode": ""
+  }
+}

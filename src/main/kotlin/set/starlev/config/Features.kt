@@ -41,7 +41,7 @@ class Features : Config() {
         return FabricLoader.getInstance()
             .getModContainer("starredheltix")
             .map { it.metadata.version.friendlyString }
-            .orElse("0.1.0")
+            .orElse("0.1.1")
     }
 
     @Expose

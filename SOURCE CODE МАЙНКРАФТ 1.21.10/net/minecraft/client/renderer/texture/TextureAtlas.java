@@ -1,0 +1,212 @@
+package net.minecraft.client.renderer.texture;
+
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.TextureFormat;
+import com.mojang.logging.LogUtils;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Map.Entry;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
+import net.minecraft.ReportedException;
+import net.minecraft.SharedConstants;
+import net.minecraft.resources.ResourceLocation;
+import org.slf4j.Logger;
+
+public class TextureAtlas extends AbstractTexture implements Dumpable, Tickable {
+   private static final Logger LOGGER = LogUtils.getLogger();
+   /** @deprecated */
+   @Deprecated
+   public static final ResourceLocation LOCATION_BLOCKS = ResourceLocation.withDefaultNamespace("textures/atlas/blocks.png");
+   /** @deprecated */
+   @Deprecated
+   public static final ResourceLocation LOCATION_PARTICLES = ResourceLocation.withDefaultNamespace("textures/atlas/particles.png");
+   private List<SpriteContents> sprites = List.of();
+   private List<TextureAtlasSprite.Ticker> animatedTextures = List.of();
+   private Map<ResourceLocation, TextureAtlasSprite> texturesByName = Map.of();
+   @Nullable
+   private TextureAtlasSprite missingSprite;
+   private final ResourceLocation location;
+   private final int maxSupportedTextureSize;
+   private int width;
+   private int height;
+   private int mipLevel;
+
+   public TextureAtlas(ResourceLocation var1) {
+      super();
+      this.location = var1;
+      this.maxSupportedTextureSize = RenderSystem.getDevice().getMaxTextureSize();
+   }
+
+   private void createTexture(int var1, int var2, int var3) {
+      LOGGER.info("Created: {}x{}x{} {}-atlas", new Object[]{var1, var2, var3, this.location});
+      GpuDevice var4 = RenderSystem.getDevice();
+      this.close();
+      ResourceLocation var10002 = this.location;
+      Objects.requireNonNull(var10002);
+      this.texture = var4.createTexture((Supplier)(var10002::toString), 7, TextureFormat.RGBA8, var1, var2, 1, var3 + 1);
+      this.textureView = var4.createTextureView(this.texture);
+      this.width = var1;
+      this.height = var2;
+      this.mipLevel = var3;
+   }
+
+   public void upload(SpriteLoader.Preparations var1) {
+      this.createTexture(var1.width(), var1.height(), var1.mipLevel());
+      this.clearTextureData();
+      this.setFilter(false, this.mipLevel > 1);
+      this.texturesByName = Map.copyOf(var1.regions());
+      this.missingSprite = (TextureAtlasSprite)this.texturesByName.get(MissingTextureAtlasSprite.getLocation());
+      if (this.missingSprite == null) {
+         String var10002 = String.valueOf(this.location);
+         throw new IllegalStateException("Atlas '" + var10002 + "' (" + this.texturesByName.size() + " sprites) has no missing texture sprite");
+      } else {
+         ArrayList var2 = new ArrayList();
+         ArrayList var3 = new ArrayList();
+         Iterator var4 = var1.regions().values().iterator();
+
+         while(var4.hasNext()) {
+            TextureAtlasSprite var5 = (TextureAtlasSprite)var4.next();
+            var2.add(var5.contents());
+
+            try {
+               var5.uploadFirstFrame(this.texture);
+            } catch (Throwable var10) {
+               CrashReport var7 = CrashReport.forThrowable(var10, "Stitching texture atlas");
+               CrashReportCategory var8 = var7.addCategory("Texture being stitched together");
+               var8.setDetail("Atlas path", (Object)this.location);
+               var8.setDetail("Sprite", (Object)var5);
+               throw new ReportedException(var7);
+            }
+
+            TextureAtlasSprite.Ticker var6 = var5.createTicker();
+            if (var6 != null) {
+               var3.add(var6);
+            }
+         }
+
+         this.sprites = List.copyOf(var2);
+         this.animatedTextures = List.copyOf(var3);
+         if (SharedConstants.DEBUG_DUMP_TEXTURE_ATLAS) {
+            Path var11 = TextureUtil.getDebugTexturePath();
+
+            try {
+               Files.createDirectories(var11);
+               this.dumpContents(this.location, var11);
+            } catch (IOException var9) {
+               LOGGER.warn("Failed to dump atlas contents to {}", var11);
+            }
+         }
+
+      }
+   }
+
+   public void dumpContents(ResourceLocation var1, Path var2) throws IOException {
+      String var3 = var1.toDebugFileName();
+      TextureUtil.writeAsPNG(var2, var3, this.getTexture(), this.mipLevel, (var0) -> {
+         return var0;
+      });
+      dumpSpriteNames(var2, var3, this.texturesByName);
+   }
+
+   private static void dumpSpriteNames(Path var0, String var1, Map<ResourceLocation, TextureAtlasSprite> var2) {
+      Path var3 = var0.resolve(var1 + ".txt");
+
+      try {
+         BufferedWriter var4 = Files.newBufferedWriter(var3);
+
+         try {
+            Iterator var5 = var2.entrySet().stream().sorted(Entry.comparingByKey()).toList().iterator();
+
+            while(var5.hasNext()) {
+               Entry var6 = (Entry)var5.next();
+               TextureAtlasSprite var7 = (TextureAtlasSprite)var6.getValue();
+               var4.write(String.format(Locale.ROOT, "%s\tx=%d\ty=%d\tw=%d\th=%d%n", var6.getKey(), var7.getX(), var7.getY(), var7.contents().width(), var7.contents().height()));
+            }
+         } catch (Throwable var9) {
+            if (var4 != null) {
+               try {
+                  var4.close();
+               } catch (Throwable var8) {
+                  var9.addSuppressed(var8);
+               }
+            }
+
+            throw var9;
+         }
+
+         if (var4 != null) {
+            var4.close();
+         }
+      } catch (IOException var10) {
+         LOGGER.warn("Failed to write file {}", var3, var10);
+      }
+
+   }
+
+   public void cycleAnimationFrames() {
+      if (this.texture != null) {
+         Iterator var1 = this.animatedTextures.iterator();
+
+         while(var1.hasNext()) {
+            TextureAtlasSprite.Ticker var2 = (TextureAtlasSprite.Ticker)var1.next();
+            var2.tickAndUpload(this.texture);
+         }
+
+      }
+   }
+
+   public void tick() {
+      this.cycleAnimationFrames();
+   }
+
+   public TextureAtlasSprite getSprite(ResourceLocation var1) {
+      TextureAtlasSprite var2 = (TextureAtlasSprite)this.texturesByName.getOrDefault(var1, this.missingSprite);
+      if (var2 == null) {
+         throw new IllegalStateException("Tried to lookup sprite, but atlas is not initialized");
+      } else {
+         return var2;
+      }
+   }
+
+   public TextureAtlasSprite missingSprite() {
+      return (TextureAtlasSprite)Objects.requireNonNull(this.missingSprite, "Atlas not initialized");
+   }
+
+   public void clearTextureData() {
+      this.sprites.forEach(SpriteContents::close);
+      this.animatedTextures.forEach(TextureAtlasSprite.Ticker::close);
+      this.sprites = List.of();
+      this.animatedTextures = List.of();
+      this.texturesByName = Map.of();
+      this.missingSprite = null;
+   }
+
+   public ResourceLocation location() {
+      return this.location;
+   }
+
+   public int maxSupportedTextureSize() {
+      return this.maxSupportedTextureSize;
+   }
+
+   int getWidth() {
+      return this.width;
+   }
+
+   int getHeight() {
+      return this.height;
+   }
+}

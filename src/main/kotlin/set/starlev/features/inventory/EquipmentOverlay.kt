@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack
 import set.starlev.StarredHeltix
 import set.starlev.events.GuiEvents
 import set.starlev.injections.accessors.ContainerScreenAccessor
+import set.starlev.utils.ColorUtils
 import set.starlev.utils.detectors.ContainerDetector
 
 object EquipmentOverlay {
@@ -154,13 +155,17 @@ object EquipmentOverlay {
 
         val totalWidth = SLOT_SIZE + PADDING * 2
         val totalHeight = SLOT_SIZE * 4 + SLOT_GAP * 3 + PADDING * 2 + 10 // +10 для заголовка
+        val backgroundColor = ColorUtils.parseColor(config.backgroundColorV2, 0xE01D1D2B.toInt())
+        val accentColor = ColorUtils.parseColor(config.accentColorV2, 0xFF3AAFD9.toInt())
+        val slotColor = ColorUtils.parseColor(config.slotColorV2, 0x60FFFFFF)
+        val slotHoverColor = ColorUtils.parseColor(config.slotHoverColorV2, 0xAA3AAFD9.toInt())
 
         // Фон в стиле Firmament — тёмный полупрозрачный
-        graphics.fill(startX, startY, startX + totalWidth, startY + totalHeight, 0xE01D1D2B.toInt())
+        graphics.fill(startX, startY, startX + totalWidth, startY + totalHeight, backgroundColor)
         // Акцентная полоска сверху (голубая как в Firmament)
-        graphics.fill(startX, startY, startX + totalWidth, startY + 2, 0xFF3AAFD9.toInt())
+        graphics.fill(startX, startY, startX + totalWidth, startY + 2, accentColor)
         // Тонкая рамка
-        val borderColor = 0xFF3AAFD9.toInt()
+        val borderColor = accentColor
         graphics.fill(startX, startY + totalHeight - 1, startX + totalWidth, startY + totalHeight, borderColor) // низ
         graphics.fill(startX, startY, startX + 1, startY + totalHeight, borderColor) // лево
         graphics.fill(startX + totalWidth - 1, startY, startX + totalWidth, startY + totalHeight, borderColor) // право
@@ -173,9 +178,10 @@ object EquipmentOverlay {
             val item = rememberedItems[i]
             val slotX = startX + PADDING
             val slotY = startY + PADDING + 12 + i * (SLOT_SIZE + SLOT_GAP)
+            val hovered = mouseX in slotX until slotX + SLOT_SIZE && mouseY in slotY until slotY + SLOT_SIZE
 
             // Фон слота (чуть светлее основного)
-            graphics.fill(slotX, slotY, slotX + SLOT_SIZE, slotY + SLOT_SIZE, 0x60FFFFFF)
+            graphics.fill(slotX, slotY, slotX + SLOT_SIZE, slotY + SLOT_SIZE, if (hovered) slotHoverColor else slotColor)
 
             if (item != null && !item.isEmpty) {
                 graphics.renderItem(item, slotX, slotY)

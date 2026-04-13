@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:armor_of_growth_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:armor_of_growth_armor"
+      }
+    ]
+  }
+}

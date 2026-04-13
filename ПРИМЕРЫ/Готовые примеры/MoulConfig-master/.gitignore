@@ -1,0 +1,8 @@
+.idea/
+.vscode/
+run/
+build/
+.gradle/
+.env
+*.png~
+*.DS_Store

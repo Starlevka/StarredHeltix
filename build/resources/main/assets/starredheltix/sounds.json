@@ -1,0 +1,14 @@
+{
+  "voting_reminder": {
+    "subtitle": "sound.starredheltix.voting_reminder",
+    "sounds": [
+      "starredheltix:voting_reminder"
+    ]
+  },
+  "update_available": {
+    "subtitle": "sound.starredheltix.update_available",
+    "sounds": [
+      "starredheltix:update_available"
+    ]
+  }
+}

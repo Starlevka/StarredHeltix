@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "furf:rising_sun_armor"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "furf:rising_sun_armor"
+      }
+    ]
+  }
+}
