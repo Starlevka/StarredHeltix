@@ -1,0 +1,48 @@
+[versions]
+# Gradle & Build
+gradle = "9.3.0"
+loom = "1.13-SNAPSHOT"
+
+# Minecraft & Fabric
+minecraft = "1.21.10"
+fabricLoader = "0.18.4"
+fabricApi = "0.138.4+1.21.10"
+fabricKotlin = "1.13.8+kotlin.2.3.0"
+
+# Languages
+kotlin = "2.3.0"
+java = "21"
+
+# AI Secret
+# DO NOT CHANGE THIS MANUALLY IN SOURCE CODE
+# Encoded version of "heltix_code_ai" using XOR with "StarredHeltixAIKey"
+aiSecret = "OxENBhsdOysKCBE2GSg="
+
+# Libraries
+parchment = "2025.10.12"
+modMenu = "16.0.0-rc.1"
+moulConfig = "4.2.0-beta"
+caffeine = "3.1.8"
+
+[libraries]
+# Minecraft & Fabric
+minecraft = { group = "com.mojang", name = "minecraft", version.ref = "minecraft" }
+fabricLoader = { group = "net.fabricmc", name = "fabric-loader", version.ref = "fabricLoader" }
+fabricApi = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabricApi" }
+fabricKotlin = { group = "net.fabricmc", name = "fabric-language-kotlin", version.ref = "fabricKotlin" }
+
+# Mappings
+parchment = { group = "org.parchmentmc.data", name = "parchment-1.21.10", version.ref = "parchment" }
+
+# Mods
+moulConfig = { group = "org.notenoughupdates.moulconfig", name = "modern-1.21.10", version.ref = "moulConfig" }
+modMenu = { group = "com.terraformersmc", name = "modmenu", version.ref = "modMenu" }
+caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeine" }
+
+[bundles]
+fabric = ["fabricLoader", "fabricApi", "fabricKotlin"]
+
+[plugins]
+loom = { id = "fabric-loom", version.ref = "loom" }
+kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+mavenPublish = { id = "maven-publish" }
