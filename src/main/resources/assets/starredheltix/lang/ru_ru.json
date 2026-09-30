@@ -1,0 +1,11 @@
+{
+  "starredheltix.menu.heltix": "Хелтикс",
+  "starredheltix.menu.heltix.tooltip": "Подключиться к starlev.heltix.net",
+  "key.category.starredheltix.starredheltix": "StarredHeltix",
+  "key.starredheltix.config": "Открыть меню StarredHeltix мода",
+  "key.starredheltix.clickhighlight": "Выделить/снять подсветку моба под прицелом",
+  "key.starredheltix.leap1": "Leap-оверлей: телепорт к 1-му тиммейту",
+  "key.starredheltix.leap2": "Leap-оверлей: телепорт ко 2-му тиммейту",
+  "key.starredheltix.leap3": "Leap-оверлей: телепорт к 3-му тиммейту",
+  "key.starredheltix.leap4": "Leap-оверлей: телепорт к 4-му тиммейту"
+}

@@ -17,7 +17,11 @@ object AutoCommissions {
         private set
     private var pigeonSlot = -1
     private var lastTriggerTime = 0L
-    private val timer = Timer()
+    // ВАЖНО: Timer("имя", daemon=true) — конструктор Timer() без аргументов создаёт
+    // НЕ-daemon поток ("Timer-N"), который не даёт JVM завершиться после закрытия
+    // окна: ClientShutdownWatchdog (26.2) крашит игру через 15 сек
+    // ("Client shutdown from post-main"). Все фоновые потоки мода должны быть daemon!
+    private val timer = Timer("StarredHeltix-AutoCommissions", true)
 
     fun init() {
         ChatEventsManager.registerIncoming { message ->
@@ -31,7 +35,7 @@ object AutoCommissions {
     }
 
     /**
-    * Вызывается из MouseButtonMixin при ПКМ.
+    * Вызывается из MouseHandlerMixin при ПКМ.
     * Переключает слот на голубя и выполняет ПКМ для использования.
     */
     fun onRightClickWhileWaiting() {
@@ -41,8 +45,8 @@ object AutoCommissions {
         // Переключаемся на слот с голубем
         mc.player?.inventory?.selected = pigeonSlot
         isWaitingForClick = false
-        mc.gui.setTitle(Component.empty())
-        mc.gui.setSubtitle(Component.empty())
+        mc.gui.hud.setTitle(Component.empty())
+        mc.gui.hud.setSubtitle(Component.empty())
 
         // Выполняем ПКМ для использования голубя
         mc.player?.let { mc.gameMode?.useItem(it, InteractionHand.MAIN_HAND) }
@@ -71,9 +75,9 @@ object AutoCommissions {
             if (StarredHeltix.feature.mining.commissions.showTitle) {
                 timer.schedule(500L) {
                     mc.execute {
-                        mc.gui.setTimes(10, 60, 10)
-                        mc.gui.setTitle(Component.literal("§b§lСдать поручение?"))
-                        mc.gui.setSubtitle(Component.literal("§3Нажмите ПКМ"))
+                        mc.gui.hud.setTimes(10, 60, 10)
+                        mc.gui.hud.setTitle(Component.literal("§b§lСдать поручение?"))
+                        mc.gui.hud.setSubtitle(Component.literal("§3Нажмите ПКМ"))
                         mc.soundManager.play(SimpleSoundInstance.forUI(SoundEvents.PARROT_AMBIENT, 1.0f))
                     }
                 }

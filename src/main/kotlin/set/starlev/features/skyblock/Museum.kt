@@ -6,10 +6,12 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.Items
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudElement
+import set.starlev.render.HudElement
 import set.starlev.utils.detectors.MuseumDetector
 import set.starlev.utils.ContainerUtils
 import set.starlev.utils.detectors.ContainerDetector
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 /**
  * Функционал для музея: отслеживание предметов и отображение их в HUD.
@@ -62,7 +64,7 @@ object Museum : HudElement("MuseumHud") {
             
             // 1. Проверяем скорборд на наличие ключевых слов музея
             if (MuseumDetector.isInMuseumZone()) {
-                val screen = mc.screen as? AbstractContainerScreen<*>
+                val screen = mc.gui.screen() as? AbstractContainerScreen<*>
                 if (screen != null) {
                     updateFromContainer(screen)
                 }
@@ -91,7 +93,7 @@ object Museum : HudElement("MuseumHud") {
         for (stack in items) {
             if (stack.isEmpty || stack.`is`(Items.AIR)) continue
             
-            val isGrayDye = stack.`is`(Items.GRAY_DYE) || stack.`is`(Items.LIGHT_GRAY_DYE)
+            val isGrayDye = stack.`is`(Items.DYE.gray) || stack.`is`(Items.DYE.lightGray)
             val baseName = stack.hoverName
             val nameComponent = if (baseName.string.isBlank()) Component.translatable(stack.item.descriptionId) else baseName
             val cleanName = nameComponent.string
@@ -134,7 +136,7 @@ object Museum : HudElement("MuseumHud") {
 
     override fun render() {
         if (!StarredHeltix.feature.skyblock.museum.enabled) return
-        if (!isEditing && mc.screen !is AbstractContainerScreen<*>) return
+        if (!isEditing && mc.gui.screen() !is AbstractContainerScreen<*>) return
         if (foundItems.isEmpty() && !isEditing) return
         
         val displayList = if (isEditing && foundItems.isEmpty()) {

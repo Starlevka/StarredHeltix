@@ -80,7 +80,7 @@ object DwarvenWaypoints {
         cachedAreaLower = area.lowercase(Locale.getDefault())
         cachedActiveCommissionsLower = CommissionsHud.getActiveCommissions().map { it.string.lowercase(Locale.getDefault()) }
 
-        val dimensionLower = level.dimension().location().toString().lowercase(Locale.getDefault())
+        val dimensionLower = level.dimension().identifier().toString().lowercase(Locale.getDefault())
         if (dimensionLower.contains("dwarven")) {
             cachedIsInDwarvenMines = true
             return
@@ -145,23 +145,22 @@ object DwarvenWaypoints {
         
         if (!config.waypointsEnabled) return
         
-        // Рендерим бокс вокруг точки
+        // Рендерим бокс вокруг точки — сквозь стены (ESP)
         val box = AABB(pos)
-        context.renderBox(box, 0f, 1f, 1f, 0.4f, true)
-        context.renderBox(box, 0f, 1f, 1f, 1.0f, false)
+        context.renderBoxSeeThrough(box, 0f, 1f, 1f, 0.4f, true)
+        context.renderBoxSeeThrough(box, 0f, 1f, 1f, 1.0f, false)
         
-        // Рендерим луч маяка (высота 300 блоков)
-        context.renderBeaconBeam(waypointPos.x, waypointPos.y, waypointPos.z, 300, 0x00FFFF, context.tickDelta)
+        // Рендерим луч маяка — высота 80 блоков, цвет с альфой, без чёрного артефакта
+        context.renderBeaconBeam(waypointPos.x, waypointPos.y - 1.0, waypointPos.z, 80, 0xFF00FFFF.toInt(), context.tickDelta, seeThrough = true)
         
-        // Динамическое масштабирование: чем дальше, тем больше текст
-        // Увеличили базовый масштаб в ~2.2 раза и ускорили динамический рост
-        val dynamicScale = 1.0f + (distance.toFloat() / 80f)
-        val nameScale = 5.5f * dynamicScale 
+        // Увеличено в 3-4 раза по просьбе (было 2.2 * dynamic, стало ~7 * dynamic)
+        val dynamicScale = 1.0f + (distance.toFloat() / 80f).coerceIn(0f, 2f)
+        val nameScale = (7.0f * dynamicScale).coerceIn(4.5f, 14f)
         
-        // Основное название локации
+        // Основное название локации — с тенью и seeThrough
         context.renderText(
             "§b§l$name", 
-            waypointPos.x, waypointPos.y + 3.0, waypointPos.z, 
+            waypointPos.x, waypointPos.y + 2.5, waypointPos.z, 
             color = 0xFFFFFFFF.toInt(),
             scale = nameScale, 
             seeThrough = true

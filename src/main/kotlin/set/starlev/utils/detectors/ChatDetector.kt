@@ -9,12 +9,12 @@ object ChatDetector {
     private const val COLOR_PATTERN = "(?i)§[0-9a-fk-orlnmxz]"
 
     /**
-     * Returns the last chat message received.
-     * Returns an empty string if history is empty.
+     * Возвращает последнее полученное сообщение чата.
+     * Возвращает пустую строку, если история пуста.
      */
     fun getLastChatMessage(): String {
         val client = Minecraft.getInstance()
-        val chat = client.gui?.chat ?: return ""
+        val chat = client.gui.hud.chat
         
         return try {
             val accessor = chat as ChatComponentAccessor
@@ -30,26 +30,26 @@ object ChatDetector {
     }
 
     /**
-     * Clean text from color codes.
+     * Очищает текст от цветовых кодов.
      */
     fun cleanColor(text: String): String {
         return text.replace(CacheManager.getRegex(COLOR_PATTERN), "")
     }
 
     /**
-     * Returns a list of the last N chat messages.
+     * Возвращает список последних N сообщений чата.
      */
     fun getChatHistory(limit: Int): List<String> {
         val client = Minecraft.getInstance()
-        val chat = client.gui?.chat ?: return emptyList()
+        val chat = client.gui.hud.chat
         
         return try {
             val accessor = chat as ChatComponentAccessor
             val messages = accessor.getAllMessages()
             
-            // Messages are usually stored oldest to newest or vice versa?
-            // Typically list adds to end, so newest is last.
-            // Let's return newest first for convenience.
+            // Сообщения обычно хранятся от старых к новым или наоборот?
+            // Как правило, список пополняется в конец, значит новейшие — в конце.
+            // Для удобства возвращаем новейшие первыми.
             
             messages.takeLast(limit).reversed().map { it.content.string }
         } catch (e: Exception) {

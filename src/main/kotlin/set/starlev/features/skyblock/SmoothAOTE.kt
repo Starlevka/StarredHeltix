@@ -27,15 +27,15 @@ object SmoothAote {
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return
 
-        val currentRenderPos = mc.gameRenderer.mainCamera.position
+        val currentRenderPos = mc.gameRenderer.mainCamera().position()
 
         val dist = currentRenderPos.distanceTo(newPos)
         if (dist < 2 || dist > 65) return
 
         val mainHandItem = player.mainHandItem
-        val isTeleportItem = set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.ASPECT_OF_THE_END) ||
-                            set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.ASPECT_OF_THE_VOID) ||
-                            set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.HYPERION)
+        val isTeleportItem = set.starlev.registry.ItemRegistry.isItem(mainHandItem, set.starlev.registry.ItemRegistry.SkyblockItem.ASPECT_OF_THE_END) ||
+                            set.starlev.registry.ItemRegistry.isItem(mainHandItem, set.starlev.registry.ItemRegistry.SkyblockItem.ASPECT_OF_THE_VOID) ||
+                            set.starlev.registry.ItemRegistry.isItem(mainHandItem, set.starlev.registry.ItemRegistry.SkyblockItem.HYPERION)
 
         if (!isTeleportItem) return
 
@@ -68,9 +68,9 @@ object SmoothAote {
         if (dist < 2 || dist > 65) return
 
         val mainHandItem = player.mainHandItem
-        val isTeleportItem = set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.ASPECT_OF_THE_END) ||
-                set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.ASPECT_OF_THE_VOID) ||
-                set.starlev.skyblock.ItemRegistry.isItem(mainHandItem, set.starlev.skyblock.ItemRegistry.SkyblockItem.HYPERION)
+        val isTeleportItem = set.starlev.registry.ItemRegistry.isItem(mainHandItem, set.starlev.registry.ItemRegistry.SkyblockItem.ASPECT_OF_THE_END) ||
+                set.starlev.registry.ItemRegistry.isItem(mainHandItem, set.starlev.registry.ItemRegistry.SkyblockItem.ASPECT_OF_THE_VOID) ||
+                set.starlev.registry.ItemRegistry.isItem(mainHandItem, set.starlev.registry.ItemRegistry.SkyblockItem.HYPERION)
 
         if (!isTeleportItem) return
 

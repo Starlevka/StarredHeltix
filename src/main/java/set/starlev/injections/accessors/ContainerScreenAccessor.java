@@ -18,3 +18,4 @@ public interface ContainerScreenAccessor {
     @Accessor("imageHeight")
     int getImageHeight();
 }
+

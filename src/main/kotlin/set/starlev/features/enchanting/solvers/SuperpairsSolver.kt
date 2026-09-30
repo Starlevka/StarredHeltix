@@ -1,124 +1,141 @@
 package set.starlev.features.enchanting.solvers
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap
-import it.unimi.dsi.fastutil.ints.IntArraySet
-import it.unimi.dsi.fastutil.ints.IntSet
 import net.minecraft.client.gui.screens.inventory.ContainerScreen
+import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
 import set.starlev.StarredHeltix
 import set.starlev.features.enchanting.ColorHighlight
 import set.starlev.features.enchanting.ExperimentSolver
 
 /**
- * Решатель для мини-игры Суперпары (Superpairs).
- * Запоминает уже открытые предметы и показывает дубликаты и совпадения.
+ * Решатель мини-игры Суперпары (Heltix).
+ *
+ * Порт `heltix-superpairs/SuperpairsHandler`: накопление памяти — каждый кадр
+ * запоминаем ВСЕ открытые (не закрытые стеклом/панелью) ячейки slot -> имя+предмет;
+ * подсвечиваем зелёным любые две+ ячейки с одинаковым ключом (тот же предмет = пара).
+ * Картинки не блокируются и не кликаются — клик просто проходит к серверу.
+ *
+ * Улучшение поверх эталона: getDisplayStack показывает запомненный предмет сквозь
+ * закрытое стекло (тумблер «Показывать предметы» в конфиге, проверка в менеджере).
  */
-class SuperpairsSolver : ExperimentSolver(Regex("Суперпары")) {
+class SuperpairsSolver : ExperimentSolver(Regex("Суперпары|Superpairs")) {
 
-    private var prevClickedSlot: Int = 0
-    private var currentSlotItem: ItemStack = ItemStack.EMPTY
-    private val duplicatedSlots: IntSet = IntArraySet(28)
+    /** slot -> «path|имя» — ключ пары. */
+    private val pairKey = HashMap<Int, String>()
 
-    override fun isEnabled(): Boolean {
-        return StarredHeltix.feature.enchanting.tableSolvers.superpairs
-    }
+    /** slot -> запомненный стек (для визуальной замены под стеклом). */
+    private val rememberedStacks = HashMap<Int, ItemStack>()
+
+    private var lastRoundText = ""
+
+    override fun isEnabled(): Boolean = StarredHeltix.feature.enchanting.tableSolvers.superpairs
 
     override fun start(screen: ContainerScreen) {
         super.start(screen)
         setState(State.SHOW)
+        StarredHeltix.LOGGER.info("[Superpairs] Started, title=${screen.title.string}")
     }
 
     override fun tick(screen: ContainerScreen) {
-        if (getState() == State.SHOW) {
-            val menu = screen.menu
-            val itemStack = menu.getSlot(prevClickedSlot).item
+        if (checkTitleChanged(screen)) {
+            pairKey.clear()
+            rememberedStacks.clear()
+            lastRoundText = ""
+        }
+        val slots = screen.menu.slots
+        val containerSlots = slots.size - 36
+        if (containerSlots <= 0) return
 
-            if (!itemStack.isEmpty) {
-                if (itemStack.`is`(Items.CYAN_STAINED_GLASS) || itemStack.`is`(Items.BLACK_STAINED_GLASS_PANE)) return
-
-                for (entry in slots.int2ObjectEntrySet()) {
-                    val entryItem = entry.value
-                    if (ItemStack.matches(entryItem, itemStack)) {
-                        duplicatedSlots.add(entry.intKey)
-                        duplicatedSlots.add(prevClickedSlot)
-                        currentSlotItem = itemStack
-                        return
-                    }
+        // Чистим фантомы: слоты за пределами текущего контейнера (размер меню сменился)
+        if (pairKey.keys.any { it >= containerSlots }) {
+            val it = pairKey.keys.iterator()
+            while (it.hasNext()) {
+                val s = it.next()
+                if (s >= containerSlots) {
+                    it.remove()
+                    rememberedStacks.remove(s)
                 }
-
-                if (slots.get(prevClickedSlot) == null) {
-                    slots.put(prevClickedSlot, itemStack)
-                }
-
-                currentSlotItem = itemStack
             }
         }
+
+        // Новый раунд по тексту «Раунд N» — забываем прошлое поле
+        for (i in 0 until slots.size) {
+            val stack = slots[i].item
+            if (stack.isEmpty || !ExperimentUtil.isRoundFlag(stack)) continue
+            val hover = ExperimentUtil.hover(stack)
+            if (hover != lastRoundText) {
+                lastRoundText = hover
+                pairKey.clear()
+                rememberedStacks.clear()
+            }
+            break
+        }
+
+        for (i in 0 until containerSlots) {
+            val stack = slots[i].item
+            if (stack.isEmpty) continue
+            if (ExperimentUtil.isClosedCard(stack)) continue
+            if (ExperimentUtil.isSystemItem(ExperimentUtil.hover(stack))) continue
+            val name = ExperimentUtil.clean(stack.hoverName.string)
+            if (name.isBlank()) continue
+            pairKey[i] = ExperimentUtil.path(stack) + "|" + name
+            rememberedStacks[i] = stack.copy()
+        }
+    }
+
+    override fun getColors(displaySlots: Int2ObjectMap<ItemStack>): List<ColorHighlight> {
+        // Отдельный тумблер подсветки пар — при выключении только показ предметов (superpairsShowItems), без заливок
+        if (!StarredHeltix.feature.enchanting.tableSolvers.superpairsShowCollected) return emptyList()
+        if (pairKey.isEmpty()) return emptyList()
+        // Группировка по ключу: подсвечиваем только точные пары (ровно 2 совпадения).
+        // Группы из 3+ — неоднозначные (ложные коллизии имён/фантомы прошлых раундов),
+        // их подсветка давала 8-9 заливок вместо 4 — такие группы игнорируем.
+        val byKey = HashMap<String, MutableList<Int>>()
+        for ((slot, key) in pairKey) byKey.getOrPut(key) { mutableListOf() }.add(slot)
+        val result = ArrayList<ColorHighlight>()
+        for ((_, group) in byKey) {
+            if (group.size != 2) continue
+            for (slot in group) result.add(ColorHighlight.green(slot))
+        }
+        return result
+    }
+
+    override fun getDisplayStack(slotId: Int, original: ItemStack): ItemStack? {
+        if (slotId !in 0 until 54) return null
+        if (!ExperimentUtil.isClosedCard(original)) return null
+        val stored = rememberedStacks[slotId] ?: return null
+        if (stored.isEmpty) return null
+        return stored.copy()
     }
 
     override fun getReplacementItems(displaySlots: Int2ObjectMap<ItemStack>): Int2ObjectMap<ItemStack> {
         val replacements = it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<ItemStack>()
         if (!StarredHeltix.feature.enchanting.tableSolvers.superpairsShowItems) return replacements
-
         for (entry in displaySlots.int2ObjectEntrySet()) {
             val index = entry.intKey
             val displayStack = entry.value
-            val storedStack = slots.get(index)
-
-            if (storedStack != null && !ItemStack.matches(storedStack, displayStack)) {
-                // Если в слоте сейчас стекло, заменяем на то что было
-                if (displayStack.`is`(Items.CYAN_STAINED_GLASS) || displayStack.`is`(Items.BLACK_STAINED_GLASS_PANE)) {
-                    replacements.put(index, storedStack)
-                }
+            val stored = rememberedStacks[index] ?: continue
+            if (ExperimentUtil.isClosedCard(displayStack) && !ItemStack.matches(stored, displayStack)) {
+                replacements.put(index, stored.copy())
             }
         }
         return replacements
     }
 
-    override fun getColors(displaySlots: Int2ObjectMap<ItemStack>): List<ColorHighlight> {
-        val highlights = mutableListOf<ColorHighlight>()
-        if (getState() != State.SHOW) return highlights
-
-        for (entry in displaySlots.int2ObjectEntrySet()) {
-            val index = entry.intKey
-            val displayStack = entry.value
-            val storedStack = slots.get(index)
-
-            if (storedStack != null) {
-                if (duplicatedSlots.contains(index)) {
-                    // Сервер уже подтвердил пару — не подсвечиваем
-                    if (ItemStack.matches(storedStack, displayStack)) continue
-                    // Мод знает о паре, но сервер ещё не раскрыл — полупрозрачный зелёный
-                    if (StarredHeltix.feature.enchanting.tableSolvers.superpairsShowCollected) {
-                        highlights.add(ColorHighlight(index, 0x3300AA00))
-                    }
-                } else if (!ItemStack.matches(storedStack, displayStack)) {
-                    if (ItemStack.matches(currentSlotItem, storedStack) &&
-                        displayStack.hoverName.string.contains("вторую")) {
-                        highlights.add(ColorHighlight.green(index))
-                    } else {
-                        // Серый цвет для просто запомненных
-                        highlights.add(ColorHighlight(index, 0x88808080.toInt()))
-                    }
-                }
-            }
-        }
-        return highlights
+    override fun onSlotUpdate(menu: AbstractContainerMenu, slotId: Int, stack: ItemStack) {
+        // Вся логика в tick(screen) — покадровый скан, как в эталоне.
     }
 
     override fun onClickSlot(slot: Int, stack: ItemStack, button: Int): Boolean {
-        if (getState() == State.SHOW) {
-            // button -2 is from key press, others are mouse buttons
-            this.prevClickedSlot = slot
-            this.currentSlotItem = ItemStack.EMPTY
-        }
+        // Клик всегда проходит: в Суперпарах нужно фlip'ать карты, блокировать нечего.
         return false
     }
 
     override fun reset() {
-        prevClickedSlot = 0
-        currentSlotItem = ItemStack.EMPTY
-        duplicatedSlots.clear()
+        pairKey.clear()
+        rememberedStacks.clear()
+        lastRoundText = ""
         super.reset()
     }
 }

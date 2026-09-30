@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.Identifier
 import net.minecraft.server.packs.resources.Resource
 import net.minecraft.server.packs.resources.ResourceManager
 import set.starlev.events.GuiEvents
@@ -124,9 +124,9 @@ object ContainerDetector {
         private fun buildCodepointMap(resourceManager: ResourceManager): Map<Int, String> {
             val map = HashMap<Int, String>(256)
             val fontJsons = listOf(
-                ResourceLocation.fromNamespaceAndPath("minecraft", "font/default.json"),
-                ResourceLocation.fromNamespaceAndPath("minecraft", "font/skyletters.json"),
-                ResourceLocation.fromNamespaceAndPath("minecraft", "font/hfont.json"),
+                Identifier.fromNamespaceAndPath("minecraft", "font/default.json"),
+                Identifier.fromNamespaceAndPath("minecraft", "font/skyletters.json"),
+                Identifier.fromNamespaceAndPath("minecraft", "font/hfont.json"),
             )
 
             for (loc in fontJsons) {
@@ -216,7 +216,7 @@ object ContainerDetector {
             }
         }
 
-        private fun readJsonObject(resourceManager: ResourceManager, loc: ResourceLocation): JsonObject? {
+        private fun readJsonObject(resourceManager: ResourceManager, loc: Identifier): JsonObject? {
             val resource = getResource(resourceManager, loc) ?: return null
             try {
                 InputStreamReader(resource.open(), StandardCharsets.UTF_8).use { reader ->
@@ -229,7 +229,7 @@ object ContainerDetector {
             }
         }
 
-        private fun getResource(resourceManager: ResourceManager, loc: ResourceLocation): Resource? {
+        private fun getResource(resourceManager: ResourceManager, loc: Identifier): Resource? {
             return try {
                 val opt = resourceManager.getResource(loc)
                 if (opt.isPresent) opt.get() else null

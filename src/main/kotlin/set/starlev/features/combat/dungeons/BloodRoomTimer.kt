@@ -6,9 +6,11 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudElement
+import set.starlev.render.HudElement
 import set.starlev.utils.detectors.ScoreboardDetector
 import java.util.regex.Pattern
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 object BloodRoomTimer : HudElement("BloodRoomTimer") {
     private val MC = Minecraft.getInstance()
@@ -19,8 +21,27 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
     
     // Публичный флаг готовности кровавой комнаты для других модулей (например, ScoreCounter)
     var isBloodReady = false
+
+    // Отслеживаем, закончилось ли текущее подземелье — после этого игнор любых [БОСС] до следующего захода
+    private var dungeonFinished = false
+    private var wasInDungeon = false
+
+    // Паттерны завершения подземелья (чат) — + "ДОПОЛНИТЕЛЬНАЯ СТАТИСТИКА" как маркер конца на Heltix
+    private val DUNGEON_END_CHAT_PATTERNS = listOf(
+        Pattern.compile("(?i).*подземелье.*(?:завершено|пройдено|окончено|победа).*"),
+        Pattern.compile("(?i).*данж.*(?:завершен|пройден|окончен|победа).*"),
+        Pattern.compile("(?i).*dungeon.*(?:complete|finished|cleared|victory).*"),
+        Pattern.compile("(?i).*(?:босс.*побежден|boss.*defeated).*"),
+        Pattern.compile("(?i).*дополнительная\\s+статистика.*")
+    )
+    private val DUNGEON_END_SCOREBOARD_PATTERNS = listOf(
+        Pattern.compile("(?i).*(?:завершено|пройдено|победа|зачищено.*100%|cleared.*100%).*"),
+        Pattern.compile("(?i).*dungeon.*(?:complete|finished).*"),
+        Pattern.compile("(?i).*дополнительная\\s+статистика.*")
+    )
     
-    private val BOSS_PATTERN = Pattern.compile(".*\\[БОСС] Наблюдатель: Поздравляю.*")
+    // Детектим САМОЕ ПЕРВОЕ сообщение вида "[БОСС] Наблюдатель:" — любой текст после, не только "Поздравляю"
+    private val BOSS_PATTERN = Pattern.compile(".*\\[БОСС]\\s*Наблюдатель:.*")
     // Улучшенные паттерны для поиска этажа
     private val FLOOR_PATTERNS = listOf(
         Pattern.compile("(?i).*Катакомбы\\s*\\(?(\\d+)\\s*этаж\\)?.*")
@@ -62,19 +83,37 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
         if (!StarredHeltix.feature.dungeons.bloodRoom.enabled) return
         val level = MC.level ?: return
         
-        // Проверка на нахождение в подземельях
-        if (!level.dimension().location().toString().startsWith("minecraft:dungeon_")) return
+        // Проверка на нахождение в подземельях (dimension + Detector)
+        if (!level.dimension().identifier().toString().startsWith("minecraft:dungeon_") && !set.starlev.utils.detectors.DungeonDetector.isInDungeon()) return
         
         val text = message.string
+
+        // Считываем, закончилось ли подземелье — если да, то игнор любых дальнейших [БОСС] до следующего захода
+        for (p in DUNGEON_END_CHAT_PATTERNS) {
+            if (p.matcher(text).find()) {
+                if (!dungeonFinished) {
+                    StarredHeltix.LOGGER.info("BloodRoomTimer: подземелье завершено по чату: $text")
+                    dungeonFinished = true
+                    // Не сбрасываем таймер мгновенно, но запрещаем новый старт; активный таймер пусть дотикает
+                }
+                return
+            }
+        }
+
         val matcher = BOSS_PATTERN.matcher(text)
         if (matcher.find()) {
+            // Только самое первое [БОСС] Наблюдатель: за заход — игнор повторов пока таймер идёт, готов или данж уже закончен
+            if (dungeonFinished) return
+            if (active) return
+            if (isBloodReady) return
             val floor = getFloor()
             val delay = when (floor) {
                 1 -> 38000L
                 2 -> 42000L
                 3 -> 50000L
                 4 -> 60900L
-                else -> 31000L
+                5 -> 61000L
+                else -> 33000L
             }
             endTime = System.currentTimeMillis() + delay
             active = true
@@ -127,8 +166,53 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
         return -1
     }
     
+    fun reset() {
+        active = false
+        isBloodReady = false
+        endTime = 0L
+        dungeonFinished = false
+        wasInDungeon = false
+    }
+
     override fun render() {
         if (!StarredHeltix.feature.dungeons.bloodRoom.enabled) return
+        val isInDungeon = set.starlev.utils.detectors.DungeonDetector.isInDungeon()
+        // Трекер нового захода — сброс флага завершения, чтобы первый [БОСС] снова считался
+        if (!wasInDungeon && isInDungeon) {
+            if (dungeonFinished) StarredHeltix.LOGGER.info("BloodRoomTimer: новый заход — сброс dungeonFinished")
+            dungeonFinished = false
+        }
+        wasInDungeon = isInDungeon
+        if (!isInDungeon) {
+            if (active || isBloodReady) reset()
+            return
+        }
+        // Проверка по скорборду, закончилось ли подземелье (даже внутри данжа) — после этого игнор любых [БОСС]
+        if (!dungeonFinished) {
+            try {
+                val sbLines = ScoreboardDetector.getScoreboardText()
+                for (line in sbLines) {
+                    for (p in DUNGEON_END_SCOREBOARD_PATTERNS) {
+                        if (p.matcher(line).find()) {
+                            StarredHeltix.LOGGER.info("BloodRoomTimer: подземелье завершено по скорборду: $line")
+                            dungeonFinished = true
+                            break
+                        }
+                    }
+                    if (dungeonFinished) break
+                }
+                if (!dungeonFinished) {
+                    val title = ScoreboardDetector.getScoreboardTitle()
+                    for (p in DUNGEON_END_SCOREBOARD_PATTERNS) {
+                        if (p.matcher(title).find()) {
+                            StarredHeltix.LOGGER.info("BloodRoomTimer: подземелье завершено по Title: $title")
+                            dungeonFinished = true
+                            break
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+        }
         
         val currentTime = System.currentTimeMillis()
         val message: String
@@ -146,9 +230,9 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
                 MC.player?.connection?.sendCommand("pc ${config.message}")
                 
                 // Показываем Title (кастомизируемый)
-                MC.gui.setTitle(Component.literal(config.titleText))
-                MC.gui.setSubtitle(Component.literal(config.subtitleText))
-                MC.gui.setTimes(10, 100, 30)
+                MC.gui.hud.setTitle(Component.literal(config.titleText))
+                MC.gui.hud.setSubtitle(Component.literal(config.subtitleText))
+                MC.gui.hud.setTimes(10, 100, 30)
                 
                 MC.soundManager.play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f))
                 MC.soundManager.play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 1.2f))

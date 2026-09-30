@@ -1,0 +1,11 @@
+{
+  "starredheltix.menu.heltix": "Heltix",
+  "starredheltix.menu.heltix.tooltip": "Connect to starlev.heltix.net",
+  "key.category.starredheltix.starredheltix": "StarredHeltix",
+  "key.starredheltix.config": "Open StarredHeltix config menu",
+  "key.starredheltix.clickhighlight": "Toggle highlight of looked-at mob",
+  "key.starredheltix.leap1": "Leap overlay: teleport to 1st teammate",
+  "key.starredheltix.leap2": "Leap overlay: teleport to 2nd teammate",
+  "key.starredheltix.leap3": "Leap overlay: teleport to 3rd teammate",
+  "key.starredheltix.leap4": "Leap overlay: teleport to 4th teammate"
+}

@@ -1,28 +1,23 @@
 [versions]
 # Gradle & Build
-gradle = "9.3.0"
-loom = "1.13-SNAPSHOT"
+gradle = "9.4.1"
+loom = "1.17.1"
 
 # Minecraft & Fabric
-minecraft = "1.21.10"
-fabricLoader = "0.18.4"
-fabricApi = "0.138.4+1.21.10"
-fabricKotlin = "1.13.8+kotlin.2.3.0"
+minecraft = "26.2"
+fabricLoader = "0.19.3"
+fabricApi = "0.154.2+26.2"
+fabricKotlin = "1.14.1+kotlin.2.4.20"
 
 # Languages
-kotlin = "2.3.0"
-java = "21"
-
-# AI Secret
-# DO NOT CHANGE THIS MANUALLY IN SOURCE CODE
-# Encoded version of "heltix_code_ai" using XOR with "StarredHeltixAIKey"
-aiSecret = "OxENBhsdOysKCBE2GSg="
+kotlin = "2.4.0"
+java = "25"
 
 # Libraries
-parchment = "2025.10.12"
-modMenu = "16.0.0-rc.1"
-moulConfig = "4.2.0-beta"
-caffeine = "3.1.8"
+modMenu = "20.0.1"
+moulConfig = "4.7.2"
+caffeine = "3.2.4"
+rhino = "1.9.1"
 
 [libraries]
 # Minecraft & Fabric
@@ -31,18 +26,17 @@ fabricLoader = { group = "net.fabricmc", name = "fabric-loader", version.ref = "
 fabricApi = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabricApi" }
 fabricKotlin = { group = "net.fabricmc", name = "fabric-language-kotlin", version.ref = "fabricKotlin" }
 
-# Mappings
-parchment = { group = "org.parchmentmc.data", name = "parchment-1.21.10", version.ref = "parchment" }
-
 # Mods
-moulConfig = { group = "org.notenoughupdates.moulconfig", name = "modern-1.21.10", version.ref = "moulConfig" }
+moulConfig = { group = "org.notenoughupdates.moulconfig", name = "modern-26.2", version.ref = "moulConfig" }
 modMenu = { group = "com.terraformersmc", name = "modmenu", version.ref = "modMenu" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeine" }
+rhino = { group = "org.mozilla", name = "rhino-all", version.ref = "rhino" }
 
 [bundles]
 fabric = ["fabricLoader", "fabricApi", "fabricKotlin"]
 
 [plugins]
-loom = { id = "fabric-loom", version.ref = "loom" }
+loom = { id = "net.fabricmc.fabric-loom", version.ref = "loom" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 mavenPublish = { id = "maven-publish" }
+

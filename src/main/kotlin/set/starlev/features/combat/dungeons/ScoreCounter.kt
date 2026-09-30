@@ -3,12 +3,14 @@ package set.starlev.features.combat.dungeons
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudElement
+import set.starlev.render.HudElement
 import set.starlev.utils.detectors.DungeonDetector
 import set.starlev.utils.detectors.ScoreboardDetector
 import java.util.regex.Pattern
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
-object ScoreCounter : HudElement("ScoreCounter") {
+object ScoreCounter {
     private val MC = Minecraft.getInstance()
     private val SCORE_PATTERN = Pattern.compile("(?i)(?:Зачищено|Cleared|Очки|Баллы|Score):?\\s*(?:\\d+(?:\\.\\d+)?%)?\\s*\\(?(\\d+)\\)?")
     
@@ -20,25 +22,40 @@ object ScoreCounter : HudElement("ScoreCounter") {
     private var lastUpdate = 0L
 
     fun init() {
-        // Инициализация не требует регистрации событий, так как мы проверяем скорборд в render
+        // Тик для уведомлений даже без HUD — привязан к карте
+        set.starlev.render.RenderEvents.register {
+            // Обновляем только в данже, иначе сбрасываем
+            if (!set.starlev.utils.detectors.DungeonDetector.isInDungeon()) {
+                if (currentScore != 0 || notified270 || notified300) {
+                    currentScore = 0
+                    notified270 = false
+                    title270Notified = false
+                    notified300 = false
+                    title300Notified = false
+                    BloodRoomTimer.isBloodReady = false
+                }
+                return@register
+            }
+            updateScore()
+        }
     }
 
     private fun updateScore() {
-        if (!DungeonDetector.isInDungeon()) {
+        if (!set.starlev.utils.detectors.DungeonDetector.isInDungeon()) {
             currentScore = 0
             notified270 = false
             title270Notified = false
             notified300 = false
             title300Notified = false
-            BloodRoomTimer.isBloodReady = false // Сбрасываем статус блада при выходе из данжа
+            BloodRoomTimer.isBloodReady = false
             return
         }
 
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastUpdate < 500) return // Обновляем раз в полсекунды
+        if (currentTime - lastUpdate < 500) return
         lastUpdate = currentTime
 
-        val lines = ScoreboardDetector.getScoreboardText()
+        val lines = set.starlev.utils.detectors.ScoreboardDetector.getScoreboardText()
         var foundScore = 0
         
         for (line in lines) {
@@ -49,42 +66,36 @@ object ScoreCounter : HudElement("ScoreCounter") {
             }
         }
 
-        // Очки найдены, обновляем текущее значение
         currentScore = foundScore
         
-        val config = StarredHeltix.feature.dungeons.scoreCounter
+        val config = StarredHeltix.feature.dungeons.visuals.dungeonScore
         
-        // Логика уведомления 270 очков (отдельно)
         if (config.enabled && currentScore >= 270 && !notified270) {
             notified270 = true
             MC.player?.connection?.sendCommand("pc ${config.message}")
         }
         
-        // Логика Title для 270 очков
         if (config.enabled && config.title270Enabled && !title270Notified && currentScore >= 270) {
             title270Notified = true
-            MC.gui.setTitle(Component.literal(config.title270Text))
-            MC.gui.setSubtitle(Component.literal(config.subtitle270Text))
-            MC.gui.setTimes(10, 100, 30)
+            MC.gui.hud.setTitle(Component.literal(config.title270Text))
+            MC.gui.hud.setSubtitle(Component.literal(config.subtitle270Text))
+            MC.gui.hud.setTimes(10, 100, 30)
             MC.soundManager.play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 1.0f))
         }
 
-        // Логика уведомления 300 очков (отдельно, независимо от 270)
         if (config.enabled && currentScore >= 300 && !notified300) {
             notified300 = true
             MC.player?.connection?.sendCommand("pc ${config.message300}")
         }
 
-        // Логика Title для 300 очков (отдельно)
         if (config.enabled && config.title300Enabled && !title300Notified && currentScore >= 300) {
             title300Notified = true
-            MC.gui.setTitle(Component.literal(config.title300Text))
-            MC.gui.setSubtitle(Component.literal(config.subtitle300Text))
-            MC.gui.setTimes(10, 100, 30)
+            MC.gui.hud.setTitle(Component.literal(config.title300Text))
+            MC.gui.hud.setSubtitle(Component.literal(config.subtitle300Text))
+            MC.gui.hud.setTimes(10, 100, 30)
             MC.soundManager.play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 1.0f))
         }
         
-        // Сброс всех уведомлений, если очки упали ниже порога
         if (currentScore < 270) {
             notified270 = false
             title270Notified = false
@@ -95,31 +106,24 @@ object ScoreCounter : HudElement("ScoreCounter") {
         }
     }
 
-    override fun render() {
-        if (!StarredHeltix.feature.dungeons.scoreCounter.enabled) return
-        
+    /** Для DungeonMapHud — текущий счёт, 0 если не в данже. Обновляет кэш если нужно. */
+    fun getCurrentScore(): Int {
         updateScore()
-        
-        if (currentScore == 0 && !isEditing) return
-
-        val config = StarredHeltix.feature.dungeons.scoreCounter
-        val scoreText = if (isEditing) "300" else currentScore.toString()
-        val color = when {
-            currentScore >= 300 -> "§6" // Gold for 300+
-            currentScore >= 270 -> "§a" // Green for 270+
-            else -> "§c" // Red for below 270
-        }
-        val message = "Очков подземелья: $color$scoreText"
-
-        this.showBackground = config.showBackground
-        drawBackground(getWidth(), getHeight())
-        cachedGraphics?.drawString(MC.font, message, x, y, 0xFFFFFFFF.toInt())
+        return currentScore
     }
 
-    override fun getWidth(): Int = MC.font.width("Очков подземелья: 300")
-    override fun getHeight(): Int = MC.font.lineHeight
+    fun getScoreColor(): String = when {
+        currentScore >= 300 -> "§6"
+        currentScore >= 270 -> "§a"
+        else -> "§c"
+    }
 
-    override fun getDefaultScale(): Float = 1.0f
-    override fun getDefaultX(): Int = 161
-    override fun getDefaultY(): Int = 14
+    fun isEnabled(): Boolean = try { StarredHeltix.feature.dungeons.visuals.dungeonScore.enabled } catch (_: Exception) { false }
+
+    // Совместимость: старый HudElement API больше не используется, но оставляем для миграций
+    fun getDisplayText(isEditing: Boolean = false): String {
+        val scoreText = if (isEditing) "300" else currentScore.toString()
+        val color = getScoreColor()
+        return "Очков: $color$scoreText"
+    }
 }

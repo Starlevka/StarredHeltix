@@ -53,7 +53,7 @@ class HighlightConfig(val target: HighlightTarget) {
     var outline = false
 
     @Expose
-    @ConfigOption(name = "=> Glow", desc = "Включает ванильное свечение (outline shader) для сущности.")
+    @ConfigOption(name = "=> Свечение", desc = "Включает ванильное свечение (outline shader) для сущности.")
     @ConfigEditorBoolean
     var glow = false
 

@@ -19,7 +19,7 @@ object BiomeDetector {
             val key = biomeHolder.unwrapKey()
             
             if (key.isPresent) {
-                val id = key.get().location()
+                val id = key.get().identifier()
                 // Пробуем получить переведенное имя
                 val translatable = Component.translatable("biome.${id.namespace}.${id.path}")
                 translatable.string

@@ -4,12 +4,14 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
 import set.starlev.features.chat.ChatEventsManager
-import set.starlev.hud.HudElement
+import set.starlev.render.HudElement
 import set.starlev.utils.ColorUtils
 import set.starlev.utils.PersonalBestManager
 import set.starlev.utils.detectors.EntityDeathDetector
 import set.starlev.utils.detectors.ScoreboardDetector
 import java.util.Locale
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 object SlayerHud : HudElement("SlayerHud") {
     private val mc = Minecraft.getInstance()
@@ -21,6 +23,16 @@ object SlayerHud : HudElement("SlayerHud") {
     private var bossStartTime = 0L
     private var isBossTimerRunning = false
     private var detectedMiniBosses = mutableSetOf<Int>()
+
+    /** Сброс при смене мира/сервера. detectedMiniBosses по entity.id — id сервер переиспользует. */
+    fun onWorldChange() {
+        slayerInfo = emptyList()
+        currentSlayerType = ""
+        currentSlayerTier = ""
+        bossStartTime = 0L
+        isBossTimerRunning = false
+        detectedMiniBosses.clear()
+    }
 
     init {
         EntityDeathDetector.registerListener { entity ->
@@ -35,9 +47,9 @@ object SlayerHud : HudElement("SlayerHud") {
             val clean = message.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
             if (clean.contains("МИНИБОСС") || clean.contains("МИНИ-БОСС") || clean.uppercase().contains("MINIBOSS")) {
                 mc.execute {
-                    mc.gui.setTitle(Component.literal("§d§lМИНИБОСС!"))
-                    mc.gui.setSubtitle(Component.literal("§fВ чате замечен: §e$clean"))
-                    mc.gui.setTimes(10, 100, 30)
+                    mc.gui.hud.setTitle(Component.literal("§d§lМИНИБОСС!"))
+                    mc.gui.hud.setSubtitle(Component.literal("§fВ чате замечен: §e$clean"))
+                    mc.gui.hud.setTimes(10, 100, 30)
                 }
             }
         }
@@ -175,13 +187,10 @@ object SlayerHud : HudElement("SlayerHud") {
                 if (miniBossNames.any { cleanName.contains(it, ignoreCase = true) }) {
                     detectedMiniBosses.add(entity.id)
                     mc.execute {
-                        mc.player?.displayClientMessage(
-                            Component.literal("§d§l[StarredHeltix] §fПоявился §e§lМИНИ-БОСС §f- §6$cleanName!"),
-                            false
-                        )
-                        mc.gui.setTitle(Component.literal("§d§lМИНИБОСС!"))
-                        mc.gui.setSubtitle(Component.literal("§fРядом замечен §e$cleanName"))
-                        mc.gui.setTimes(10, 100, 30)
+                        mc.player?.sendSystemMessage(Component.literal("§d§l[StarredHeltix] §fПоявился §e§lМИНИ-БОСС §f- §6$cleanName!"))
+                        mc.gui.hud.setTitle(Component.literal("§d§lМИНИБОСС!"))
+                        mc.gui.hud.setSubtitle(Component.literal("§fРядом замечен §e$cleanName"))
+                        mc.gui.hud.setTimes(10, 100, 30)
                         mc.soundManager.play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT, 1.2f))
                     }
                 }
@@ -218,7 +227,7 @@ object SlayerHud : HudElement("SlayerHud") {
 
         val finalMessage = message
         mc.execute {
-            mc.player?.displayClientMessage(Component.literal(finalMessage), false)
+            mc.player?.sendSystemMessage(Component.literal(finalMessage))
         }
     }
 

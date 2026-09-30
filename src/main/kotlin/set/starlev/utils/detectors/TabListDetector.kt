@@ -16,8 +16,8 @@ object TabListDetector {
      */
     fun getTabListHeader(): String {
         val client = Minecraft.getInstance()
-        val gui = client.gui ?: return ""
-        val tabList = gui.tabList ?: return ""
+        val gui = client.gui.hud
+        val tabList = gui.tabList
         
         return try {
             if (tabList !is PlayerTabOverlayAccessor) return ""
@@ -34,8 +34,8 @@ object TabListDetector {
      */
     fun getTabListFooter(): String {
         val client = Minecraft.getInstance()
-        val gui = client.gui ?: return ""
-        val tabList = gui.tabList ?: return ""
+        val gui = client.gui.hud
+        val tabList = gui.tabList
         
         return try {
             if (tabList !is PlayerTabOverlayAccessor) return ""
@@ -99,20 +99,18 @@ object TabListDetector {
         }
         
         // Добавляем тело (список игроков)
-        val tabList = client.gui?.tabList
-        if (tabList != null) {
+        val tabList = client.gui.hud.tabList
+        if (tabList is PlayerTabOverlayAccessor) {
             try {
-                if (tabList is PlayerTabOverlayAccessor) {
-                    val entries = tabList.invokeGetPlayerInfos()
-                    entries.forEach { entry ->
-                        val displayName = entry.tabListDisplayName
-                        val text = if (displayName != null) {
-                            componentToFormattedString(displayName)
-                        } else {
-                            PlayerTeam.formatNameForTeam(entry.team, Component.literal(entry.profile.name)).getString()
-                        }
-                        lines.add(text)
+                val entries = tabList.invokeGetPlayerInfos()
+                entries.forEach { entry ->
+                    val displayName = entry.tabListDisplayName
+                    val text = if (displayName != null) {
+                        componentToFormattedString(displayName)
+                    } else {
+                        PlayerTeam.formatNameForTeam(entry.team, Component.literal(entry.profile.name)).getString()
                     }
+                    lines.add(text)
                 }
             } catch (e: Exception) {
             }
@@ -156,8 +154,8 @@ object TabListDetector {
         getTabListHeaderRaw()?.let { addComponentLines(it) }
         
         // Добавляем тело
-        val tabList = client.gui?.tabList
-        if (tabList != null && tabList is PlayerTabOverlayAccessor) {
+        val tabList = client.gui.hud.tabList
+        if (tabList is PlayerTabOverlayAccessor) {
             val entries = tabList.invokeGetPlayerInfos()
             entries.forEach { entry ->
                 val displayName = entry.tabListDisplayName
@@ -177,15 +175,13 @@ object TabListDetector {
 
     private fun getTabListHeaderRaw(): Component? {
         val client = Minecraft.getInstance()
-        val gui = client.gui ?: return null
-        val tabList = gui.tabList ?: return null
+        val tabList = client.gui.hud.tabList
         return if (tabList is PlayerTabOverlayAccessor) tabList.getHeader() else null
     }
 
     private fun getTabListFooterRaw(): Component? {
         val client = Minecraft.getInstance()
-        val gui = client.gui ?: return null
-        val tabList = gui.tabList ?: return null
+        val tabList = client.gui.hud.tabList
         return if (tabList is PlayerTabOverlayAccessor) tabList.getFooter() else null
     }
 
@@ -236,22 +232,22 @@ object TabListDetector {
     private fun getColorCode(rgb: Int): Char? {
         // Маппинг ARGB/RGB в классические коды §
         return when (rgb and 0xFFFFFF) {
-            0x000000 -> '0' // Black
-            0x0000AA -> '1' // Dark Blue
-            0x00AA00 -> '2' // Dark Green
-            0x00AAAA -> '3' // Dark Aqua
-            0xAA0000 -> '4' // Dark Red
-            0xAA00AA -> '5' // Dark Purple
-            0xFFAA00 -> '6' // Gold
-            0xAAAAAA -> '7' // Gray
-            0x555555 -> '8' // Dark Gray
-            0x5555FF -> '9' // Blue
-            0x55FF55 -> 'a' // Green
-            0x55FFFF -> 'b' // Aqua
-            0xFF5555 -> 'c' // Red
-            0xFF55FF -> 'd' // Light Purple
-            0xFFFF55 -> 'e' // Yellow
-            0xFFFFFF -> 'f' // White
+            0x000000 -> '0' // Чёрный
+            0x0000AA -> '1' // Тёмно-синий
+            0x00AA00 -> '2' // Тёмно-зелёный
+            0x00AAAA -> '3' // Тёмно-бирюзовый
+            0xAA0000 -> '4' // Тёмно-красный
+            0xAA00AA -> '5' // Тёмно-фиолетовый
+            0xFFAA00 -> '6' // Золотой
+            0xAAAAAA -> '7' // Серый
+            0x555555 -> '8' // Тёмно-серый
+            0x5555FF -> '9' // Синий
+            0x55FF55 -> 'a' // Зелёный
+            0x55FFFF -> 'b' // Бирюзовый
+            0xFF5555 -> 'c' // Красный
+            0xFF55FF -> 'd' // Светло-фиолетовый
+            0xFFFF55 -> 'e' // Жёлтый
+            0xFFFFFF -> 'f' // Белый
             else -> null
         }
     }

@@ -1,11 +1,13 @@
 package set.starlev.features.skyblock
 
 import net.minecraft.client.Minecraft
-import set.starlev.hud.HudElement
+import set.starlev.render.HudElement
 import set.starlev.StarredHeltix
 import set.starlev.utils.detectors.EnchantmentProgressDetector
 import set.starlev.utils.detectors.EnchantmentProgressDetector.EnchantType
 import set.starlev.utils.detectors.SkillXpDetector
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 object EnchantmentProgressHud : HudElement("EnchantmentProgressHud") {
     private val mc = Minecraft.getInstance()

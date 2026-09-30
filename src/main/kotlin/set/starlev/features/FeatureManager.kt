@@ -1,89 +1,43 @@
 package set.starlev.features
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.reflect.TypeToken
 import org.slf4j.LoggerFactory
-import java.io.File
-import java.nio.file.Files
 
 /**
- * Менеджер фич — единственная точка регистрации и управления жизненным циклом.
+ * Лёгкий реестр фич — только хранение и поиск по [Category]/id.
+ * Раньше здесь была своя file-toggle система (feature-toggles.json), но теперь
+ * единый источник правды — MoulConfig [set.starlev.config.Features] через
+ * [set.starlev.StarredHeltix.feature]. Включение/выключение идёт через конфиг,
+ * а не через отдельное поле [Feature.enabled].
+ *
+ * Bootstrap — напрямую в [set.starlev.StarredHeltix.onInitializeClient]:
+ * каждая фича вызывает `init()` вручную, порядок важен (детекторы → фичи → HUD).
+ * Этот менеджер сохраняется для будущего единого SH-экрана «Все фичи по категориям»
+ * (использует [getByCategory] + [getAll] + SH-kit).
  */
 object FeatureManager {
     private val LOGGER = LoggerFactory.getLogger("StarredHeltix")
-    private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
     private val features = mutableListOf<Feature>()
 
-    private var togglesFile: File? = null
-    private val togglesCache = mutableMapOf<String, Boolean>()
-
     fun register(vararg newFeatures: Feature) {
-        for (feature in newFeatures) {
-            features.add(feature)
-        }
+        for (f in newFeatures) if (features.none { it.id == f.id }) features.add(f)
     }
 
-    fun init(configDir: File) {
-        togglesFile = File(configDir, "feature-toggles.json")
-        loadToggles()
-
-        LOGGER.info("Инициализация ${features.size} фич...")
-        for (feature in features) {
+    /** Вызвать `init()` у всех зарегистрированных (если когда-то перейдём на регистрацию через этот менеджер). */
+    fun initAll() {
+        if (features.isEmpty()) return
+        LOGGER.info("Инициализация ${features.size} фич (FeatureManager)...")
+        for (f in features) {
             try {
-                val saved = togglesCache[feature.id]
-                if (saved != null) {
-                    feature.enabled = saved
-                }
-                feature.init()
-                if (feature.enabled) {
-                    feature.onEnable()
-                }
-                LOGGER.debug("Фича '${feature.name}' [${feature.category.name}] инициализирована (enabled=${feature.enabled})")
+                f.init()
+                LOGGER.debug("Фича '${f.name}' [${f.category.name}] init ok")
             } catch (e: Exception) {
-                LOGGER.error("Ошибка инициализации фичи '${feature.name}': ${e.message}", e)
+                LOGGER.error("Ошибка init '${f.name}': ${e.message}", e)
             }
         }
-        LOGGER.info("Все фичи инициализированы (${features.count { it.enabled }} из ${features.size} включены)")
     }
 
     fun getAll(): List<Feature> = features.toList()
     fun getById(id: String): Feature? = features.find { it.id == id }
     fun getByName(name: String): Feature? = features.find { it.name == name }
     fun getByCategory(category: Category): List<Feature> = features.filter { it.category == category }
-    fun getEnabled(): List<Feature> = features.filter { it.enabled }
-    fun getDisabled(): List<Feature> = features.filter { !it.enabled }
-
-    fun toggleById(id: String): Boolean {
-        val feature = getById(id) ?: return false
-        feature.toggle()
-        saveToggles()
-        return true
-    }
-
-    fun saveToggles() {
-        val file = togglesFile ?: return
-        try {
-            togglesCache.clear()
-            for (feature in features) {
-                togglesCache[feature.id] = feature.enabled
-            }
-            Files.createDirectories(file.parentFile.toPath())
-            file.writeText(GSON.toJson(togglesCache))
-        } catch (e: Exception) {
-            LOGGER.error("Ошибка сохранения toggle-состояний: ${e.message}", e)
-        }
-    }
-
-    private fun loadToggles() {
-        val file = togglesFile ?: return
-        if (!file.exists()) return
-        try {
-            val type = object : TypeToken<Map<String, Boolean>>() {}.type
-            val loaded: Map<String, Boolean> = GSON.fromJson(file.readText(), type)
-            togglesCache.putAll(loaded)
-        } catch (e: Exception) {
-            LOGGER.warn("Ошибка загрузки toggle-состояний: ${e.message}")
-        }
-    }
 }

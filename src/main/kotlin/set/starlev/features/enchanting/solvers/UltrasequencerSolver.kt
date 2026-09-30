@@ -1,237 +1,224 @@
 package set.starlev.features.enchanting.solvers
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap
-import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.ContainerScreen
 import net.minecraft.world.inventory.AbstractContainerMenu
-import net.minecraft.world.item.DyeItem
-import net.minecraft.world.item.Item
-import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
 import set.starlev.StarredHeltix
 import set.starlev.features.enchanting.ColorHighlight
 import set.starlev.features.enchanting.ExperimentSolver
-import set.starlev.utils.detectors.SlotPhaseDetector
 
 /**
- * Ultrasequencer (Секвенсор) — решатель мини-игры «Ультрасеквенсор».
+ * Секвенсор (Heltix Sequencer) — решатель мини-игры «Секвенсор».
  *
- * Архитектура:
- * — Event-driven: получает обновления слотов через [onSlotUpdate] (от EventBus).
- * — Не подписывается на [net.minecraft.world.inventory.ContainerListener] напрямую —
- *   это делает [set.starlev.events.ContainerEventWire] и пробрасывает через
- *   [set.starlev.features.enchanting.ExperimentSolverManager].
- * — Детект фазы по Item enum + тексту displayName (см. [SlotPhaseDetector]) —
- *   работает и для Hypixel-стиля (GLOWSTONE/CLOCK), и для Heltix (BOOK с кастомным именем).
- * — Детект игровых слотов через [DyeItem] и особые предметы (INK_SAC и пр.).
- * — Сортировка по `stack.count` — первым идёт «1», потом «2» и т.д.
+ * Порт `heltix-superpairs/SequencerHandler`: порядок кликов задаётся не числами,
+ * а ЦВЕТОМ блоков — по фиксированному спектру
+ * white → light_blue → blue → purple → magenta → pink → red → orange → yellow → lime → green → cyan.
  *
- * Состояния:
- * 1. [State.REMEMBER] — сервер показывает последовательность.
- *    Накапливаем dye items, сортируем по возрастанию числа.
- * 2. [State.SHOW] — сервер ждёт клика. Подсвечиваем слот с наименьшим числом.
- * 3. [State.END] — все клики сделаны.
+ * Механика Heltix (в этом и суть солвера): красители МИГАЮТ в ячейках во время фазы
+ * запоминания, а потом ячейки ЗАКРЫВАЮТСЯ панелями. Поэтому каждый кадр копим
+ * ПАМЯТЬ slot → индекс спектра (union, ничего не забываем), а шаги строим из памяти
+ * сортировкой по спектру. Без этого солвер «видит» только текущий миг — ячейки,
+ * вспыхнувшие и закрывшиеся раньше, терялись.
+ *
+ * Каждый кадр в [tick]:
+ *  - смена текста «Раунд N» → сброс;
+ *  - все видимые сейчас цветные ячейки добавляются в память (isPane/isGlass/системные — пропуск);
+ *  - шаги = память, отсортированная по спектру (дубли — по номеру слота);
+ *  - фаза игры (gamePhase): все запомненные ячейки скрыты хотя бы раз (латч);
+ *  - авто-продвижение: целевая ячейка снова открыла цвет (сервер принял клик);
+ *    клик по цели тоже продвигает (как handleClick в эталоне).
  */
-class UltrasequencerSolver private constructor() : ExperimentSolver(Regex("Секвенсор|Ultrasequencer")) {
+class UltrasequencerSolver private constructor() : ExperimentSolver(
+    Regex("Секвенсор|Секуенсор|Ultrasequencer|Sequencer|Высший|Запредельный|Метафизический")
+) {
 
     companion object {
         @JvmField
         val INSTANCE = UltrasequencerSolver()
-
-        /**
-         * Особые предметы, не наследники [DyeItem], но используемые на панели Ultrasequencer.
-         * В Minecraft 1.21 [DyeItem] покрывает все `*_DYE`, но INK_SAC, BONE_MEAL и пр. — отдельные Item.
-         * Подход NoFrills: явно перечисляем такие случаи.
-         */
-        private val DYE_LIKE_ITEMS: Set<Item> = setOf(
-            Items.INK_SAC,
-            Items.BONE_MEAL,
-            Items.LAPIS_LAZULI,
-            Items.COCOA_BEANS,
-        )
     }
 
-    /**
-     * Очередь ожидаемых кликов в правильном порядке.
-     * Первый элемент — следующий слот для клика. Сортируется по возрастанию числа.
-     */
-    private val expectedQueue: ArrayDeque<Pair<Int, ItemStack>> = ArrayDeque()
+    /** slot -> индекс спектра. Память с начала раунда: вспышки закрываются, память остаётся. */
+    private val colorMemory = HashMap<Int, Int>()
 
-    /** Текущая фаза по последнему обновлению слота 49 (инструкция). */
-    @Volatile private var lastPhase: SlotPhaseDetector.Phase = SlotPhaseDetector.Phase.NONE
+    /** slot -> шаг (1-базный). Порядок = сортировка памяти по индексу спектра. */
+    private val sequenceSlots = HashMap<Int, Int>()
+    private var currentStep = 1
+    private var lastRoundText = ""
 
-    /** Ссылка на активное меню (нужна для [rebuildQueue] вне start()). */
-    @Volatile private var activeMenu: AbstractContainerMenu? = null
+    /** Латч: все запомненные ячейки хотя бы раз скрыты → пошла фаза игры. */
+    private var gamePhase = false
 
-    override fun isEnabled(): Boolean {
-        return StarredHeltix.feature.enchanting.tableSolvers.ultrasequencer
-    }
+    /** Последний момент роста памяти — авто-продвижение разрешаем только на стабильной памяти. */
+    private var lastMemoryChangeMs = 0L
+
+    /** Троттлинг периодической сводки в лог. */
+    private var lastSummaryMs = 0L
+
+    @Volatile private var lastAdvanceMs = 0L
+
+    override fun isEnabled(): Boolean = StarredHeltix.feature.enchanting.tableSolvers.ultrasequencer
 
     override fun start(screen: ContainerScreen) {
         super.start(screen)
-        expectedQueue.clear()
-        lastPhase = SlotPhaseDetector.Phase.NONE
-        activeMenu = screen.menu
-        StarredHeltix.LOGGER.info("[Ultrasequencer] Started, title=${screen.title.string}")
+        hardReset()
+        setState(State.SHOW)
+        StarredHeltix.LOGGER.info("[Sequencer] Started, title=${screen.title.string}")
     }
 
-    /**
-     * tick() не используется — вся логика работает на событиях [onSlotUpdate].
-     * Оставлен пустым для совместимости с [set.starlev.features.enchanting.ExperimentSolverManager].
-     */
-    override fun tick(screen: ContainerScreen) {}
+    private fun hardReset() {
+        colorMemory.clear()
+        sequenceSlots.clear()
+        currentStep = 1
+        lastRoundText = ""
+        gamePhase = false
+        lastMemoryChangeMs = 0L
+    }
 
-    /**
-     * Обрабатывает обновление одного слота.
-     * Поставляется через [set.starlev.events.EventBus] (см. [set.starlev.events.SlotUpdateEvent]).
-     *
-     * Оптимизация: `rebuildQueue` НЕ вызывается здесь, чтобы не тратить CPU
-     * на каждом из 36 слотов. Вместо этого очередь собирается в [onPhaseChanged]
-     * при переходе REMEMBER → WAIT (к этому моменту все dye items уже в меню).
-     */
-    override fun onSlotUpdate(menu: AbstractContainerMenu, slotId: Int, stack: ItemStack) {
-        activeMenu = menu
+    override fun tick(screen: ContainerScreen) {
+        if (checkTitleChanged(screen)) {
+            // МЯГКИЙ ресинк: память НЕ трогаем. Настоящая смена игры всегда идёт через
+            // close/open контейнера → start() → hardReset(). А заголовок может дёргаться
+            // (таймер/прогресс) внутри одной игры — сносить память по нему нельзя.
+            StarredHeltix.LOGGER.info("[Sequencer] Смена заголовка без переоткрытия, память сохр.: '${ExperimentUtil.clean(screen.title.string)}'")
+        }
+        val slots = screen.menu.slots
+        val containerSlots = slots.size - 36
+        if (containerSlots <= 0) return
+        val nowMs = System.currentTimeMillis()
 
-        // 1. Проверяем слот на phase-индикатор (независимо от slotId —
-        // Heltix может класть инструкцию в другой слот).
-        val newPhase = SlotPhaseDetector.detect(stack)
-        if (newPhase != SlotPhaseDetector.Phase.NONE) {
-            if (newPhase != lastPhase) {
-                onPhaseChanged(newPhase, menu, stack)
-                lastPhase = newPhase
+        // 1. Новый раунд?
+        for (i in 0 until slots.size) {
+            val stack = slots[i].item
+            if (stack.isEmpty || !ExperimentUtil.isRoundFlag(stack)) continue
+            val hover = ExperimentUtil.hover(stack)
+            if (hover != lastRoundText) {
+                StarredHeltix.LOGGER.info("[Sequencer] Смена раунда: '$lastRoundText' -> '$hover', сброс памяти (было ячеек: ${colorMemory.size})")
+                lastRoundText = hover
+                colorMemory.clear()
+                sequenceSlots.clear()
+                currentStep = 1
+                gamePhase = false
+                setState(State.SHOW)
             }
-            return
+            break
         }
 
-        // 2. Игровое поле Ultrasequencer (slots 9..44).
-        // В фазе REMEMBER ничего не делаем — очередь будет построена при переходе в WAIT.
-        if (slotId !in 9..44) return
-    }
+        // 2. Память: UNION всех видимых сейчас цветных ячеек. Закрывшиеся не забываем!
+        for (i in 0 until containerSlots) {
+            val stack = slots[i].item
+            if (stack.isEmpty) continue
+            val hover = ExperimentUtil.hover(stack)
+            if (ExperimentUtil.isPane(stack) || ExperimentUtil.isGlass(stack) ||
+                ExperimentUtil.isSystemItem(hover)
+            ) continue
+            val ci = ExperimentUtil.spectrumIndex(stack)
+            if (ci != -1 && colorMemory[i] != ci) {
+                colorMemory[i] = ci
+                lastMemoryChangeMs = nowMs
+                StarredHeltix.LOGGER.info("[Sequencer] Запомнено: слот $i = ${ExperimentUtil.spectrumName(ci)} (всего: ${colorMemory.size})")
+            }
+        }
 
-    private fun onPhaseChanged(
-        newPhase: SlotPhaseDetector.Phase,
-        menu: AbstractContainerMenu,
-        instructionStack: ItemStack,
-    ) {
-        when (newPhase) {
-            SlotPhaseDetector.Phase.REMEMBER -> {
-                // Новый раунд. Очередь пока не строим — соберём при переходе в WAIT,
-                // когда все dye items гарантированно пришли в меню.
-                expectedQueue.clear()
-                setState(State.REMEMBER)
-                StarredHeltix.LOGGER.info("[Ultrasequencer] → REMEMBER")
+        // 3. Шаги = память, отсортированная по спектру (white→…→cyan), как COLOR_PATTERN в эталоне
+        if (colorMemory.isNotEmpty()) {
+            val sorted = colorMemory.entries.sortedWith(compareBy({ it.value }, { it.key }))
+            sequenceSlots.clear()
+            sorted.forEachIndexed { idx, e -> sequenceSlots[e.key] = idx + 1 }
+            if (getState() != State.END) setState(State.SHOW)
+        }
+
+        // 4. Фаза игры: все запомненные ячейки скрыты (мигание закончилось)
+        if (!gamePhase && colorMemory.isNotEmpty()) {
+            gamePhase = colorMemory.keys.all { s -> s >= slots.size || isCellHidden(slots[s].item) }
+            if (gamePhase) {
+                val order = sequenceSlots.entries.sortedBy { it.value }
+                    .joinToString { "${it.key}=${ExperimentUtil.spectrumName(colorMemory[it.key] ?: -1)}" }
+                StarredHeltix.LOGGER.info("[Sequencer] Фаза игры! Порядок: $order")
             }
-            SlotPhaseDetector.Phase.WAIT -> {
-                // CLOCK = сервер ждёт клика.
-                // Откладываем rebuildQueue на следующий тик — при ContentPacket
-                // слот инструкции приходит раньше слотов с dye items, и меню
-                // ещё не заполнено на момент вызова onPhaseChanged.
-                Minecraft.getInstance().execute {
-                    rebuildQueue(menu)
-                    if (expectedQueue.isNotEmpty()) {
-                        setState(State.SHOW)
-                        StarredHeltix.LOGGER.info(
-                            "[Ultrasequencer] → SHOW. ${expectedQueue.size} dye items в очереди. " +
-                                "Следующий слот: ${expectedQueue.first().first}."
-                        )
-                    } else {
-                        StarredHeltix.LOGGER.warn(
-                            "[Ultrasequencer] WAIT, но dye items не найдены. " +
-                                "Возможно, Heltix использует неожиданные предметы."
-                        )
-                    }
-                }
+        }
+
+        // 5. Авто-продвижение: в фазе игры целевая ячейка снова открыла цвет (сервер принял клик).
+        //    ВАЖНО: проверяем ОТКРЫТИЕ, а не закрытие — в начале игры всё закрыто,
+        //    проверка «закрылось» мгновенно «прошла» бы весь раунд.
+        //    И только на стабильной памяти — вспышки во время запоминания шаги не трогают.
+        if (gamePhase && sequenceSlots.isNotEmpty() && getState() != State.END &&
+            currentStep <= sequenceSlots.size &&
+            nowMs - lastMemoryChangeMs > 1000
+        ) {
+            val targetSlot = sequenceSlots.entries.firstOrNull { it.value == currentStep }?.key
+            if (targetSlot != null && targetSlot < slots.size &&
+                isCellOpen(slots[targetSlot].item) &&
+                nowMs - lastAdvanceMs > 150
+            ) {
+                lastAdvanceMs = nowMs
+                StarredHeltix.LOGGER.info("[Sequencer] Авто-прогресс: цель $targetSlot открылась, шаг $currentStep -> ${currentStep + 1}")
+                advanceStep()
             }
-            SlotPhaseDetector.Phase.NONE -> {
-                // Неизвестный предмет в инструкции. Не критично, просто ждём.
-                if (!instructionStack.isEmpty) {
-                    StarredHeltix.LOGGER.debug(
-                        "[Ultrasequencer] Неизвестный предмет в инструкции: ${instructionStack.item}"
-                    )
-                }
-            }
+        }
+
+        // 6. Периодическая сводка (раз в 5с) — для диагностики «почему пусто»
+        if (nowMs - lastSummaryMs > 5000) {
+            lastSummaryMs = nowMs
+            StarredHeltix.LOGGER.info("[Sequencer] state: шаг=$currentStep/${sequenceSlots.size} память=${colorMemory.size} фазаИгры=$gamePhase st=${getState()}")
         }
     }
 
-    /**
-     * Собирает все dye items из слотов 9..44 и сортирует по возрастанию числа.
-     *
-     * Критерии сортировки:
-     * 1. `stack.count` — основной (как у NoFrills: `Comparator.comparingInt(s -> s.stack.getCount())`).
-     * 2. Число из `hoverName` — запасной, если count не совпадает с номером (на случай странностей Heltix).
-     */
-    private fun rebuildQueue(menu: AbstractContainerMenu) {
-        expectedQueue.clear()
-        val slots = mutableListOf<Pair<Int, ItemStack>>()
-        for (index in 9..44) {
-            val stack = menu.getSlot(index).item
-            if (isDye(stack)) {
-                slots.add(Pair(index, stack))
-            }
-        }
-        slots.sortWith(
-            compareBy<Pair<Int, ItemStack>> { it.second.count }
-                .thenBy { it.second.hoverName.string.toIntOrNull() ?: Int.MAX_VALUE }
-        )
-        expectedQueue.addAll(slots)
-    }
+    private fun isCellHidden(stack: ItemStack): Boolean =
+        stack.isEmpty || ExperimentUtil.isPane(stack) || ExperimentUtil.isGlass(stack) ||
+            ExperimentUtil.isClosedCard(stack) || ExperimentUtil.spectrumIndex(stack) == -1
 
-    /**
-     * Проверяет, является ли предмет ячейкой Ultrasequencer.
-     * — Наследник [DyeItem] (RED_DYE, BLUE_DYE и т.д.).
-     * — Или один из специальных предметов ([DYE_LIKE_ITEMS]).
-     */
-    private fun isDye(stack: ItemStack): Boolean {
-        if (stack.isEmpty) return false
-        val item = stack.item
-        return item is DyeItem || item in DYE_LIKE_ITEMS
+    private fun isCellOpen(stack: ItemStack): Boolean =
+        !stack.isEmpty && !ExperimentUtil.isPane(stack) && !ExperimentUtil.isGlass(stack) &&
+            !ExperimentUtil.isClosedCard(stack) && ExperimentUtil.spectrumIndex(stack) != -1
+
+    private fun advanceStep() {
+        currentStep++
+        if (currentStep > sequenceSlots.size) {
+            setState(State.END)
+            StarredHeltix.LOGGER.info("[Sequencer] Все шаги пройдены → END")
+        }
     }
 
     override fun getColors(displaySlots: Int2ObjectMap<ItemStack>): List<ColorHighlight> {
-        if (getState() != State.SHOW || expectedQueue.isEmpty()) return emptyList()
-        val next = expectedQueue.first()
-        return listOf(ColorHighlight.green(next.first))
-    }
-
-    override fun getReplacementItems(displaySlots: Int2ObjectMap<ItemStack>): Int2ObjectMap<ItemStack> {
-        val replacements = it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<ItemStack>()
-        if (expectedQueue.isEmpty()) return replacements
-
-        for ((order, pair) in expectedQueue.withIndex()) {
-            val (slotIndex, stack) = pair
-            val display = displaySlots.get(slotIndex) ?: continue
-            if (display.isEmpty) continue
-            if (!isDye(display)) continue
-            val copy = display.copy()
-            val isNext = (order == 0)
-            val color = if (isNext) "§a§l" else "§7"
-            val newName = "${color}${order + 1}. §f${copy.hoverName.string}"
-            copy.set(DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal(newName))
-            replacements.put(slotIndex, copy)
+        if (sequenceSlots.isEmpty() || getState() == State.END) return emptyList()
+        val result = ArrayList<ColorHighlight>()
+        for ((slot, step) in sequenceSlots) {
+            when {
+                step == currentStep -> result.add(ColorHighlight.green(slot))
+                step > currentStep -> result.add(ColorHighlight(slot, 0x3300FF00)) // остальные — бледно-зелёные
+            }
         }
-        return replacements
+        return result
     }
+
+    override fun getDisplayStack(slotId: Int, original: ItemStack): ItemStack? = null
+
+    override fun getReplacementItems(displaySlots: Int2ObjectMap<ItemStack>): Int2ObjectMap<ItemStack> =
+        it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap()
 
     override fun onClickSlot(slot: Int, stack: ItemStack, button: Int): Boolean {
-        if (getState() != State.SHOW) return shouldBlockIncorrectClicks()
-        if (expectedQueue.isEmpty()) return false
-
-        val next = expectedQueue.first()
-        if (slot != next.first) return shouldBlockIncorrectClicks()
-
-        expectedQueue.removeFirst()
-        if (expectedQueue.isEmpty()) {
-            setState(State.END)
-            StarredHeltix.LOGGER.info("[Ultrasequencer] Все клики сделаны → END.")
+        if (sequenceSlots.isEmpty() || getState() == State.END) return false
+        val expected = sequenceSlots[slot]
+        return if (expected != null && expected == currentStep) {
+            // Правильный клик — продвигаем сразу, а не ждём подтверждение сервера
+            // (как handleClick в эталоне). Дабл-прогресса нет: авто-продвижение в tick
+            // смотрит на СЛЕДУЮЩУЮ цель, а она пока закрыта.
+            lastAdvanceMs = System.currentTimeMillis()
+            StarredHeltix.LOGGER.info("[Sequencer] Клик по цели $slot, шаг $currentStep -> ${currentStep + 1}")
+            advanceStep()
+            false
+        } else {
+            StarredHeltix.feature.enchanting.tableSolvers.blockIncorrectClicks
         }
-        return false
+    }
+
+    override fun onSlotUpdate(menu: AbstractContainerMenu, slotId: Int, stack: ItemStack) {
+        // Вся логика в tick(screen).
     }
 
     override fun reset() {
-        expectedQueue.clear()
-        lastPhase = SlotPhaseDetector.Phase.NONE
-        activeMenu = null
+        hardReset()
         super.reset()
     }
 }

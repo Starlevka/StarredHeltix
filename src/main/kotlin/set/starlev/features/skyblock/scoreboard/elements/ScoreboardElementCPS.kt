@@ -4,7 +4,7 @@ import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
 import set.starlev.features.skyblock.HudScoreboard.ScoreboardLine
 import set.starlev.features.skyblock.scoreboard.ScoreboardElement
-import set.starlev.features.misc.info.StatsTracker
+import set.starlev.utils.detectors.StatsTracker
 import set.starlev.secret.features.SecretFunFeatures
 import set.starlev.utils.ColorUtils
 

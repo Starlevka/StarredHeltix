@@ -13,10 +13,29 @@ import kotlin.math.floor
 
 object PartyCommands {
     private val mc = Minecraft.getInstance()
-    private val partyPattern = Regex("(?i)^\\[?(?:Пати|Party)]?\\s*>?\\s*.*?(\\S+):\\s*(.+)")
-    private val pmPattern = Regex("(?i)^(?:От|From|To|Кому)\\s+(?:\\[.+?]\\s*)?(\\S+):\\s*(.+)|^\\[(\\S+)\\s*->\\s*\\S+]\\s*(.+)")
+    // Расширенные форматы для Heltix: "Пати > * Nick: текст", "Party > Nick > текст", "[Пати] Nick: текст".
+    // Флаг u обязателен: без него (?i) в Java/Kotlin игнорирует регистр только для ASCII — «Пати» не матчился.
+    private val partyPattern = Regex("(?iu)(?:\\[\\s*)?(?:пати|party)(?:\\s*\\])?\\s*(?:\\[[^\\]]*\\])?\\s*[>»\\-–]?\\W*([\\p{L}\\p{N}_]{2,16})\\s*[:>]\\s*(.+)")
+    // Звук/обработка — только для входящих строк, НАЧИНАЮЩИХСЯ с канала пати: «Пати >» / «Party >» / «[Пати] >».
+    // Прежний partySimplePattern ловил подстроку «пати/party» в любом месте → звук срабатывал на каждой
+    // второй строке чата (глобальный чат, системки с упоминанием party, и т.п.).
+    private val partyPrefixPattern = Regex("(?iu)^\\s*(?:\\[)?\\s*(?:пати|party)\\s*(?:\\])?\\s*[>»]")
+    private val pmPattern = Regex("(?iu)^(?:От|From|To|Кому)\\s+(?:\\[.+?\\]\\s*)?\\W*([\\p{L}\\p{N}_]{2,16})\\s*[:>]\\s*(.+)|^\\[(\\S+)\\s*->\\s*\\S+\\]\\s*(.+)")
+    private val pmSimplePattern = Regex("(?iu)(?:^\\[.*->.*\\]|\\b(?:От|From)\\b.*:|^\\s*ЛС\\b)")
+
+    // Запасной разбор отправителя ЛС, когда pmPattern не сработал (формат нестандартный).
+    // Без него отправитель был бы пустым, isModerator("") == false и команда бы не выполнилась.
+    // Держит: «[Nick -> …», «Nick -> …», «От Nick: …», «лс от Nick: …» (до двух префиксов- слов).
+    private val pmSenderFallback = Regex(
+        "(?iu)^\\s*\\[?\\s*(?:(?:\\*|от|from|лс|whisper)\\s*){0,2}([\\p{L}\\p{N}_]{2,16})\\s*(?:[:>]|->|—|–)"
+    )
+
+    // Единый разбор «!команда аргументы» для пати и ЛС — одинаковое поведение в обоих каналах.
+    private val COMMAND_PATTERN = Regex("!([A-Za-z][A-Za-z_]*)\\s*(.*)")
 
     private val config get() = StarredHeltix.feature.chat.party
+    private var lastPartySoundMs = 0L
+    private var lastPmSoundMs = 0L
 
     fun init() {
         ChatEventsManager.registerOutgoing { message ->
@@ -27,7 +46,7 @@ object PartyCommands {
                     return@registerOutgoing true
                 } else {
                     // Ответ неверный или не число, блокируем отправку
-                    mc.player?.displayClientMessage(Component.literal("§c§l[MACRO] §fСначала решите пример в чате!"), false)
+                    mc.player?.sendSystemMessage(Component.literal("§c§l[MACRO] §fСначала решите пример в чате!"))
                     return@registerOutgoing true
                 }
             }
@@ -45,10 +64,7 @@ object PartyCommands {
                 val isExclamationCommand = config.enabled && config.convertCommands && lowerMsg.startsWith("!")
 
                 if (!isCommand || isPartyCommand || isExclamationCommand) {
-                    mc.player?.displayClientMessage(
-                        Component.literal("§c§l[MUTE] §fВы не можете писать в чат, так как заблокированы модератором §e${data?.mod}\n§fПричина: §7${data?.reason}"),
-                        false
-                    )
+                    mc.player?.sendSystemMessage(Component.literal("§c§l[MUTE] §fВы не можете писать в чат, так как заблокированы модератором §e${data?.mod}\n§fПричина: §7${data?.reason}"))
                     return@registerOutgoing true
                 }
             }
@@ -62,11 +78,20 @@ object PartyCommands {
 
         var lastProcessedMessage = ""
         ChatEventsManager.registerIncoming { message ->
-            if (config.enabled && message != lastProcessedMessage) {
+            if (message != lastProcessedMessage) {
                 lastProcessedMessage = message
-                when {
-                    partyPattern.containsMatchIn(message) -> handlePartyMessage(message)
-                    pmPattern.containsMatchIn(message) -> handlePrivateMessage(message)
+                // Пати — только если строка начинается с «Пати >» (см. partyPrefixPattern).
+                if (partyPrefixPattern.containsMatchIn(message)) {
+                    if (partyPattern.containsMatchIn(message)) {
+                        // Полноценный формат «Пати > Ник: текст» — разбор команд + звук внутри handlePartyMessage.
+                        handlePartyMessage(message)
+                    } else {
+                        // Префикс пати есть, но формат нестандартный — просто звук.
+                        playPartySound()
+                    }
+                } else if (pmPattern.containsMatchIn(message) || pmSimplePattern.containsMatchIn(message)) {
+                    handlePrivateMessage(message)
+                    if (!pmPattern.containsMatchIn(message)) playPmSound()
                 }
             }
         }
@@ -77,26 +102,79 @@ object PartyCommands {
         val player = match.groupValues[1]
         val text = match.groupValues[2]
 
+        // Звук как на Hypixel при входящем сообщении из пати (с анти-спамом 300мс)
+        playPartySound()
 
         if (text.contains("!")) handlePartyCommand(player, text)
     }
 
     private fun handlePrivateMessage(message: String) {
-        val match = pmPattern.find(message) ?: return
-        
-        // В зависимости от группы в regex получаем имя и текст
-        val player = match.groupValues.getOrNull(1)?.takeIf { it.isNotEmpty() } ?: match.groupValues.getOrNull(3) ?: return
-        val text = match.groupValues.getOrNull(2)?.takeIf { it.isNotEmpty() } ?: match.groupValues.getOrNull(4) ?: return
+        val match = pmPattern.find(message)
+        var player: String? = null
+        var text: String? = null
 
-        mc.player?.playSound(SoundEvents.NOTE_BLOCK_BELL.value(), 0.8f, 1.2f)
-        if (text.contains("!")) handlePMCommand(player, text)
+        if (match != null) {
+            // В зависимости от группы в regex получаем имя и текст
+            player = match.groupValues.getOrNull(1)?.takeIf { it.isNotEmpty() } ?: match.groupValues.getOrNull(3)
+            text = match.groupValues.getOrNull(2)?.takeIf { it.isNotEmpty() } ?: match.groupValues.getOrNull(4)
+        }
+
+        // Раньше тут стоял `?: return`, и ЛС-команды молча терялись, когда совпадал только
+        // pmSimplePattern («ЛС …», «[Nick -> …]») — а pmPattern не распарсил. Теперь при
+        // неудаче разбираем команду прямо из сырой строки.
+        if (player.isNullOrBlank() || text.isNullOrBlank()) {
+            val fb = pmSenderFallback.find(message)
+            player = fb?.groupValues?.get(1)
+            text = fb?.let { m -> message.substring(m.range.last + 1).trim() }.takeUnless { it.isNullOrBlank() } ?: message
+        }
+
+        // Звук как на Hypixel при входящем ЛС (с анти-спамом 300мс)
+        playPmSound()
+        if (text.contains("!")) handlePMCommand(player ?: "", text)
+    }
+
+    private fun playPartySound() {
+        if (!config.messageSound) return
+        val now = System.currentTimeMillis()
+        if (now - lastPartySoundMs < 300L) return
+        lastPartySoundMs = now
+        try {
+            mc.execute {
+                mc.soundManager.play(
+                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                        SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f, 1.0f
+                    )
+                )
+            }
+        } catch (_: Exception) {
+            try { mc.execute { mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f)) } } catch (_: Exception) {}
+        }
+    }
+
+    private fun playPmSound() {
+        if (!config.messageSound) return
+        val now = System.currentTimeMillis()
+        if (now - lastPmSoundMs < 300L) return
+        lastPmSoundMs = now
+        try {
+            mc.execute {
+                mc.soundManager.play(
+                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                        SoundEvents.NOTE_BLOCK_BELL.value(), 1.0f, 1.0f
+                    )
+                )
+            }
+        } catch (_: Exception) {
+            try { mc.execute { mc.player?.playSound(SoundEvents.NOTE_BLOCK_BELL.value(), 1.0f, 1.0f) } } catch (_: Exception) {}
+        }
     }
 
     private fun handlePartyCommand(player: String, text: String) {
-        val parts = text.trim().split("\\s+".toRegex(), limit = 2)
-        if (!parts[0].startsWith("!")) return
-        val cmd = parts[0].substring(1).lowercase()
-        val args = if (parts.size > 1) parts[1].trim() else ""
+        // Команда ищется в любом месте текста, а не только в начале — раньше «привет !kick X»
+        // в пати молча игнорировалось, тогда как в ЛС работало (там ищем через Regex.find).
+        val cmdMatch = COMMAND_PATTERN.find(text) ?: return
+        val cmd = cmdMatch.groupValues[1].lowercase()
+        val args = cmdMatch.groupValues[2].trim()
         val isModerator = ModerationManager.isModerator(player)
 
         if (isModerator) handleModCommand(player, cmd, args)
@@ -119,17 +197,11 @@ object PartyCommands {
     }
 
     private fun handlePMCommand(player: String, text: String) {
-        val parts = text.split("\\s+".toRegex(), limit = 2)
-        val fullText = if (parts.size > 1) parts[1].trim() else ""
-        
-        if (fullText.startsWith("!")) {
-            val cmdParts = fullText.substring(1).split("\\s+".toRegex(), limit = 2)
-            val cmd = cmdParts[0].lowercase()
-            val args = if (cmdParts.size > 1) cmdParts[1].trim() else ""
-            
-            if (ModerationManager.isModerator(player)) {
-                handleModCommand(player, cmd, args)
-            }
+        // Мод-команда может быть не в начале сообщения («привет !sh_mute …») — ищем !cmd в любом месте.
+        // Раньше брался parts[1], из-за чего сама команда (!cmd) отбрасывалась и модерация в ЛС не работала.
+        val cmdMatch = COMMAND_PATTERN.find(text)
+        if (cmdMatch != null && ModerationManager.isModerator(player)) {
+            handleModCommand(player, cmdMatch.groupValues[1].lowercase(), cmdMatch.groupValues[2].trim())
         }
 
         if ((config.invite || ModerationManager.isModerator(player)) && (text.contains("!invite") || text.contains("!inv"))) {
@@ -137,9 +209,11 @@ object PartyCommands {
         }
     }
     private fun handleModCommand(mod: String, cmd: String, args: String) {
-        val parts = args.split(" ", limit = 2)
+        // Полный разбор по токену: sh_mute требует target + duration + reason (3+ части),
+        // limit=2 здесь ломал аргументы (reason слипался с duration).
+        val parts = args.split(Regex("\\s+")).filter { it.isNotEmpty() }
         val target = parts.getOrNull(0) ?: ""
-        val reason = parts.getOrNull(1) ?: "Без причины"
+        val reason = if (parts.size > 1) parts.drop(1).joinToString(" ") else "Без причины"
         val isMe = target.lowercase() == mc.player?.name?.string?.lowercase()
         // Проверка прав модератора на конкретную команду
         if (!ModerationManager.isCommandAllowed(mod, cmd)) return
@@ -149,7 +223,7 @@ object PartyCommands {
                 if (isMe && parts.size >= 3) {
                     if (ModerationManager.canPerformAction(mod, target)) {
                         mc.execute {
-                            ModerationManager.mute(target, mod, parts[1], parts[2])
+                            ModerationManager.mute(target, mod, parts[1], parts.drop(2).joinToString(" "))
                         }
                     } else {
                         mc.player?.connection?.sendCommand("msg $mod [StarredHeltix] Вы не можете мутить игрока со статусом выше вашего!")
@@ -240,8 +314,9 @@ object PartyCommands {
         Thread {
             lines.forEachIndexed { _, line ->
                 Thread.sleep(800)
-                mc.player?.connection?.sendCommand("pc $line")
+                // sendCommand должен идти из клиентского потока, а не из этого фонового треда.
+                mc.execute { mc.player?.connection?.sendCommand("pc $line") }
             }
-        }.start()
+        }.apply { isDaemon = true }.start()
     }
 }

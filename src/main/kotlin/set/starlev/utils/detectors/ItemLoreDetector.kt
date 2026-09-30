@@ -9,8 +9,8 @@ import set.starlev.utils.CacheManager
 object ItemLoreDetector {
 
     /**
-     * Returns the lore (tooltip) of the given item stack as a list of strings.
-     * Excludes the item name (first line).
+     * Возвращает лор (тултип) заданного предмета в виде списка строк.
+     * Без имени предмета (первая строка).
      */
     fun getLore(stack: ItemStack): List<String> {
         if (stack.isEmpty) return emptyList()
@@ -48,7 +48,7 @@ object ItemLoreDetector {
     }
 
     /**
-     * Returns the full tooltip (including name) of the given item stack.
+     * Возвращает полный тултип (включая имя) заданного предмета.
      */
     fun getFullTooltip(stack: ItemStack): List<String> {
         if (stack.isEmpty) return emptyList()

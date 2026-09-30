@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import net.minecraft.client.gui.screens.inventory.ContainerScreen
 import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.item.ItemStack
+import set.starlev.utils.detectors.SlotPhaseDetector
 
 /**
  * Базовый класс для всех решателей экспериментов стола чародейства.
@@ -30,13 +31,22 @@ abstract class ExperimentSolver(protected val titlePattern: Regex) {
     var currentScreen: ContainerScreen? = null
         protected set
 
+    /** Последний виденный сырой заголовок (для детекта смены уровня внутри открытого стола). */
+    protected var lastTitleRaw: String = ""
+
     /**
      * Проверяет, подходит ли данный экран для этого солвера.
+     * Заголовок Heltix может быть в Hfont (PUA-глифы) — сначала декодируем.
      */
     fun matches(screen: ContainerScreen): Boolean {
-        val title = screen.title.string
-        // Ищем паттерн как подстроку, так как title содержит юникод символы форматирования
-        return titlePattern.find(title) != null
+        val raw = screen.title.string
+        val title = try {
+            set.starlev.utils.detectors.ContainerDetector.decodeTitle(raw)
+        } catch (_: Exception) {
+            raw
+        }
+        // Ищем паттерн как подстроку, так как title может содержать символы форматирования
+        return titlePattern.containsMatchIn(title)
     }
 
     /**
@@ -50,7 +60,21 @@ abstract class ExperimentSolver(protected val titlePattern: Regex) {
     open fun start(screen: ContainerScreen) {
         this.currentScreen = screen
         this.stateField = State.REMEMBER
+        this.lastTitleRaw = screen.title.string
         this.slots.clear()
+    }
+
+    /**
+     * Детект смены заголовка внутри одного открытого стола (порт HeltixSuperpairs:
+     * при `title != activeTitle` вызывается resetAllHandlers). Прогресс уровня меняет
+     * заголовок окна, не закрывая контейнер — в этот момент солвер должен забыть прошлый раунд.
+     * @return true, если заголовок изменился с прошлого кадра (состояние уже не актуально).
+     */
+    protected fun checkTitleChanged(screen: ContainerScreen): Boolean {
+        val raw = screen.title.string
+        if (raw == lastTitleRaw) return false
+        lastTitleRaw = raw
+        return true
     }
 
     /**
@@ -78,6 +102,14 @@ abstract class ExperimentSolver(protected val titlePattern: Regex) {
     open fun getReplacementItems(displaySlots: Int2ObjectMap<ItemStack>): Int2ObjectMap<ItemStack> {
         return Int2ObjectOpenHashMap()
     }
+
+    /**
+     * Возвращает заменённый стек для рендера конкретного слота (вызывается из миксина рендера).
+     * По умолчанию — без замены. Солверы могут переопределить для отображения запомненных предметов
+     * (Superpairs) или нумерации шагов (Chronomatron/Ultrasequencer).
+     * @return null если замены нет, иначе стек для рендера/тултипа
+     */
+    open fun getDisplayStack(slotId: Int, original: ItemStack): ItemStack? = null
 
     /**
      * Вызывается при клике по слоту.
@@ -108,10 +140,22 @@ abstract class ExperimentSolver(protected val titlePattern: Regex) {
     open fun markDirty() {}
 
     /**
-     * Проверяет, нужно ли блокировать неправильные клики.
+     * Активен ли сейчас «таймер» — индикатор фазы WAIT (сервер ждёт клика игрока).
+     * Ищем любой слот меню, который SlotPhaseDetector определяет как WAIT.
+     * В фазе REMEMBER («запомните узор», GLOWSTONE) таймера нет → false,
+     * поэтому блокировка неправильных кликов не должна срабатывать.
+     */
+    protected fun isTimerActive(): Boolean {
+        val menu = currentScreen?.menu ?: return false
+        return menu.slots.any { SlotPhaseDetector.detect(it.item) == SlotPhaseDetector.Phase.WAIT }
+    }
+
+    /**
+     * Нужно ли блокировать неправильные клики прямо сейчас:
+     * включённая настройка + активный таймер (фаза WAIT) в открытом меню.
      */
     protected fun shouldBlockIncorrectClicks(): Boolean {
-        return set.starlev.StarredHeltix.feature.enchanting.tableSolvers.blockIncorrectClicks
+        return set.starlev.StarredHeltix.feature.enchanting.tableSolvers.blockIncorrectClicks && isTimerActive()
     }
 
     /**

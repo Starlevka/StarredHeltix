@@ -20,9 +20,18 @@ object GardenDetector {
         val lines = ScoreboardDetector.getScoreboardText()
         for (line in lines) {
             val clean = line.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+            // Расширенная проверка: любой намёк на сад (локация ⏣/ф + сад, либо просто слово сад/garden)
             if ((clean.contains('⏣') || clean.contains('ф')) && clean.contains("Сад", ignoreCase = true)) {
                 return true
             }
+            if (clean.contains("сад", ignoreCase = true) || clean.contains("garden", ignoreCase = true)) {
+                return true
+            }
+        }
+        // Фоллбэк по заголовку скорборда
+        val title = ScoreboardDetector.getScoreboardTitle()
+        if (title.contains("сад", ignoreCase = true) || title.contains("garden", ignoreCase = true)) {
+            return true
         }
         return false
     }

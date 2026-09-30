@@ -3,10 +3,12 @@ package set.starlev.features.skyblock
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudElement
-import set.starlev.hud.ScoreboardEditorScreen
+import set.starlev.render.HudElement
+import set.starlev.render.ScoreboardEditorScreen
 import set.starlev.utils.detectors.TabListDetector
 import java.util.regex.Pattern
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 object PetOverlay : HudElement("PetOverlay") {
     private val mc = Minecraft.getInstance()
@@ -28,6 +30,16 @@ object PetOverlay : HudElement("PetOverlay") {
     
     // История для расчета "скорости" получения (скользящее окно 5 минут)
     private val gainHistory = mutableListOf<Pair<Long, Double>>()
+
+    /** Сброс сессии XP питомца при смене мира/сервера. */
+    fun onWorldChange() {
+        lastPetInfo = null
+        sessionXp = 0.0
+        sessionStart = 0L
+        lastRawXp = -1.0
+        currentPetKey = ""
+        gainHistory.clear()
+    }
 
     private val LEVEL_PATTERN = Pattern.compile("(?i)\\[ур(\\d+)\\]\\s*(.*)")
     private val XP_PATTERN = Pattern.compile("([\\d,.]+)/([\\d,.]+)")
@@ -74,7 +86,7 @@ object PetOverlay : HudElement("PetOverlay") {
     }
 
     override fun render() {
-        if (mc.screen is ScoreboardEditorScreen) return
+        if (mc.gui.screen() is ScoreboardEditorScreen) return
         val config = StarredHeltix.feature.skyblock.pet
         if (!config.enabled) return
 

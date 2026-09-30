@@ -1,32 +1,50 @@
 package set.starlev.features.chat
 
 import set.starlev.StarredHeltix
+import set.starlev.utils.CacheManager
 
 object MessageFilterManager {
-    private val config get() = StarredHeltix.feature.chat.general.messageFilter
+    private val config get() = StarredHeltix.feature.chat.messageFilter
+    private val colorRegex get() = CacheManager.getRegex("§[0-9a-fk-orA-FK-OR]")
+
+    // Нормализуем фильтр один раз на проверку: нижний регистр, без цветов, схлопнутые пробелы
+    private fun normalizeFilter(raw: String): String {
+        val noColor = colorRegex.replace(raw, "")
+        return noColor.trim().replace(Regex("\\s+"), " ").lowercase()
+    }
+
+    private fun normalizeMessage(message: String): String {
+        val noColor = colorRegex.replace(message, " ").replace("§", " ")
+        return noColor.replace(Regex("\\s+"), " ").trim().lowercase()
+    }
 
     fun shouldAllowMessage(message: String): Boolean {
         if (!config.enabled || config.filters.isEmpty()) return true
-        
-        // Убираем цветовые коды для корректной фильтрации, если они есть
-        val cleanMessage = message.replace(Regex("§[0-9a-fk-orA-FK-OR]"), "")
-        val prefix = cleanMessage.substringBefore(':')
-        
+        val cleanMessage = normalizeMessage(message)
+        if (cleanMessage.isEmpty()) return true
+
         return config.filters.none { filter ->
-            val cleanFilter = filter.replace(Regex("§[0-9a-fk-orA-FK-OR]"), "").trim()
-            if (cleanFilter.isEmpty()) return@none false
-            
-            // Проверяем: 
-            // 1. Сообщение начинается с фильтра
-            // 2. Фильтр содержится в префиксе (до первого двоеточия - обычно это отправитель)
-            cleanMessage.startsWith(cleanFilter, ignoreCase = true) || 
-            prefix.contains(cleanFilter, ignoreCase = true)
+            val f = normalizeFilter(filter)
+            if (f.isEmpty()) return@none false
+            // contains по нормализованной строке — ловит и префиксы, и отправителя,
+            // и многословные фразы независимо от цветов/пробелов
+            cleanMessage.contains(f)
+        }
+    }
+
+    /** Совместимость: старая сигнатура с Component — фильтруем по .string */
+    fun shouldAllowMessage(component: net.minecraft.network.chat.Component): Boolean {
+        return try {
+            shouldAllowMessage(component.string)
+        } catch (_: Exception) {
+            true
         }
     }
 
     fun addFilter(filter: String) {
-        if (filter.isNotEmpty() && !config.filters.contains(filter)) {
-            config.filters.add(filter)
+        val f = filter.trim()
+        if (f.isNotEmpty() && !config.filters.contains(f)) {
+            config.filters.add(f)
             StarredHeltix.configManager.saveConfig("filter-add")
         }
     }
@@ -37,3 +55,4 @@ object MessageFilterManager {
         }
     }
 }
+

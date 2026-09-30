@@ -4,7 +4,9 @@ import com.mojang.blaze3d.vertex.PoseStack
 import net.minecraft.client.Minecraft
 import net.minecraft.sounds.SoundEvents
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudElement
+import set.starlev.render.HudElement
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 object FishingNotifier : HudElement("FishingNotifier") {
     private val mc = Minecraft.getInstance()

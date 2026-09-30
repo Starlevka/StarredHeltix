@@ -1,24 +1,23 @@
 package set.starlev.events
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.minecraft.client.KeyMapping
 import com.mojang.blaze3d.platform.InputConstants
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.Identifier
 import org.lwjgl.glfw.GLFW
 import set.starlev.StarredHeltix
 import set.starlev.config.ConfigGuiManager
 import set.starlev.features.chat.CustomBindManager
 import set.starlev.features.visual.GhostNPCHandler
-import set.starlev.features.visual.MegaChestNPCHandler
 
 object KeyBindHandler {
-    private val configKey = KeyBindingHelper.registerKeyBinding(
+    private val configKey = KeyMappingHelper.registerKeyMapping(
         KeyMapping(
             "key.starredheltix.config",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_RIGHT_SHIFT,
-            KeyMapping.Category(ResourceLocation.fromNamespaceAndPath("key", "categories.misc"))
+            ModKeybinds.CATEGORY
         )
     )
 
@@ -26,19 +25,20 @@ object KeyBindHandler {
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             // Обработка отложенного открытия экрана
             StarredHeltix.screenToOpen?.let { screen ->
-                client.setScreen(screen)
+                client.setScreenAndShow(screen)
                 StarredHeltix.screenToOpen = null
             }
 
             while (configKey.consumeClick()) {
-                if (client.screen == null) {
+                if (client.gui.screen() == null) {
                     ConfigGuiManager.openConfigGui()
                 }
             }
 
-            // Проверка ЛКМ для GhostNPC и Мега-ящиков
+            // Проверка ЛКМ для GhostNPC и скриптовых NPC
             if (client.options.keyAttack.isDown) {
-                if (GhostNPCHandler.handleAttack() || MegaChestNPCHandler.handleAttack()) {
+                val handledByScriptNpc = set.starlev.render.ScriptNPCManager.handleAttack()
+                if (GhostNPCHandler.handleAttack() || handledByScriptNpc) {
                     // Обработано
                 }
             }

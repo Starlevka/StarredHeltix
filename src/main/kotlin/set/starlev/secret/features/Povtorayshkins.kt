@@ -24,11 +24,11 @@ object Povtorayshkins {
     private val messageTimestamps = mutableMapOf<String, Long>()
 
     fun init() {
-        // Инициализация через миксин PovtorayshkinsMixin
+        // Инициализация через миксин ClientPacketListenerMixin
     }
 
     /**
-     * Вызывается из PovtorayshkinsMixin при отправке сообщения игроком
+     * Вызывается из ClientPacketListenerMixin при отправке сообщения игроком
      */
     fun onPlayerSendMessage(message: String) {
         if (!isEnabled()) return
@@ -71,7 +71,7 @@ object Povtorayshkins {
                 sendMessage(processedMessage)
                 addToCache(processedMessage)
             }
-        }.start()
+        }.apply { isDaemon = true }.start()
     }
 
     private fun scheduleAmoebaRepeat(originalMessage: String) {
@@ -87,7 +87,7 @@ object Povtorayshkins {
                 sendMessage(processedMessage)
                 addToCache(processedMessage)
             }
-        }.start()
+        }.apply { isDaemon = true }.start()
     }
 
     private fun processLevaMessage(message: String): String {
@@ -177,7 +177,7 @@ object Povtorayshkins {
 
     private fun sendMessage(message: String) {
         val player = mc.player ?: return
-        val connection = player.connection ?: return
+        val connection = player.connection
         
         // Отправляем сообщение
         connection.sendChat(message)

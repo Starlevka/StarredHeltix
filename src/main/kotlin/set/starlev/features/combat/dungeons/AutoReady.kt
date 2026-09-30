@@ -23,7 +23,7 @@ object AutoReadyNotifier {
         if (isInZone && !wasInZone) {
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastMessageTime > MESSAGE_COOLDOWN) {
-                player.connection?.sendCommand("pc ${config.readyMessage}")
+                player.connection.sendCommand("pc ${config.readyMessage}")
                 lastMessageTime = currentTime
             }
         }

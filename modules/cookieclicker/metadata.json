@@ -1,0 +1,7 @@
+{
+  "name": "cookieclicker",
+  "version": "1.0.0",
+  "author": "Starlev",
+  "description": "Cookie Clicker — затягивающая мини-игра-кликер прямо в Minecraft. Пеки печеньки, покупай постройки, лови золотые печеньки. Открыть: /cookieclicker",
+  "entry": "index.js"
+}

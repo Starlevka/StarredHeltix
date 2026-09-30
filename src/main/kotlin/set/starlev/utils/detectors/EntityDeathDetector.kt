@@ -4,9 +4,9 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.LivingEntity
-import net.minecraft.world.entity.monster.Zombie
-import net.minecraft.world.entity.monster.Spider
-import net.minecraft.world.entity.monster.CaveSpider
+import net.minecraft.world.entity.monster.zombie.Zombie
+import net.minecraft.world.entity.monster.spider.Spider
+import net.minecraft.world.entity.monster.spider.CaveSpider
 import net.minecraft.world.entity.animal.wolf.Wolf
 
 object EntityDeathDetector {

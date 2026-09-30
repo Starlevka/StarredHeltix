@@ -18,7 +18,7 @@ object CustomBindManager {
     fun tick() {
         if (!StarredHeltix.feature.chat.binds.enabled) return
         if (mc.player == null) return
-        if (mc.screen != null) return
+        if (mc.gui.screen() != null) return
 
         binds.forEach { (_, pair) ->
             val keyCode = pair.second
@@ -178,6 +178,6 @@ object CustomBindManager {
     }
 
     private fun sendMsg(msg: String) {
-        mc.player?.displayClientMessage(Component.literal(msg), false)
+        mc.player?.sendSystemMessage(Component.literal(msg))
     }
 }

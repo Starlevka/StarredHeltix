@@ -3,8 +3,10 @@ package set.starlev.features.foraging
 import net.minecraft.client.Minecraft
 import net.minecraft.world.item.Items
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudElement
-import set.starlev.skyblock.ItemRegistry
+import set.starlev.render.HudElement
+import set.starlev.registry.ItemRegistry
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 object TreeCapCooldown : HudElement("TreeCapCooldown") {
     private val mc = Minecraft.getInstance()
@@ -17,7 +19,8 @@ object TreeCapCooldown : HudElement("TreeCapCooldown") {
 
         val currentTime = System.currentTimeMillis()
         val timeSinceLastBreak = currentTime - lastBreakTime
-        val cooldownMs = (config.cooldown.toDoubleOrNull() ?: 2.0) * 1000
+        val normalized = config.cooldown.trim().replace(',', '.')
+        val cooldownMs = (normalized.toDoubleOrNull() ?: 2.0) * 1000
         return ((cooldownMs - timeSinceLastBreak) / 1000.0).coerceAtLeast(0.0)
     }
 
@@ -48,17 +51,16 @@ object TreeCapCooldown : HudElement("TreeCapCooldown") {
     fun onLogBreak(blockName: String) {
         val config = StarredHeltix.feature.foraging.axes.treeCapCooldown
         if (!config.enabled) return
-        
-        val currentTime = System.currentTimeMillis()
-        val cooldownMs = (config.cooldown.toDoubleOrNull() ?: 2.0) * 1000
-        
-        // Обновляем время последнего слома только если кулдаун уже прошел
-        if (currentTime - lastBreakTime >= cooldownMs) {
-            val item = mc.player?.mainHandItem?.hoverName?.string ?: ""
-            if (item.contains("Treecapitator") || item.contains("Jungle Axe") || item.contains("Древоточец") || item.contains("Джунглевый топор")) {
-                lastBreakTime = currentTime
-            }
-        }
+
+        val player = mc.player ?: return
+        val stack = player.mainHandItem
+        // Надёжная проверка через Skyblock ID + fallback по имени
+        if (ItemRegistry.getAxeType(stack) == ItemRegistry.SkyblockItem.UNKNOWN) return
+
+        // КД не перезапускается, пока активен: ждём полного сброса и только
+        // потом стартуем заново (иначе каждый сломанный блок вечно продлевает таймер).
+        if (getRemainingSeconds() > 0.0) return
+        lastBreakTime = System.currentTimeMillis()
     }
 
     fun isVisible(): Boolean {

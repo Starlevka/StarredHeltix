@@ -63,7 +63,7 @@ object MuseumDetector {
         
         // 2. Проверка по структуре предметов (запасной вариант)
         val items = ContainerUtils.getContainerItems(screen)
-        val grayDyeCount = items.count { it.`is`(Items.GRAY_DYE) }
+        val grayDyeCount = items.count { it.`is`(Items.DYE.gray) }
         if (grayDyeCount >= 1) return true
 
         return false

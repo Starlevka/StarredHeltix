@@ -6,11 +6,17 @@ import net.minecraft.world.scores.DisplaySlot
 import net.minecraft.world.scores.PlayerTeam
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudElement
+import set.starlev.render.HudElement
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.math.abs
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
+import set.starlev.render.drawRoundedPanel
+import set.starlev.render.drawSmoothRoundedPanel
+import set.starlev.render.blitStretched
+import set.starlev.render.blitRoundedStretched
 
 object HudScoreboard : HudElement("Scoreboard") {
     private val mc = Minecraft.getInstance()
@@ -20,6 +26,18 @@ object HudScoreboard : HudElement("Scoreboard") {
     private var anchoredContentWidth: Float? = null
     private var anchoredScale: Float? = null
     private var cachedLines: List<ScoreboardLine>? = null
+    // Throttling как в CustomScoreboardRenderer.tryUpdate (250мс)
+    private var nextPlannedUpdate = 0L
+    private var cachedOrderedLinesInternal: List<ScoreboardLine> = emptyList()
+
+    // ===== Кастомная текстура фона (как customImageFile у CustomScoreboard) =====
+    // Абсолютный путь из конфига в приоритете, иначе поиск в config/starredheltix/textures/.
+    // Загрузка/регистрация — в CustomHudTextures (порт CustomScoreboardBackground.kt).
+    private fun ensureCustomTexture(): set.starlev.render.CustomHudTextures.Handle? =
+        set.starlev.render.CustomHudTextures.ensure(
+            "scoreboard", "scoreboard.png",
+            explicitPath = StarredHeltix.feature.skyblock.scoreboard.customImagePath,
+        )
 
     enum class AnchorSide {
         LEFT,
@@ -280,15 +298,66 @@ object HudScoreboard : HudElement("Scoreboard") {
         return (maxWidth + padding * 2) to (totalHeight + padding * 2)
     }
 
+    // ===== CustomScoreboard-style helpers (работа как в CustomScoreboard-main) =====
+    private fun List<ScoreboardLine>.isBlankLine(): Boolean {
+        val stripped = this.firstOrNull()?.component?.string?.replace(Regex("(?i)§[0-9a-fk-orlnmx]"), "")?.trim() ?: ""
+        // Пустая строка или только пробелы — это сепаратор
+        return stripped.isEmpty()
+    }
+
+    private fun ScoreboardLine.isBlankSep(): Boolean {
+        val stripped = component.string.replace(Regex("(?i)§[0-9a-fk-orlnmx]"), "").trim()
+        return stripped.isEmpty()
+    }
+
+    private fun List<ScoreboardLine>.hideLeadingAndTrailingSeparators(): List<ScoreboardLine> {
+        // Как в CustomScoreboard LinesConfig.hideSeparatorsAtStartEnd
+        return this.dropWhile { it.isBlankSep() }.dropLastWhile { it.isBlankSep() }
+    }
+
+    private fun List<ScoreboardLine>.condenseConsecutiveSeparators(): List<ScoreboardLine> {
+        // Как в CustomScoreboard LinesConfig.condenseConsecutiveSeparators
+        if (this.isEmpty()) return this
+        val out = mutableListOf<ScoreboardLine>()
+        var lastWasBlank = false
+        for (line in this) {
+            val isBlank = line.isBlankSep()
+            if (isBlank) {
+                if (!lastWasBlank) out.add(line)
+                lastWasBlank = true
+            } else {
+                out.add(line)
+                lastWasBlank = false
+            }
+        }
+        return out
+    }
+
+    private fun tryUpdate(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now < nextPlannedUpdate) return
+        // Строим линии и применяем CustomScoreboard-логику очистки
+        val base = buildOrderedLinesInternal()
+        cachedOrderedLinesInternal = base.hideLeadingAndTrailingSeparators().condenseConsecutiveSeparators()
+        nextPlannedUpdate = now + 250
+    }
+
+    private fun buildOrderedLinesInternal(): List<ScoreboardLine> {
+        val base = buildBaseLines()
+        if (base.isEmpty()) return emptyList()
+        return applyStoredOrder(base)
+    }
+
     private fun buildCustomLines(): List<ScoreboardLine> {
         val scoreboardCfg = StarredHeltix.feature.skyblock.scoreboard
 
         // Получаем порядок элементов из конфига (ConfigEditorDraggableList)
-        val orderedElements = scoreboardCfg.scoreboardEntries.toList()
+        // filterNotNull — страховка: Gson отдаёт null для неизвестных enum-имён
+        // (например после удаления элемента из ScoreboardConfigElement)
+        val orderedElements = scoreboardCfg.scoreboardEntries.toList().filterNotNull()
 
         val out = mutableListOf<ScoreboardLine>()
         for (configElement in orderedElements) {
-            if (configElement == null) continue
             val element = configElement.element
             if (!element.showWhen()) continue
             if (!element.showIsland()) continue
@@ -301,14 +370,38 @@ object HudScoreboard : HudElement("Scoreboard") {
 
             out.addAll(lines)
         }
+        // Модульные кастомные строки (scoreboard.addCustomLine) — AFTER_XP отдельно, BOTTOM в общий поток
+        val modLines = set.starlev.scripting.ModuleCustomScoreboard.getAll()
+        // BOTTOM — добавляем в конец общего out (потом HudScoreboard разложит по anchor)
+        // Для простоты: все модульные строки идут как BOTTOM, AFTER_XP тоже пока в BOTTOM
+        // Сортируем по order+id для стабильности
+        val sortedMods = modLines.sortedWith(compareBy({ it.order }, { it.id }))
+        for (e in sortedMods) {
+            // anchor учитывается внешним кодом: если AFTER_XP — вставка после XP, иначе в конец
+            // Сейчас просто добавляем в out; логика anchor — в caller (insertAfterXp)
+            // Для AFTER_XP — пометим ключом чтобы вставка сверху сработала через didInsertAfterXp
+            // Проще: добавляем только BOTTOM сейчас, AFTER_XP будет вставлен при проходе buildBaseLines
+            // Храним anchor в CustomLineAnchor для последующей сортировки
+            out.add(ScoreboardLine("mod:${e.module}:${e.id}", e.component, centered = false))
+        }
         return out
     }
 
     private fun buildOrderedLines(): List<ScoreboardLine> {
+        // Throttling как в CustomScoreboardRenderer.tryUpdate — обновляем не чаще 250мс
+        // В режиме редактирования форсируем обновление
+        val force = isEditing
+        tryUpdate(force)
+        if (cachedOrderedLinesInternal.isNotEmpty() || !force) {
+            // Если есть кэш — возвращаем его (CustomScoreboard стиль)
+            // При пустом кэше (первый кадр) строим напрямую
+            if (cachedOrderedLinesInternal.isNotEmpty()) return cachedOrderedLinesInternal
+        }
         val base = buildBaseLines()
         if (base.isEmpty()) return emptyList()
         val ordered = applyStoredOrder(base)
-        return ordered
+        // Применяем очистку сепараторов как в CustomScoreboard
+        return ordered.hideLeadingAndTrailingSeparators().condenseConsecutiveSeparators()
     }
 
     private fun buildBaseLines(): List<ScoreboardLine> {
@@ -417,7 +510,7 @@ object HudScoreboard : HudElement("Scoreboard") {
         return existing.size
     }
 
-    override fun renderWithGraphics(graphics: net.minecraft.client.gui.GuiGraphics) {
+    override fun renderWithGraphics(graphics: net.minecraft.client.gui.GuiGraphicsExtractor) {
         ensureInitialized()
         cachedGraphics = graphics
         
@@ -478,8 +571,48 @@ object HudScoreboard : HudElement("Scoreboard") {
         val height = lines.size * 9 + padding * 2
 
         this.showBackground = config.showBackground
-        
-        drawBackground(width, height, 0, shadow = false, shadowBottom = false)
+
+        // Стиль фона (SkyblockConfig.ScoreboardBackgroundStyle):
+        // DEFAULT — прямоугольник с тенью как у остальных HUD; ROUNDED — гладкий
+        // скруглённый (software-AA, как шейдерный drawRec в CustomScoreboard);
+        // NONE — без фона; CUSTOM — своя текстура PNG со скруглёнными углами
+        // (blitRoundedStretched), растяжка под структуру строк при любом разрешении.
+        // Прозрачность фона (backgroundAlpha) единая для всех стилей.
+        val radius = config.cornerRadius.toInt().coerceIn(0, 10)
+        val bgColor = set.starlev.utils.ColorUtils.alphaColor(config.backgroundAlpha)
+        when (config.backgroundStyle) {
+            set.starlev.config.categories.ScoreboardBackgroundStyle.DEFAULT -> {
+                if (config.showBackground) {
+                    val pad = 4
+                    graphics.fill(x - pad, y - pad, x + width + pad, y + height + pad, bgColor)
+                }
+            }
+            set.starlev.config.categories.ScoreboardBackgroundStyle.ROUNDED -> {
+                if (config.showBackground) {
+                    val pad = 4
+                    graphics.drawSmoothRoundedPanel(x - pad, y - pad, width + pad * 2, height + pad * 2, bgColor, radius)
+                }
+            }
+            set.starlev.config.categories.ScoreboardBackgroundStyle.NONE -> {
+                // без фона
+            }
+            set.starlev.config.categories.ScoreboardBackgroundStyle.CUSTOM -> {
+                val handle = ensureCustomTexture()
+                if (handle != null) {
+                    // Прозрачность как imageBackgroundTransparency у CustomScoreboard (ARGB),
+                    // растяжка под структуру скорборда (width+pad x height+pad) при любом разрешении
+                    val pad = 4
+                    graphics.blitRoundedStretched(
+                        handle.id,
+                        x - pad, y - pad, width + pad * 2, height + pad * 2,
+                        handle.srcW, handle.srcH, radius, bgColor
+                    )
+                } else if (config.showBackground) {
+                    // Фолбэк: гладкий скруглённый тёмный фон
+                    graphics.drawSmoothRoundedPanel(x - 4, y - 4, width + 8, height + 8, bgColor, radius)
+                }
+            }
+        }
 
         var currentY = y + padding
         for (line in lines) {
@@ -488,7 +621,7 @@ object HudScoreboard : HudElement("Scoreboard") {
             } else {
                 x + padding
             }
-            graphics.drawString(mc.font, line.component, drawX, currentY, 0xFFFFFFFF.toInt())
+            graphics.drawString(mc.font, line.component, drawX, currentY, 0xFFFFFFFF.toInt(), shadow = true)
             currentY += 9
         }
     }

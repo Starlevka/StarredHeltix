@@ -6,12 +6,12 @@ import set.starlev.injections.accessors.GuiAccessor
 object HeldItemDetector {
 
     /**
-     * Returns the text of the currently displayed held item tooltip.
-     * Returns an empty string if the tooltip is not visible or empty.
+     * Возвращает текст тултипа предмета, который сейчас отображается.
+     * Возвращает пустую строку, если тултип не виден или пуст.
      */
     fun getTooltipText(): String {
         val client = Minecraft.getInstance()
-        val gui = client.gui ?: return ""
+        val gui = client.gui.hud
         
         return try {
             val accessor = gui as GuiAccessor
@@ -28,11 +28,11 @@ object HeldItemDetector {
     }
 
     /**
-     * Checks if the held item tooltip is currently visible (timer > 0).
+     * Проверяет, отображается ли сейчас тултип предмета в руке (таймер > 0).
      */
     fun isTooltipVisible(): Boolean {
         val client = Minecraft.getInstance()
-        val gui = client.gui ?: return false
+        val gui = client.gui.hud
         
         return try {
             val accessor = gui as GuiAccessor

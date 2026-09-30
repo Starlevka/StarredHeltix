@@ -4,7 +4,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.item.ItemStack
 
 /**
- * Fired when a slot in the open container changes (from server packet).
+ * Вызывается, когда слот открытого контейнера меняется (пакетом с сервера).
  *
  * Источник:
  * — `ClientboundContainerSetSlotPacket` — обновление одного слота.

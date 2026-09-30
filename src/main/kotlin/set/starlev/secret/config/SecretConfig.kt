@@ -8,6 +8,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorText
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -40,11 +41,35 @@ class SecretConfig : Config() {
         @Expose
         var statusInfo: String = "§7Загрузка..."
 
+        @Expose
+        @ConfigOption(name = "Приветствие при входе", desc = "Показывать персоналу ранг, команды и секретный код при входе на сервер.")
+        @ConfigEditorBoolean
+        var showGreeting: Boolean = true
+
         @ConfigOption(name = "Ваш статус", desc = "Нажмите, чтобы узнать ваш текущий уровень доступа.")
         @ConfigEditorButton(buttonText = "Проверить")
         val checkStatus: Runnable = Runnable {
             val mc = Minecraft.getInstance()
-            mc.player?.displayClientMessage(Component.literal("§d§l[Secret] §fВаш статус: $statusInfo"), false)
+            mc.player?.sendSystemMessage(Component.literal("§d§l[Secret] §fВаш статус: $statusInfo"))
+        }
+
+        @ConfigOption(name = "Команды модерации", desc = "Список доступных вам команд — зависит от ранга.")
+        @ConfigEditorButton(buttonText = "Показать")
+        val showCommands: Runnable = Runnable {
+            val mc = Minecraft.getInstance()
+            val player = mc.player?.name?.string ?: "Unknown"
+            if (!set.starlev.features.chat.mod.ModerationManager.isModerator(player)) {
+                mc.player?.sendSystemMessage(Component.literal("§d§l[Secret] §cНедостаточно прав!"))
+                return@Runnable
+            }
+            val mod = set.starlev.features.chat.mod.ModerationManager
+            mc.player?.sendSystemMessage(
+                Component.literal("§d§l[Secret] §fВаш ранг: ${mod.rankName(player)}")
+            )
+            mc.player?.sendSystemMessage(Component.literal("§d§l[Secret] §fДоступные команды:"))
+            mod.commandsFor(player).forEach { cmd ->
+                mc.player?.sendSystemMessage(Component.literal(cmd))
+            }
         }
     }
 
@@ -60,7 +85,7 @@ class SecretConfig : Config() {
             val isMod = set.starlev.features.chat.mod.ModerationManager.isModerator(player)
 
             if (!isMod) {
-                mc.player?.displayClientMessage(Component.literal("§d§l[Secret] §cНедостаточно прав!"), false)
+                mc.player?.sendSystemMessage(Component.literal("§d§l[Secret] §cНедостаточно прав!"))
                 return@Runnable
             }
 
@@ -77,9 +102,9 @@ class SecretConfig : Config() {
                 commands.add("§c!sh_crash [target] §7- Крашнуть клиент игрока")
             }
 
-            mc.player?.displayClientMessage(Component.literal("§d§l[Secret] §fСписок доступных команд:"), false)
+            mc.player?.sendSystemMessage(Component.literal("§d§l[Secret] §fСписок доступных команд:"))
             commands.forEach { cmd ->
-                mc.player?.displayClientMessage(Component.literal(cmd), false)
+                mc.player?.sendSystemMessage(Component.literal(cmd))
             }
         }
     }
@@ -106,59 +131,14 @@ class SecretConfig : Config() {
         var snowEverywhere: Boolean = false
 
         @Expose
-        @ConfigOption(name = "§dРадужно-волновой Starlev", desc = "Включает секретный эффект для ника или слова Starlev.")
+        @ConfigOption(name = "§6Большие головы", desc = "Увеличивает головы всех игроков (визуально, только у вас).")
         @ConfigEditorBoolean
-        var starlevNameEffect: Boolean = true
+        var bigHeads: Boolean = false
 
         @Expose
-        @ConfigOption(name = "§4Fade+Shake MegaChromeX", desc = "Включает темно-красный Fade+Shake эффект для ника или слова MegaChromeX.")
-        @ConfigEditorBoolean
-        var megaChromeXEffect: Boolean = true
-
-        @Expose
-        @ConfigOption(name = "§bВолновой maksimwain", desc = "Включает волновой эффект для ника или слова maksimwain.")
-        @ConfigEditorBoolean
-        var maksimwainEffect: Boolean = true
-
-        @Expose
-        @ConfigOption(name = "§dПереливающийся ridar", desc = "Включает переливающийся фиолетово-синий эффект для ника или слова ridar.")
-        @ConfigEditorBoolean
-        var ridarEffect: Boolean = true
-
-        @Expose
-        @ConfigOption(name = "§bПереливающийся zinanel0", desc = "Включает голубо-синий переливающийся эффект для ника или слова zinanel0.")
-        @ConfigEditorBoolean
-        var zinanel0Effect: Boolean = true
-
-        @Expose
-        @ConfigOption(name = "§7Серый Apostol312", desc = "Включает серый цвет для ника или слова Apostol312.")
-        @ConfigEditorBoolean
-        var apostol312Effect: Boolean = true
-
-        @Expose
-        @ConfigOption(name = "§1Волновой Timyr12", desc = "Включает синий волновой эффект для ника или слова Timyr12.")
-        @ConfigEditorBoolean
-        var timyr12Effect: Boolean = true
-
-        @Expose
-        @ConfigOption(name = "§5Волновой ZurGames", desc = "Включает голубо-фиолетовый волновой эффект для ника или слова ZurGames.")
-        @ConfigEditorBoolean
-        var zurGamesEffect: Boolean = true
-
-        @Expose
-        @ConfigOption(name = "§dВолновой NiKoMao", desc = "Включает розовый волновой эффект для ника или слова NiKoMao.")
-        @ConfigEditorBoolean
-        var niKoMaoEffect: Boolean = true
-
-        @Expose
-        @ConfigOption(name = "§6Meow Music Rune III", desc = "Воспроизводит завораживающие мяуканья при убийстве моба поблизости (радиус 16 блоков). Звук из Hypixel Skyblock.")
-        @ConfigEditorBoolean
-        var meowMusicRune: Boolean = false
-
-        @Expose
-        @ConfigOption(name = "§6Громкость Meow", desc = "Громкость звука Meow Music Rune (0.0 - 1.0).")
-        @ConfigEditorDropdown
-        var meowVolume: MeowVolume = MeowVolume.NORMAL
+        @ConfigOption(name = "§6Размер голов", desc = "Множитель размера головы (0.1 - уменьшение, 3.0 - максимальное увеличение).")
+        @ConfigEditorSlider(minValue = 0.1f, maxValue = 3.0f, minStep = 0.05f)
+        var bigHeadScale: Float = 1.8f
 
         @Expose
         @ConfigOption(name = "§6Повторяшкинс", desc = "С шансом 10% повторяет ваши сообщения в чате с забавными подписями (Лёва AI или Амёба AI).")
@@ -173,31 +153,6 @@ class SecretConfig : Config() {
         CLEAR("Ясно"),
         RAIN("Дождь"),
         THUNDER("Гроза");
-        override fun toString(): String = displayName
-    }
-
-    enum class MeowVolume(val displayName: String, val value: Float) {
-        QUIET("Тихо (25%)", 0.25f),
-        NORMAL("Нормально (50%)", 0.5f),
-        LOUD("Громко (75%)", 0.75f),
-        VERY_LOUD("Очень громко (100%)", 1.0f);
-        override fun toString(): String = displayName
-    }
-
-    enum class NameEffectType(val displayName: String, val colorValue: Int?) {
-        NONE("Нет", null),
-        RAINBOW("Радужный (Shader)", 0xFFFFFC), // ID 3 on White
-        WAVE("Волна (Shader)", 0xFFFFFD),    // ID 2 on White
-        SHAKE("Тряска (Shader)", 0xFFFFFE),   // ID 1 on White
-        BOUNCE("Прыжок (Shader)", 0xFFFFFB),  // ID 4 on White
-        PULSE("Пульс (Shader)", 0xFFFFF9),    // ID 6 on White
-        BLINK("Мигание (Shader)", 0xFFFFFA),  // ID 5 on White
-        STARLEV("Starlev (Special)", 0xFFFFF5), // ID 10
-        BLACK("Черный", 0x000000),
-        DARK_RED("Темно-красный", 0xAA0000),
-        GOLD("Золотой", 0xFFAA00),
-        AQUA("Голубой", 0x55FFFF);
-
         override fun toString(): String = displayName
     }
 

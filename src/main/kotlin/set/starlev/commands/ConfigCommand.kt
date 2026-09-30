@@ -5,8 +5,8 @@ import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.client.Minecraft
@@ -20,9 +20,9 @@ import set.starlev.config.ConfigGuiManager
 import set.starlev.config.Features
 import set.starlev.features.chat.MessageFilterManager
 import set.starlev.features.chat.CustomBindManager
-import set.starlev.features.misc.Waypoints
-import set.starlev.features.misc.MouseLock
-import set.starlev.features.inventory.InventoryButtonsGui
+import set.starlev.features.skyblock.Waypoints
+import set.starlev.features.farming.MouseLock
+import set.starlev.features.skyblock.InventoryButtonsGui
 import set.starlev.utils.ConfigUtils
 
 object ConfigCommand {
@@ -62,8 +62,8 @@ object ConfigCommand {
             .then(literal("remove")
                 .then(argument("id", IntegerArgumentType.integer(0, 999))
                     .suggests { _, builder ->
-                        StarredHeltix.feature.chat.general.messageFilter.filters.forEachIndexed { index, filter ->
-                            builder.suggest(index, Component.literal(filter))
+                        StarredHeltix.feature.chat.messageFilter.filters.forEachIndexed { index, filter ->
+                            builder.suggest(index.toString(), Component.literal(filter))
                         }
                         builder.buildFuture()
                     }
@@ -104,15 +104,8 @@ object ConfigCommand {
                 1
             })
             .then(literal("reset").executes { ctx ->
-                set.starlev.hud.HudManager.resetAllPositions()
+                set.starlev.render.HudManager.resetAllPositions()
                 ctx.source.sendFeedback(Component.literal("§aРасположение HUD элементов сброшено"))
-                1
-            })
-        )
-        // Мега-ящики дебаг
-        .then(literal("megabox")
-            .then(literal("spawn").executes { ctx ->
-                set.starlev.features.visual.MegaChestNPCHandler.spawnDebugChest()
                 1
             })
         )
@@ -128,6 +121,7 @@ object ConfigCommand {
                 1
             }
         )
+        .then(set.starlev.scripting.ModuleCommand.registerSubcommand())
         .then(literal("waypoint")
             .then(literal("apply")
                 .then(argument("x", IntegerArgumentType.integer(-30_000_000, 30_000_000))
@@ -244,7 +238,7 @@ object ConfigCommand {
         dispatcher.register(
             literal("вход")
                 .executes { ctx ->
-                    val password = StarredHeltix.feature.misc.autoLogin.password
+                    val password = StarredHeltix.feature.skyblock.autoLogin.password
                     if (password.isNotEmpty()) {
                         Minecraft.getInstance().player?.connection?.sendCommand("login $password")
                         ctx.source.sendFeedback(Component.literal("§aУспешный вход в систему"))
@@ -287,7 +281,7 @@ object ConfigCommand {
         }
         
         MessageFilterManager.addFilter(message)
-        val id = StarredHeltix.feature.chat.general.messageFilter.filters.indexOf(message)
+        val id = StarredHeltix.feature.chat.messageFilter.filters.indexOf(message)
         ctx.source.sendFeedback(Component.literal("§aФильтр добавлен: §e[$id] §f$message"))
         ctx.source.sendFeedback(Component.literal("§7(Будет скрывать сообщения, начинающиеся с этого или содержащие это в имени отправителя)"))
         return 1
@@ -295,7 +289,7 @@ object ConfigCommand {
 
     private fun removeFilter(ctx: CommandContext<FabricClientCommandSource>): Int {
         val id = IntegerArgumentType.getInteger(ctx, "id")
-        val filters = StarredHeltix.feature.chat.general.messageFilter.filters
+        val filters = StarredHeltix.feature.chat.messageFilter.filters
         if (id >= 0 && id < filters.size) {
             val removed = filters.removeAt(id)
             StarredHeltix.configManager.saveConfig("filter-remove")
@@ -307,7 +301,7 @@ object ConfigCommand {
     }
 
     private fun listFilters(ctx: CommandContext<FabricClientCommandSource>): Int {
-        val filters = StarredHeltix.feature.chat.general.messageFilter.filters
+        val filters = StarredHeltix.feature.chat.messageFilter.filters
         if (filters.isEmpty()) {
             ctx.source.sendFeedback(Component.literal("§cСписок фильтров пуст"))
             return 1
@@ -346,7 +340,7 @@ object ConfigCommand {
 
     private fun setPassword(ctx: CommandContext<FabricClientCommandSource>): Int {
         val password = StringArgumentType.getString(ctx, "password")
-        StarredHeltix.feature.misc.autoLogin.password = password
+        StarredHeltix.feature.skyblock.autoLogin.password = password
         StarredHeltix.configManager.saveConfig("config-password")
         ctx.source.sendFeedback(Component.literal("§aПароль установлен"))
         return 1

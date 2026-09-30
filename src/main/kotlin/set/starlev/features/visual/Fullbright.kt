@@ -6,7 +6,4 @@ object Fullbright {
     fun isEnabled(): Boolean {
         return StarredHeltix.feature.optimization.visualOptimizations.fullbright
     }
-
-    fun init() {
-    }
 }

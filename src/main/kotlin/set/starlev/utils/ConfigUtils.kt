@@ -7,7 +7,7 @@ import io.github.notenoughupdates.moulconfig.gui.MoulConfigEditor
 import io.github.notenoughupdates.moulconfig.platform.MoulConfigScreenComponent
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudEditorScreen
+import set.starlev.render.HudEditorScreen
 
 object ConfigUtils {
 

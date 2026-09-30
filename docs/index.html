@@ -4,397 +4,760 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StarredHeltix — Heltix Skyblock 0.1.0</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <title>StarredHeltix 1.0.0 — мод для Heltix SkyBlock</title>
+    <meta name="description"
+        content="StarredHeltix 1.0.0 — клиентский Fabric-мод для Heltix SkyBlock: кастомный табло, редактор HUD, солверы данжей и экспериментов, модули на JavaScript.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #05070f;
+            --bg-2: #0a0e1c;
+            --card: rgba(255, 255, 255, .035);
+            --line: rgba(255, 255, 255, .09);
+            --txt: #e8ecf6;
+            --muted: #8f9bb3;
+            --dim: #5b6780;
+            --accent: #818cf8;
+            --accent-2: #c084fc;
+            --accent-3: #f472b6;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #030712;
-            min-height: 100vh;
-            overflow-x: hidden;
-            color: white;
+            background: var(--bg);
+            color: var(--txt);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
-        #particles-js {
+        #bg-canvas {
             position: fixed;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             z-index: 0;
-            top: 0;
-            left: 0;
+            opacity: .5;
         }
 
-        .container {
+        .wrap {
             position: relative;
-            z-index: 10;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
+            z-index: 1;
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
 
-        .hero {
+        /* ---------- HERO ---------- */
+        header.hero {
             text-align: center;
-            margin-bottom: 60px;
-            animation: float 6s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
+            padding: 96px 0 72px;
         }
 
         .logo {
-            font-size: 4.5rem;
+            font-size: clamp(2.6rem, 8vw, 5rem);
             font-weight: 900;
-            background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+            letter-spacing: -.035em;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
             -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             background-clip: text;
-            text-shadow: 0 0 60px rgba(192, 132, 252, 0.5);
-            margin-bottom: 10px;
-            letter-spacing: -0.03em;
+            -webkit-text-fill-color: transparent;
         }
 
         .tagline {
-            font-size: 1.4rem;
-            color: #94a3b8;
+            margin-top: 14px;
+            font-size: clamp(1rem, 2.2vw, 1.3rem);
+            color: var(--muted);
             font-weight: 500;
-            letter-spacing: 0.05em;
+            max-width: 680px;
+            margin-inline: auto;
         }
 
-        .version-tag {
+        .ver {
             display: inline-block;
-            margin-top: 20px;
-            padding: 8px 24px;
-            background: linear-gradient(135deg, rgba(129, 140, 248, 0.2), rgba(192, 132, 252, 0.2));
-            border: 1px solid rgba(192, 132, 252, 0.3);
-            border-radius: 100px;
-            font-size: 0.9rem;
+            margin-top: 26px;
+            padding: 9px 22px;
+            font-size: .92rem;
             font-weight: 600;
-            color: #a5b4fc;
-            backdrop-filter: blur(10px);
+            border-radius: 100px;
+            background: rgba(129, 140, 248, .13);
+            border: 1px solid rgba(192, 132, 252, .3);
         }
 
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            max-width: 1000px;
-            width: 100%;
-            margin-bottom: 50px;
+        .ver b {
+            color: var(--accent-2);
         }
 
-        .feature-card {
-            background: rgba(17, 24, 39, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 28px 24px;
-            text-align: left;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-            transition: left 0.5s;
-        }
-
-        .feature-card:hover::before {
-            left: 100%;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            border-color: rgba(192, 132, 252, 0.4);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(192, 132, 252, 0.1);
-        }
-
-        .feature-icon {
-            font-size: 2.2rem;
-            margin-bottom: 16px;
-            display: block;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
-        }
-
-        .feature-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #f1f5f9;
-            margin-bottom: 8px;
-        }
-
-        .feature-desc {
-            font-size: 0.9rem;
-            color: #64748b;
-            line-height: 1.5;
-        }
-
-        .cta-section {
+        .stack {
+            margin-top: 22px;
             display: flex;
-            gap: 20px;
             flex-wrap: wrap;
+            gap: 8px;
             justify-content: center;
-            margin-bottom: 50px;
+        }
+
+        .stack span {
+            font-size: .78rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            padding: 5px 12px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, .05);
+            border: 1px solid var(--line);
+            color: var(--muted);
+        }
+
+        .cta {
+            margin-top: 34px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
         .btn {
-            padding: 18px 40px;
-            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 28px;
+            font-weight: 600;
+            font-size: .95rem;
             text-decoration: none;
+            border-radius: 10px;
+            transition: transform .15s, box-shadow .15s, background .15s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-p {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: #0a0e1c;
+        }
+
+        .btn-p:hover {
+            box-shadow: 0 10px 30px rgba(129, 140, 248, .35);
+        }
+
+        .btn-s {
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid var(--line);
+            color: var(--txt);
+        }
+
+        /* ---------- SECTION ---------- */
+        section {
+            padding: 56px 0;
+            border-top: 1px solid var(--line);
+        }
+
+        h2 {
+            font-size: clamp(1.5rem, 3.4vw, 2rem);
+            font-weight: 800;
+            letter-spacing: -.02em;
+            margin-bottom: 8px;
+        }
+
+        .sub {
+            color: var(--muted);
+            margin-bottom: 34px;
+            max-width: 720px;
+        }
+
+        .eyebrow {
+            font-size: .76rem;
             font-weight: 700;
-            font-size: 1.05rem;
-            transition: all 0.3s ease;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: var(--accent-2);
+            margin-bottom: 10px;
+        }
+
+        /* ---------- CARDS ---------- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+            gap: 14px;
+        }
+
+        .card {
+            padding: 20px;
+            border-radius: 12px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            transition: border-color .15s, transform .15s;
+        }
+
+        .card:hover {
+            border-color: rgba(192, 132, 252, .35);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            font-size: 1.02rem;
+            font-weight: 700;
+            margin-bottom: 7px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            border: none;
-            cursor: pointer;
+            gap: 9px;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white;
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        .card p {
+            color: var(--muted);
+            font-size: .9rem;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.5);
+        .ico {
+            font-size: 1.15rem;
         }
 
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: #e2e8f0;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        /* ---------- TAGS ---------- */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 11px;
         }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-5px);
+        .tag {
+            font-size: .73rem;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 5px;
+            background: rgba(129, 140, 248, .12);
+            color: #b6bdf5;
+            border: 1px solid rgba(129, 140, 248, .2);
         }
 
-        .footer {
-            text-align: center;
-            color: #475569;
-            font-size: 0.85rem;
-            padding-top: 30px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        /* ---------- COMMANDS ---------- */
+        .cmds {
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            overflow: hidden;
+        }
+
+        .cmd {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            align-items: baseline;
+            padding: 11px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, .05);
+        }
+
+        .cmd:last-child {
+            border-bottom: none;
+        }
+
+        .cmd code {
+            font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+            font-size: .855rem;
+            font-weight: 600;
+            color: #a5b4fc;
+            white-space: nowrap;
+        }
+
+        .cmd span {
+            color: var(--muted);
+            font-size: .875rem;
+        }
+
+        /* ---------- TABLE ---------- */
+        .tbl {
             width: 100%;
-            max-width: 600px;
+            border-collapse: collapse;
+            font-size: .9rem;
         }
 
-        .footer a {
-            color: #818cf8;
-            text-decoration: none;
+        .tbl th,
+        .tbl td {
+            padding: 11px 14px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, .06);
         }
 
-        .glitch {
+        .tbl th {
+            color: var(--dim);
+            font-size: .76rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+
+        .tbl td code {
+            font-family: ui-monospace, Menlo, monospace;
+            font-size: .85rem;
+            color: #a5b4fc;
+        }
+
+        .tbl tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ---------- INSTALL ---------- */
+        .steps {
+            counter-reset: s;
+            display: grid;
+            gap: 12px;
+        }
+
+        .step {
+            counter-increment: s;
             position: relative;
-            animation: glitch 3s infinite;
+            padding: 16px 18px 16px 56px;
+            border-radius: 10px;
+            background: var(--card);
+            border: 1px solid var(--line);
         }
 
-        @keyframes glitch {
-            0%, 90%, 100% { transform: none; }
-            92% { transform: skewX(-2deg); }
-            94% { transform: skewX(2deg); }
-            96% { transform: none; }
-            98% { transform: skewX(-1deg); }
+        .step::before {
+            content: counter(s);
+            position: absolute;
+            left: 18px;
+            top: 16px;
+            width: 24px;
+            height: 24px;
+            display: grid;
+            place-items: center;
+            border-radius: 6px;
+            font-size: .8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #0a0e1c;
         }
 
-        @media (max-width: 768px) {
-            .logo { font-size: 3rem; }
-            .tagline { font-size: 1.1rem; }
-            .features-grid { grid-template-columns: 1fr; }
-            .cta-section { flex-direction: column; align-items: center; }
-            .btn { width: 100%; max-width: 300px; justify-content: center; }
+        .step b {
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .step p {
+            color: var(--muted);
+            font-size: .9rem;
+        }
+
+        /* ---------- FOOTER ---------- */
+        footer {
+            padding: 44px 0 56px;
+            border-top: 1px solid var(--line);
+            text-align: center;
+            color: var(--dim);
+            font-size: .87rem;
+        }
+
+        footer a {
+            color: var(--muted);
+        }
+
+        .lic {
+            margin-top: 10px;
+            color: var(--dim);
+            font-size: .82rem;
+        }
+
+        @media (max-width: 640px) {
+            .tbl {
+                font-size: .84rem;
+            }
+
+            .tbl th,
+            .tbl td {
+                padding: 9px 10px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <canvas id="particles-js"></canvas>
+    <canvas id="bg-canvas"></canvas>
 
-    <div class="container">
-        <div class="hero">
-            <h1 class="logo glitch">StarredHeltix</h1>
-            <p class="tagline">Мод для Heltix Skyblock</p>
-            <span class="version-tag">Версия 0.1.0 • Minecraft 1.21.10</span>
-        </div>
+    <div class="wrap">
 
-        <div class="features-grid">
-            <div class="feature-card">
-                <span class="feature-icon">&#127925;</span>
-                <h3 class="feature-title">Музыкальная система</h3>
-                <p class="feature-desc">Разная музыка в зависимости от локации игрока. Полноценный движок с категориями.</p>
+        <header class="hero">
+            <h1 class="logo">StarredHeltix</h1>
+            <p class="tagline">Клиентский Fabric-мод с QOL-фичами для Heltix SkyBlock — от кастомного
+                табло и солверов до системы модулей на JavaScript.</p>
+            <div class="ver">Версия <b>1.0.0</b> · Minecraft <b>26.2</b> · Java <b>25</b></div>
+            <div class="stack">
+                <span>Fabric Loader 0.19.3</span>
+                <span>Fabric API</span>
+                <span>Fabric Language Kotlin</span>
+                <span>Kotlin + Java</span>
+                <span>Rhino 1.9.1</span>
             </div>
-            <div class="feature-card">
-                <span class="feature-icon">&#128208;</span>
-                <h3 class="feature-title">Кастомные кнопки инвентаря</h3>
-                <p class="feature-desc">Настраиваемые кнопки в инвентаре и оверлей экипировки для удобного управления.</p>
+            <div class="cta">
+                <a class="btn btn-p" href="https://github.com/Starlevka/StarredHeltix/releases/latest">Скачать 1.0.0</a>
+                <a class="btn btn-s" href="https://github.com/Starlevka/StarredHeltix">Исходный код</a>
             </div>
-            <div class="feature-card">
-                <span class="feature-icon">&#128736;</span>
-                <h3 class="feature-title">Фичи для подземелий</h3>
-                <p class="feature-desc">Решатель этажа 4, крестиков-ноликов, таймеры и счётчики для данжей.</p>
-            </div>
-            <div class="feature-card">
-                <span class="feature-icon">&#128170;</span>
-                <h3 class="feature-title">HUD скорости</h3>
-                <p class="feature-desc">HUD Rancher Boots для отображения скорости передвижения скилла.</p>
-            </div>
-            <div class="feature-card">
-                <span class="feature-icon">&#10024;</span>
-                <h3 class="feature-title">HUD прогресса зачарований</h3>
-                <p class="feature-desc">Отслеживание прогресса зачарований прямо на экране.</p>
-            </div>
-            <div class="feature-card">
-                <span class="feature-icon">&#128202;</span>
-                <h3 class="feature-title">Кастомный Scoreboard</h3>
-                <p class="feature-desc">Bank, CPS, BPS, Gems, Location, Ping и другие элементы настраиваемого скора.</p>
-            </div>
-            <div class="feature-card">
-                <span class="feature-icon">&#127981;</span>
-                <h3 class="feature-title">Помощник по Музею</h3>
-                <p class="feature-desc">Автоматическое отслеживание коллекции музея и подсказки.</p>
-            </div>
-            <div class="feature-card">
-                <span class="feature-icon">&#127873;</span>
-                <h3 class="feature-title">Мега-ящики NPC</h3>
-                <p class="feature-desc">Визуализация и рендеринг мега-ящиков для удобного просмотра.</p>
-            </div>
-        </div>
+        </header>
 
-        <div class="cta-section">
-            <a href="https://github.com/Starlevka/StarredHeltix/releases/latest" class="btn btn-primary">
-                <span>&#128640;</span> Скачать v0.1.1
-            </a>
-            <a href="https://github.com/Starlevka/StarredHeltix" class="btn btn-secondary">
-                <span>&#128193;</span> GitHub
-            </a>
-        </div>
+        <!-- ================= ОСНОВНОЕ ================= -->
+        <section>
+            <div class="eyebrow">Основное</div>
+            <h2>Что умеет мод</h2>
+            <p class="sub">Около сотни переключаемых фич в 16 категориях настроек. Всё выключается
+                независимо, перезагрузка мира не требуется.</p>
 
-        <footer class="footer">
-            <p>Разработано с любовью для <a href="https://heltix.net">Heltix</a> комьюнити</p>
-            <p style="margin-top: 8px;">Fabric Loader 0.18.4 • Kotlin</p>
+            <div class="grid">
+
+                <div class="card">
+                    <h3><span class="ico">&#128202;</span> Кастомный табло</h3>
+                    <p>Заменяет ванильный сайдбар. Строки двигаются мышью, лишние удаляются, каждая
+                        перекрашивается отдельно.</p>
+                    <div class="tags">
+                        <span class="tag">Банк</span><span class="tag">Гемы</span><span class="tag">Печенье</span>
+                        <span class="tag">Локация</span><span class="tag">Сила</span><span class="tag">FPS</span>
+                        <span class="tag">Пинг</span><span class="tag">CPS</span><span class="tag">BPS</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#129513;</span> Редактор HUD</h3>
+                    <p>Перетаскивание, масштаб и включение любого HUD-элемента прямо в игре. Раскладки
+                        сохраняются отдельно для каждого элемента.</p>
+                    <div class="tags">
+                        <span class="tag">drag &amp; drop</span><span class="tag">масштаб</span>
+                        <span class="tag">автосохранение</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#128506;</span> Фоны с прозрачностью</h3>
+                    <p>У табло и карты подземелий общий ползунок прозрачности 0–100% — работает для
+                        всех стилей сразу, включая свою PNG-картинку.</p>
+                    <div class="tags">
+                        <span class="tag">0–100%</span><span class="tag">свой PNG</span>
+                        <span class="tag">радиус скругления</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#129517;</span> Солверы данжей</h3>
+                    <p>Решают рутинную часть, чтобы глаза оставались на бою.</p>
+                    <div class="tags">
+                        <span class="tag">Три незнакомца</span><span class="tag">Лучи крипера</span>
+                        <span class="tag">Крестики-нолики</span><span class="tag">Вода на доске</span>
+                        <span class="tag">Этаж 4</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#129514;</span> Солверы экспериментов</h3>
+                    <p>Три вида зачарований решаются автоматически по состоянию GUI.</p>
+                    <div class="tags">
+                        <span class="tag">Superpairs</span><span class="tag">Chronomatron</span>
+                        <span class="tag">Ultrasequencer</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#128506;</span> Карта подземелий</h3>
+                    <p>Карта из офф-хенда 1:1, стили рамки, переключатель декораций, живые счётчики
+                        склепов и очков.</p>
+                    <div class="tags">
+                        <span class="tag">1:1 рендер</span><span class="tag">склепы</span><span class="tag">очки</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#9995;</span> Команды пати</h3>
+                    <p>Работают прямо в чате пати — переключаться в игровой чат не нужно.</p>
+                    <div class="tags">
+                        <span class="tag">!ping</span><span class="tag">!fps</span><span class="tag">!coords</span>
+                        <span class="tag">!time</span><span class="tag">!kick</span><span class="tag">!invite</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#128188;</span> Фильтры и свои бинды</h3>
+                    <p>Свои сочетания клавиш и правила, скрывающие или переписывающие сообщения чата.</p>
+                    <div class="tags">
+                        <span class="tag">keybind</span><span class="tag">message filter</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#127912;</span> Модули на JavaScript</h3>
+                    <p>Пиши свои фичи в игре. Песочница Rhino со счётчиком инструкций: зависший скрипт
+                        подвесит только себя, не клиент.</p>
+                    <div class="tags">
+                        <span class="tag">HUD</span><span class="tag">рендер</span><span class="tag">звук</span>
+                        <span class="tag">частицы</span><span class="tag">NPC</span><span class="tag">HTTP</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#128161;</span> Подсветки и оверлеи</h3>
+                    <p>Мобы, мини-боссы, ноды Энда, светящиеся грибы, вредители в саду, оверлеи
+                        экипировки и питомца, подсветка слотов.</p>
+                    <div class="tags">
+                        <span class="tag">glowing</span><span class="tag">equipment</span><span class="tag">pet</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#128293;</span> Напоминалки</h3>
+                    <p>Поклёвки, легендарные морские существа, авто-готовность в данже, очередь
+                        диалогов NPC, радар хотспотов.</p>
+                    <div class="tags">
+                        <span class="tag">fishing</span><span class="tag">dungeon ready</span>
+                        <span class="tag">hotspot radar</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="ico">&#127912;‍&nbsp;&#10148;</span> Визуал и анимации</h3>
+                    <p>Редактор анимации замаха, оверлей блоков, блик на голове, фулл-брайт, рамка
+                        вокруг ванильного GUI, сокрытие офф-хенда и книги рецептов.</p>
+                    <div class="tags">
+                        <span class="tag">swing editor</span><span class="tag">fullbright</span>
+                        <span class="tag">head glint</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= КОМАНДЫ ================= -->
+        <section>
+            <div class="eyebrow">Команды</div>
+            <h2>Всё управляется через <code>/sh</code></h2>
+            <p class="sub">Основная команда — <code>/sh</code> (алиас <code>/starredheltix</code>).
+                Все подкоманды поддерживают Tab-автокомплит.</p>
+
+            <div class="cmds">
+                <div class="cmd"><code>/sh</code><span>главное меню настроек (MoulConfig, 16 категорий)</span></div>
+                <div class="cmd"><code>/sh hud editor</code><span>редактор HUD — перетаскивание элементов</span></div>
+                <div class="cmd"><code>/sh buttons</code><span>редактор кнопок в инвентаре</span></div>
+                <div class="cmd"><code>/sh filter</code><span>фильтры сообщений чата</span></div>
+                <div class="cmd"><code>/sh binds</code><span>свои сочетания клавиш</span></div>
+                <div class="cmd"><code>/sh waypoints</code><span>менеджер вейпоинтов</span></div>
+                <div class="cmd"><code>/sh coords</code><span>показать и скопировать координаты</span></div>
+                <div class="cmd"><code>/sh rotation</code><span>поворот камеры</span></div>
+                <div class="cmd"><code>/sh mouselock</code><span>фиксация курсора</span></div>
+                <div class="cmd"><code>/sh update [install]</code><span>проверка и установка обновлений мода</span></div>
+                <div class="cmd"><code>/sh reset config</code><span>сбросить конфигурацию</span></div>
+            </div>
+
+            <h3 style="margin:32px 0 12px;font-size:1.05rem;">Команды пати (в чате, с <code>!</code>)</h3>
+            <div class="cmds">
+                <div class="cmd"><code>!ping</code><code>!fps</code><code>!time</code><span>пинг, FPS и время сервера</span></div>
+                <div class="cmd"><code>!coords</code><code>!rng</code><code>!dt</code><span>координаты, рандомайзер, таймер данжа</span></div>
+                <div class="cmd"><code>!promote</code><code>!kick</code><code>!invite</code><span>управление пати</span></div>
+            </div>
+        </section>
+
+        <!-- ================= МОДУЛИ ================= -->
+        <section>
+            <div class="eyebrow">Модули</div>
+            <h2>Управление JS-модулями</h2>
+            <p class="sub">Модули — обычные папки с JavaScript в
+                <code>config/starredheltix/modules/</code>. Ни архивов, ни шага сборки.</p>
+
+            <div class="cmds">
+                <div class="cmd"><code>/sh modules</code><span>список модулей: включённые, выключенные, библиотеки</span></div>
+                <div class="cmd"><code>/sh modules install &lt;имя&gt;</code><span>скачать и установить из официального репозитория</span></div>
+                <div class="cmd"><code>/sh modules remove &lt;имя&gt;</code><span>удалить модуль вместе с папкой</span></div>
+                <div class="cmd"><code>/sh modules on &lt;имя&gt;</code><span>включить (поднимет и зависимости)</span></div>
+                <div class="cmd"><code>/sh modules off &lt;имя&gt;</code><span>выключить (зависимые — с предупреждением)</span></div>
+                <div class="cmd"><code>/sh modules reload [имя]</code><span>перезагрузить без перезапуска игры</span></div>
+                <div class="cmd"><code>/sh modules info &lt;имя&gt;</code><span>детали, включая список зависимых</span></div>
+                <div class="cmd"><code>/sh modules update [имя]</code><span>обновить с GitHub</span></div>
+                <div class="cmd"><code>/sh modules checkupdates</code><span>показать модули с обновлениями</span></div>
+            </div>
+
+            <h3 style="margin:30px 0 14px;font-size:1.05rem;">Что доступно модулю</h3>
+            <div class="grid">
+                <div class="card">
+                    <h3><span class="ico">&#128205;</span> Глобальные API</h3>
+                    <p>Доступны всем модулям: <code>player</code>, <code>chat</code>, <code>client</code>,
+                        <code>settings</code>, <code>camera</code>, <code>math</code>, <code>cps</code>,
+                        <code>detector</code>, <code>textComponent</code>, ctjs-классы
+                        <code>Display</code>/<code>Text</code>/<code>Image</code>/<code>Scoreboard</code>/<code>Team</code>/<code>Renderer</code>/<code>Maps</code>.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="ico">&#128207;</span> Per-module API</h3>
+                    <p>Своё для каждого модуля: <code>events</code>, <code>hud</code>, <code>world</code>,
+                        <code>render</code>, <code>inventory</code>, <code>item</code>, <code>gui</code>,
+                        <code>keybind</code>, <code>command</code>, <code>config</code>, <code>storage</code>,
+                        <code>net</code>, <code>sound</code>, <code>particles</code>, <code>npc</code>.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="ico">&#128260;</span> Свои команды</h3>
+                    <p><code>command.register("имя", fn)</code> создаёт настоящую Brigadier-команду
+                        верхнего уровня. Снимается автоматически при выгрузке модуля.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="ico">&#9881;</span> Настройки с GUI</h3>
+                    <p><code>config.defineSchema</code> даёт модулю нативные виджеты MoulConfig:
+                        переключатели, ползунки, выпадающие списки, цвета и текстовые поля.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="ico">&#128218;</span> Библиотеки</h3>
+                    <p><code>"library": true</code> в metadata + <code>module.exports</code>. Зависимости
+                        через <code>requires</code> скачиваются автоматически и сортируются
+                        топологически при загрузке.</p>
+                </div>
+                <div class="card">
+                    <h3><span class="ico">&#9203;</span> Автоочистка</h3>
+                    <p>При выгрузке модуля снимаются триггеры, подписки, HUD, батчи, текстуры, шрифты,
+                        звуки, таймеры, NPC, команды и локальный HTTP-сервер.</p>
+                </div>
+            </div>
+
+            <p class="sub" style="margin-top:28px;margin-bottom:0;">Полный справочник API —
+                <a href="scripting-api.md" style="color:var(--accent-2);">scripting-api.md</a>,
+                сжатый референс — <a href="scripting-api-AI.md" style="color:var(--accent-2);">scripting-api-AI.md</a>.</p>
+        </section>
+
+        <!-- ================= УСТАНОВКА ================= -->
+        <section>
+            <div class="eyebrow">Установка</div>
+            <h2>Четыре шага</h2>
+            <p class="sub">Нужен Minecraft 26.2 и Java 25. Один загрузчик, один вариант мода.</p>
+
+            <div class="steps">
+                <div class="step">
+                    <b>Fabric Loader</b>
+                    <p>Установи для Minecraft 26.2 с <a href="https://fabricmc.net/use/installer/"
+                            style="color:var(--accent-2);">fabricmc.net</a>.</p>
+                </div>
+                <div class="step">
+                    <b>Fabric API и Fabric Language Kotlin</b>
+                    <p>Обязательны — без них мод не запустится. Mod Menu поддерживается, но не обязателен.</p>
+                </div>
+                <div class="step">
+                    <b>Скачай StarredHeltix 1.0.0</b>
+                    <p><a href="https://github.com/Starlevka/StarredHeltix/releases/latest"
+                            style="color:var(--accent-2);">GitHub Releases</a> — один
+                        <code>starredheltix-1.0.0.jar</code>.</p>
+                </div>
+                <div class="step">
+                    <b>Положи в папку mods и запусти игру</b>
+                    <p>Меню настроек — <code>/sh</code>. Ссылки на сообщество — иконками в строке
+                        заголовка прямо в меню настроек.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= СОДЕРЖАНИЕ ================= -->
+        <section>
+            <div class="eyebrow">Подробности</div>
+            <h2>Что внутри</h2>
+            <table class="tbl">
+                <tr>
+                    <th>Параметр</th>
+                    <th>Значение</th>
+                </tr>
+                <tr>
+                    <td>Версия</td>
+                    <td><code>1.0.0</code></td>
+                </tr>
+                <tr>
+                    <td>Minecraft</td>
+                    <td><code>26.2</code></td>
+                </tr>
+                <tr>
+                    <td>Загрузчик</td>
+                    <td>Fabric (клиентский мод, серверная часть не нужна)</td>
+                </tr>
+                <tr>
+                    <td>Java</td>
+                    <td><code>25</code></td>
+                </tr>
+                <tr>
+                    <td>Fabric Loader / API</td>
+                    <td><code>0.19.3</code> / <code>0.154.2+26.2</code></td>
+                </tr>
+                <tr>
+                    <td>Категорий настроек</td>
+                    <td>16</td>
+                </tr>
+                <tr>
+                    <td>Детекторов состояния Heltix</td>
+                    <td>19</td>
+                </tr>
+                <tr>
+                    <td>Солверов</td>
+                    <td>8 (5 данжей + 3 эксперимента)</td>
+                </tr>
+                <tr>
+                    <td>Миксинов</td>
+                    <td>49 клиентских + 10 accessors</td>
+                </tr>
+                <tr>
+                    <td>Движок скриптинга</td>
+                    <td>Mozilla Rhino <code>1.9.1</code>, лимит 10000 инструкций / 3000 мс</td>
+                </tr>
+                <tr>
+                    <td>Маппинги</td>
+                    <td>Официальные Mojang, без Parchment</td>
+                </tr>
+                <tr>
+                    <td>Лицензия</td>
+                    <td>LGPL-3.0-only</td>
+                </tr>
+            </table>
+        </section>
+
+        <footer>
+            <p>Сделано для комьюнити <a href="https://heltix.net">Heltix</a></p>
+            <p class="lic">LGPL-3.0-only · Вдохновлено SkyHanni, Firmament, Skysoft, NoFrills,
+                OdinFabric, SkyCubed и heltix-mod</p>
         </footer>
+
     </div>
 
     <script>
-        const canvas = document.getElementById('particles-js');
-        const ctx = canvas.getContext('2d');
+        (function () {
+            const c = document.getElementById('bg-canvas');
+            const x = c.getContext('2d');
+            let w, h, dots = [];
+            const N = 70;
 
-        let width, height;
-        let particles = [];
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-
-        class Particle {
-            constructor() {
-                this.reset();
+            function size() {
+                w = c.width = window.innerWidth;
+                h = c.height = window.innerHeight;
+                dots = Array.from({ length: N }, () => ({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    r: Math.random() * 1.6 + .6,
+                    vx: (Math.random() - .5) * .22,
+                    vy: (Math.random() - .5) * .22,
+                    hue: 230 + Math.random() * 90
+                }));
             }
 
-            reset() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.size = Math.random() * 2 + 0.5;
-                this.speedX = (Math.random() - 0.5) * 0.5;
-                this.speedY = Math.random() * 0.3 + 0.1;
-                this.opacity = Math.random() * 0.5 + 0.2;
-                this.hue = Math.random() * 60 + 220;
-            }
-
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-
-                if (this.y > height) {
-                    this.y = 0;
-                    this.x = Math.random() * width;
+            function tick() {
+                x.clearRect(0, 0, w, h);
+                for (const d of dots) {
+                    d.x += d.vx;
+                    d.y += d.vy;
+                    if (d.x < 0 || d.x > w) d.vx *= -1;
+                    if (d.y < 0 || d.y > h) d.vy *= -1;
+                    x.beginPath();
+                    x.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+                    x.fillStyle = 'hsla(' + d.hue + ', 85%, 72%, .55)';
+                    x.fill();
                 }
-                if (this.x > width) this.x = 0;
-                if (this.x < 0) this.x = width;
+                requestAnimationFrame(tick);
             }
 
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = `hsla(${this.hue}, 80%, 70%, ${this.opacity})`;
-                ctx.fill();
-            }
-        }
-
-        function init() {
-            resize();
-            particles = [];
-            const count = Math.min(150, Math.floor((width * height) / 10000));
-            for (let i = 0; i < count; i++) {
-                particles.push(new Particle());
-            }
-        }
-
-        function connectParticles() {
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < 120) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(192, 132, 252, ${0.15 * (1 - dist / 120)})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.stroke();
-                    }
-                }
-            }
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-
-            connectParticles();
-            requestAnimationFrame(animate);
-        }
-
-        window.addEventListener('resize', init);
-        init();
-        animate();
-
-        document.querySelectorAll('.feature-card').forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                card.style.transform = `translateY(-8px) scale(1.02) rotateX(${Math.random() * 2 - 1}deg)`;
-            });
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = '';
-            });
-        });
+            addEventListener('resize', size);
+            size();
+            tick();
+        })();
     </script>
+
 </body>
+
 </html>

@@ -11,7 +11,7 @@ object DeathCounter {
     private val mc = Minecraft.getInstance()
     private val config get() = StarredHeltix.feature.dungeons.deathCounter
     private var lastTriggered = 0L
-    private const val COOLDOWN = 5000L // 5 seconds cooldown to prevent spam
+    private const val COOLDOWN = 5000L // Кулдаун 5 секунд против спама
 
     private var lastTitle = ""
     private var lastActionBar = ""
@@ -63,7 +63,7 @@ object DeathCounter {
         val title = set.starlev.utils.detectors.ScoreboardDetector.getScoreboardTitle()
         val isDungeon = title.contains("КАТАКОМБЫ", ignoreCase = true) || 
                         title.contains("CATACOMBS", ignoreCase = true) ||
-                        (mc.level?.dimension()?.location()?.toString()?.startsWith("minecraft:dungeon_") ?: false)
+                        (mc.level?.dimension()?.identifier()?.toString()?.startsWith("minecraft:dungeon_") ?: false)
         
         if (!isDungeon) return
         
@@ -77,6 +77,6 @@ object DeathCounter {
     private fun sendDeathMessage() {
         val player = mc.player ?: return
         val message = config.deathMessage
-        player.connection?.sendCommand("pc $message")
+        player.connection.sendCommand("pc $message")
     }
 }

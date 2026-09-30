@@ -14,21 +14,21 @@ base.archivesName.set(archives_base_name)
 
 repositories {
     mavenCentral()
-    maven("https://maven.parchmentmc.org")
     maven("https://maven.notenoughupdates.org/releases")
     maven("https://maven.terraformersmc.com/releases/")
 }
 
 dependencies {
     minecraft(libs.minecraft)
-    mappings(loom.layered {
-        officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-1.21.10:2025.10.12@zip")
-    })
-    modImplementation(libs.bundles.fabric)
-    modImplementation(include("org.notenoughupdates.moulconfig:modern-1.21.10:4.2.0-beta")!!)
-    modApi(libs.modMenu)
-    implementation(include("com.github.ben-manes.caffeine:caffeine:3.1.8")!!)
+    implementation(libs.bundles.fabric)
+    implementation(include("org.notenoughupdates.moulconfig:modern-26.2:4.7.2")!!)
+    compileOnly(libs.modMenu)
+    implementation(include(libs.caffeine.get())!!)
+    implementation(include(libs.rhino.get())!!)
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
 
 loom {
@@ -37,29 +37,24 @@ loom {
 
 tasks.processResources {
     inputs.property("version", version)
-    inputs.property("aiSecret", libs.versions.aiSecret.get())
-    
+
     filesMatching("fabric.mod.json") {
         expand("version" to version)
-    }
-    
-    filesMatching("assets/starredheltix/internal/data.bin") {
-        expand("aiSecret" to libs.versions.aiSecret.get())
     }
 }
 
 tasks.withType<JavaCompile> {
-    options.release = 21
+    options.release = 25
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
 }
 
 java {
     withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 tasks.jar {

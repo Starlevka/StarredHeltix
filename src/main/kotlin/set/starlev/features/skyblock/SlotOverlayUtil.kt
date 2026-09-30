@@ -1,40 +1,37 @@
 package set.starlev.features.skyblock
 
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.core.component.DataComponents
+import net.minecraft.resources.Identifier
 import net.minecraft.world.item.ItemStack
 import set.starlev.StarredHeltix
 
 /**
  * Утилита для отрисовки подсветки слотов по цвету редкости предмета.
- * Портировано из HELTIX.
- *
- * — Квадратная форма: [drawSlotSquare]
- * — Круглая форма: [drawSlotCircle]
+ * 3 режима:
+ *  1) Простой квадрат (без текстуры) — заливка через fill
+ *  2) Квадрат с обводкой — бекграунд цветом + квадратная рамка через fill
+ *  3) Круг — спрайт кружка через blitSprite (как в Skyblocker, NativeImage-текстура)
  */
 object SlotOverlayUtil {
 
+    private val CIRCLE_SPRITE = Identifier.fromNamespaceAndPath("starredheltix", "item_background_circular")
 
     fun isEnabled(): Boolean {
         val config = StarredHeltix.feature.skyblock.slotOverlay
         return config.enabled
     }
 
-    /** Возвращает режим формы: "Квадратная" или "Круглая". */
-    private fun getShape(): String {
-        return StarredHeltix.feature.skyblock.slotOverlay.shape
+    private fun getStyle(): set.starlev.config.categories.SkyblockConfig.SlotOverlayConfig.SlotStyle {
+        return StarredHeltix.feature.skyblock.slotOverlay.getEffectiveStyle()
     }
 
     /** Возвращает прозрачность (0-255). */
     private fun getAlpha(): Int {
-        return StarredHeltix.feature.skyblock.slotOverlay.alpha.toInt()
+        return StarredHeltix.feature.skyblock.slotOverlay.alpha
             .coerceIn(0, 255)
-    }
-
-    /** Возвращает, рисовать ли в хотбаре. */
-    private fun showInHotbar(): Boolean {
-        return StarredHeltix.feature.skyblock.slotOverlay.showInHotbar
     }
 
     /**
@@ -57,50 +54,75 @@ object SlotOverlayUtil {
     }
 
     /**
-     * Рисует квадратную подсветку под предметом.
-     * Аналог HELTIX Utils.drawBackground.
+     * 1) Простой квадрат (без текстуры) — обычная заливка.
      */
-    fun drawSlotSquare(graphics: GuiGraphics, x: Int, y: Int, size: Int, rgb: Int) {
+    fun drawSlotSimple(graphics: GuiGraphicsExtractor, x: Int, y: Int, size: Int, rgb: Int) {
         val alpha = getAlpha()
         if (alpha <= 0) return
-        graphics.fill(x, y, x + size, y + size, (alpha shl 24) or (rgb and 0xFFFFFF))
+        val color = (alpha shl 24) or (rgb and 0xFFFFFF)
+        graphics.fill(x, y, x + size, y + size, color)
     }
 
     /**
-     * Рисует круглую подсветку под предметом.
-     * Использует построчный рендеринг круга (сканирование по Y).
-     * Улучшенная версия: полный охват -radius..radius и ровные края.
+     * 2) Квадрат с обводкой — бекграунд цветом редкости + квадратная рамка
+     * поверх (чистый fill-рендер, без спрайтов).
      */
-    fun drawSlotCircle(graphics: GuiGraphics, x: Int, y: Int, size: Int, rgb: Int) {
+    fun drawSlotSquare(graphics: GuiGraphicsExtractor, x: Int, y: Int, size: Int, rgb: Int) {
         val alpha = getAlpha()
         if (alpha <= 0) return
-        val centerX = x + size / 2
-        val centerY = y + size / 2
-        val radius = size / 2
-        val color = (alpha shl 24) or (rgb and 0xFFFFFF)
+        // Бекграунд
+        val bgColor = (alpha shl 24) or (rgb and 0xFFFFFF)
+        graphics.fill(x, y, x + size, y + size, bgColor)
+        // Квадратная обводка более непрозрачным цветом для акцента
+        val borderAlpha = (alpha + 80).coerceIn(0, 255)
+        val borderColor = (borderAlpha shl 24) or (rgb and 0xFFFFFF)
+        graphics.fill(x, y, x + size, y + 1, borderColor)
+        graphics.fill(x, y + size - 1, x + size, y + size, borderColor)
+        graphics.fill(x, y, x + 1, y + size, borderColor)
+        graphics.fill(x + size - 1, y, x + size, y + size, borderColor)
+    }
 
-        // Строчный рендеринг круга (алгоритм заполнения окружности)
-        for (dy in -radius..radius) {
-            val dx = Math.sqrt(((radius * radius - dy * dy).toDouble()))
-            val lineHalf = dx.toInt()
-            if (lineHalf < 0) continue
-            graphics.fill(centerX - lineHalf, centerY + dy, centerX + lineHalf + 1, centerY + dy + 1, color)
-        }
+    /**
+     * 3) Круг — спрайт кружка через blitSprite (как в Skyblocker по текстуре, загруженной через NativeImage).
+     */
+    fun drawSlotCircle(graphics: GuiGraphicsExtractor, x: Int, y: Int, size: Int, rgb: Int) {
+        val alpha = getAlpha()
+        if (alpha <= 0) return
+        graphics.blitSprite(
+            RenderPipelines.GUI_TEXTURED, CIRCLE_SPRITE,
+            x, y, size, size,
+            (alpha shl 24) or (rgb and 0xFFFFFF)
+        )
     }
 
     /**
      * Основная точка входа: рисует подсветку для предмета.
+     * Рисуется везде, включая хотбар (отдельной опции больше нет).
      */
-    fun drawOverlay(graphics: GuiGraphics, x: Int, y: Int, stack: ItemStack, isHotbar: Boolean = false) {
+    fun drawOverlay(graphics: GuiGraphicsExtractor, x: Int, y: Int, stack: ItemStack) {
         if (!isEnabled()) return
-        if (isHotbar && !showInHotbar()) return
 
         val rgb = getRgbColor(stack) ?: return
-        val shape = getShape()
-        if (shape == "Круглая") {
-            drawSlotCircle(graphics, x, y, 16, rgb)
-        } else {
-            drawSlotSquare(graphics, x, y, 16, rgb)
+        when (getStyle()) {
+            set.starlev.config.categories.SkyblockConfig.SlotOverlayConfig.SlotStyle.SIMPLE_SQUARE -> drawSlotSimple(graphics, x, y, 16, rgb)
+            set.starlev.config.categories.SkyblockConfig.SlotOverlayConfig.SlotStyle.BORDERED_SQUARE -> drawSlotSquare(graphics, x, y, 16, rgb)
+            set.starlev.config.categories.SkyblockConfig.SlotOverlayConfig.SlotStyle.CIRCLE -> drawSlotCircle(graphics, x, y, 16, rgb)
+        }
+    }
+
+    /**
+     * Фон слота в предпросмотре хранилищ (StoragePreview) — наследует стиль из «Слот-подсветки».
+     * Если подсветка выключена — старое поведение: полупрозрачный квадрат (alpha 128).
+     */
+    fun drawPreviewBackground(graphics: GuiGraphicsExtractor, x: Int, y: Int, size: Int, rgb: Int) {
+        if (!isEnabled()) {
+            graphics.fill(x, y, x + size, y + size, (128 shl 24) or (rgb and 0xFFFFFF))
+            return
+        }
+        when (getStyle()) {
+            set.starlev.config.categories.SkyblockConfig.SlotOverlayConfig.SlotStyle.SIMPLE_SQUARE -> drawSlotSimple(graphics, x, y, size, rgb)
+            set.starlev.config.categories.SkyblockConfig.SlotOverlayConfig.SlotStyle.BORDERED_SQUARE -> drawSlotSquare(graphics, x, y, size, rgb)
+            set.starlev.config.categories.SkyblockConfig.SlotOverlayConfig.SlotStyle.CIRCLE -> drawSlotCircle(graphics, x, y, size, rgb)
         }
     }
 }

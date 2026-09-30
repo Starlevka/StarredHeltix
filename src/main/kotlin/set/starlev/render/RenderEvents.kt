@@ -11,8 +11,13 @@ class RenderEvents private constructor() {
 
         @JvmStatic
         fun fireWorldRender(context: RenderContext) {
+            RenderContext.current = context
             for (callback in callbacks) {
-                callback(context)
+                try {
+                    callback(context)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

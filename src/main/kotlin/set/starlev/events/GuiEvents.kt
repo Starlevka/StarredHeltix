@@ -7,9 +7,10 @@ class GuiEvents private constructor() {
     companion object {
         private val openCallbacks = mutableListOf<(AbstractContainerScreen<*>) -> Unit>()
         private val closeCallbacks = mutableListOf<(AbstractContainerScreen<*>) -> Unit>()
-        private val renderCallbacks = mutableListOf<(net.minecraft.client.gui.GuiGraphics) -> Unit>()
-        private val foregroundCallbacks = mutableListOf<(net.minecraft.client.gui.GuiGraphics, Int, Int, AbstractContainerScreen<*>) -> Unit>()
+        private val renderCallbacks = mutableListOf<(net.minecraft.client.gui.GuiGraphicsExtractor) -> Unit>()
+        private val foregroundCallbacks = mutableListOf<(net.minecraft.client.gui.GuiGraphicsExtractor, Int, Int, AbstractContainerScreen<*>) -> Unit>()
         private val clickCallbacks = mutableListOf<(Double, Double, Int, AbstractContainerScreen<*>) -> Boolean>()
+        private val keyCallbacks = mutableListOf<(net.minecraft.client.input.KeyEvent, AbstractContainerScreen<*>) -> Boolean>()
 
         @JvmStatic
         fun registerOpen(callback: (AbstractContainerScreen<*>) -> Unit) {
@@ -17,12 +18,12 @@ class GuiEvents private constructor() {
         }
 
         @JvmStatic
-        fun registerRender(callback: (net.minecraft.client.gui.GuiGraphics) -> Unit) {
+        fun registerRender(callback: (net.minecraft.client.gui.GuiGraphicsExtractor) -> Unit) {
             renderCallbacks.add(callback)
         }
 
         @JvmStatic
-        fun registerForeground(callback: (net.minecraft.client.gui.GuiGraphics, Int, Int, AbstractContainerScreen<*>) -> Unit) {
+        fun registerForeground(callback: (net.minecraft.client.gui.GuiGraphicsExtractor, Int, Int, AbstractContainerScreen<*>) -> Unit) {
             foregroundCallbacks.add(callback)
         }
 
@@ -31,18 +32,30 @@ class GuiEvents private constructor() {
             clickCallbacks.add(callback)
         }
 
+        /** Хоткеи внутри контейнерных экранов (из AbstractContainerScreenMixin.keyPressed). */
+        @JvmStatic
+        fun registerKey(callback: (net.minecraft.client.input.KeyEvent, AbstractContainerScreen<*>) -> Boolean) {
+            keyCallbacks.add(callback)
+        }
+
+        @JvmStatic
+        fun fireKey(event: net.minecraft.client.input.KeyEvent, screen: AbstractContainerScreen<*>): Boolean {
+            return keyCallbacks.any { it(event, screen) }
+        }
+
         @JvmStatic
         fun registerClose(callback: (AbstractContainerScreen<*>) -> Unit) {
             closeCallbacks.add(callback)
         }
 
         @JvmStatic
-        fun fireRender(graphics: net.minecraft.client.gui.GuiGraphics) {
+        fun fireRender(graphics: net.minecraft.client.gui.GuiGraphicsExtractor) {
             renderCallbacks.forEach { it(graphics) }
+            set.starlev.events.StarredEvents.guiRender.post(set.starlev.events.GuiRenderEvent(graphics))
         }
 
         @JvmStatic
-        fun fireForeground(graphics: net.minecraft.client.gui.GuiGraphics, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
+        fun fireForeground(graphics: net.minecraft.client.gui.GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
             foregroundCallbacks.forEach { it(graphics, mouseX, mouseY, screen) }
         }
 
@@ -54,11 +67,13 @@ class GuiEvents private constructor() {
         @JvmStatic
         fun fireOpen(screen: AbstractContainerScreen<*>) {
             openCallbacks.forEach { it(screen) }
+            set.starlev.events.StarredEvents.guiOpen.post(set.starlev.events.GuiOpenEvent(screen))
         }
 
         @JvmStatic
         fun fireClose(screen: AbstractContainerScreen<*>) {
             closeCallbacks.forEach { it(screen) }
+            set.starlev.events.StarredEvents.guiClose.post(set.starlev.events.GuiCloseEvent(screen))
         }
     }
 }

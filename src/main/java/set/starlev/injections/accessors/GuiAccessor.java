@@ -1,11 +1,11 @@
 package set.starlev.injections.accessors;
 
-import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(Gui.class)
+@Mixin(Hud.class)
 public interface GuiAccessor {
     @Accessor("overlayMessageString")
     net.minecraft.network.chat.Component getOverlayMessageString();
@@ -25,3 +25,4 @@ public interface GuiAccessor {
     @Accessor("titleTime")
     int getTitleTime();
 }
+

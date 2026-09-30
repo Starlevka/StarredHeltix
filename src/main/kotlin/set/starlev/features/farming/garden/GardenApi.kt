@@ -42,7 +42,7 @@ object GardenApi {
                 )
                 theoretical.firstOrNull { name.contains(it.displayName.lowercase()) }
                     ?: theoretical.firstOrNull { name.contains(it.toolPrefix.lowercase()) }
-                    ?: CropType.WHEAT // fallback
+                    ?: CropType.WHEAT // запасной вариант
             }
             else -> null
         }

@@ -12,34 +12,27 @@ import set.starlev.StarredHeltix
 class ChatConfig {
 
     @Expose
-    @ConfigOption(name = "Функции чата", desc = "Общие настройки для взаимодействия с чатом.")
-    @Accordion
-    var general = GeneralChatConfig()
-
-    @Expose
-    @ConfigOption(name = "Кастомные бинды", desc = "Настройки пользовательских горячих клавиш (/bind).")
+    @ConfigOption(name = "Кастомные бинды", desc = "Настройки пользовательских горячих клавиш (/bind)")
     @Accordion
     var binds = BindsConfig()
 
     @Expose
-    @ConfigOption(name = "Команды пати", desc = "Настройки автоматизации команд для группы (Party).")
+    @ConfigOption(name = "Команды пати", desc = "Настройки автоматизации команд для группы (Party)")
     @Accordion
     var party = PartyCommandsConfig()
 
-    class GeneralChatConfig {
-        @Accordion
-        @Expose
-        @ConfigOption(name = "Фильтр сообщений", desc = "Скрывает сообщения, содержащие определенные слова.")
-        var messageFilter = MessageFilterConfig()
-    }
+    @Expose
+    @ConfigOption(name = "Фильтр сообщений", desc = "Скрывает сообщения, содержащие определенные слова")
+    @Accordion
+    var messageFilter = MessageFilterConfig()
 
     class BindsConfig {
         @Expose
-        @ConfigOption(name = "Включить бинды", desc = "Включает поддержку пользовательских горячих клавиш (/bind).")
+        @ConfigOption(name = "Бинды", desc = "Включает поддержку пользовательских горячих клавиш (/bind)")
         @ConfigEditorBoolean
         var enabled = true
 
-        @ConfigOption(name = "Открыть меню биндов", desc = "Настроить пользовательские клавиши через удобное меню.")
+        @ConfigOption(name = "Меню биндов", desc = "Настроить пользовательские клавиши через удобное меню")
         @ConfigEditorButton(buttonText = "Открыть")
         val openBindsMenu = Runnable {
             set.starlev.StarredHeltix.screenToOpen = set.starlev.render.BindsGui(null)
@@ -55,20 +48,20 @@ class ChatConfig {
     class PartyConfig {
         @Accordion
         @Expose
-        @ConfigOption(name = "Команды в пати и ЛС", desc = "Позволяет другим игрокам управлять вашей группой через команды.")
+        @ConfigOption(name = "Команды в пати и ЛС", desc = "Позволяет другим игрокам управлять вашей группой через команды")
         var partyCommands = PartyCommandsConfig()
     }
 
     class MessageFilterConfig {
         @Expose
-        @ConfigOption(name = "Включить", desc = "Включает фильтрацию сообщений. /sh filter")
+        @ConfigOption(name = "Включить?", desc = "Включает фильтрацию сообщений. /sh filter")
         @ConfigEditorBoolean
         var enabled = false
 
-        @ConfigOption(name = "Открыть меню фильтров", desc = "Настроить слова для фильтрации через удобное меню.")
+        @ConfigOption(name = "Открыть меню фильтров", desc = "Настроить слова для фильтрации через удобное меню")
         @ConfigEditorButton(buttonText = "Открыть")
         val openFilterMenu = Runnable {
-            net.minecraft.client.Minecraft.getInstance().setScreen(set.starlev.render.FilterGui(null))
+            net.minecraft.client.Minecraft.getInstance().setScreenAndShow(set.starlev.render.FilterGui(null))
         }
 
         @Expose
@@ -77,57 +70,62 @@ class ChatConfig {
 
     class PartyCommandsConfig {
         @Expose
-        @ConfigOption(name = "Включить команды", desc = "Разрешает выполнение команд из чата.")
+        @ConfigOption(name = "Пати команды", desc = "Разрешает выполнение команд из чата")
         @ConfigEditorBoolean
         var enabled = true
 
         @Expose
-        @ConfigOption(name = "Конвертировать ! команды", desc = "Заменяет '!' на '/' для команд (например, !p -> /p).")
+        @ConfigOption(name = "Звук пати/ЛС", desc = "Проигрывать звук при новом сообщении из пати или ЛС")
+        @ConfigEditorBoolean
+        var messageSound = true
+
+        @Expose
+        @ConfigOption(name = "Конвертировать ! команды", desc = "Заменяет '!' на '/' для команд (например, !p -> /p)")
         @ConfigEditorBoolean
         var convertCommands = false
 
         @Expose
-        @ConfigOption(name = "!promote", desc = "Разрешает команду повышения игрока.")
+        @ConfigOption(name = "!promote", desc = "Разрешает команду повышения игрока")
         @ConfigEditorBoolean
         var promote = true
 
         @Expose
-        @ConfigOption(name = "!kick", desc = "Разрешает команду исключения игрока.")
+        @ConfigOption(name = "!kick", desc = "Разрешает команду исключения игрока")
         @ConfigEditorBoolean
         var kick = true
 
         @Expose
-        @ConfigOption(name = "!invite", desc = "Разрешает команду приглашения игрока.")
+        @ConfigOption(name = "!invite", desc = "Разрешает команду приглашения игрока")
         @ConfigEditorBoolean
         var invite = true
 
         @Expose
-        @ConfigOption(name = "!ping", desc = "Разрешает команду проверки пинга.")
+        @ConfigOption(name = "!ping", desc = "Разрешает команду проверки пинга")
         @ConfigEditorBoolean
         var ping = true
 
         @Expose
-        @ConfigOption(name = "!fps", desc = "Разрешает команду проверки FPS.")
+        @ConfigOption(name = "!fps", desc = "Разрешает команду проверки FPS")
         @ConfigEditorBoolean
         var fps = true
 
         @Expose
-        @ConfigOption(name = "!time", desc = "Разрешает команду проверки времени.")
+        @ConfigOption(name = "!time", desc = "Разрешает команду проверки времени")
         @ConfigEditorBoolean
         var time = true
 
         @Expose
-        @ConfigOption(name = "!coords", desc = "Разрешает команду отправки координат.")
+        @ConfigOption(name = "!coords", desc = "Разрешает команду отправки координат")
         @ConfigEditorBoolean
         var coords = true
 
         @Expose
-        @ConfigOption(name = "!rng", desc = "Разрешает команду генерации случайного числа.")
+        @ConfigOption(name = "!rng", desc = "Разрешает команду генерации случайного числа")
         @ConfigEditorBoolean
         var rng = true
 
         @Expose
-        @ConfigOption(name = "!dt", desc = "Разрешает команду напоминания о перерыве.")
+        @ConfigOption(name = "!dt", desc = "Разрешает команду напоминания о перерыве")
         @ConfigEditorBoolean
         var dt = true
 

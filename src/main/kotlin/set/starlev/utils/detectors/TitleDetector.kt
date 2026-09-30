@@ -6,18 +6,18 @@ import set.starlev.injections.accessors.GuiAccessor
 object TitleDetector {
 
     /**
-     * Returns the currently displayed title text.
-     * Returns an empty string if no title is visible.
+     * Возвращает текст title, отображаемого сейчас.
+     * Возвращает пустую строку, если title не виден.
      */
     fun getTitleText(): String {
         val client = Minecraft.getInstance()
-        val gui = client.gui ?: return ""
+        val gui = client.gui.hud
         
         return try {
             val accessor = gui as GuiAccessor
-            // Only return text if it's currently being displayed (time > 0)
-            // or if title is not null. Usually titleTime manages visibility/fading.
-            // But checking for null is safer.
+            // Возвращаем текст только если он сейчас отображается (время > 0)
+            // или title не null. Обычно видимость/затухание управляется titleTime,
+            // но проверка на null безопаснее.
             val title = accessor.getTitle()
             if (title != null && accessor.getTitleTime() > 0) {
                 title.string
@@ -30,17 +30,17 @@ object TitleDetector {
     }
 
     /**
-     * Returns the currently displayed subtitle text.
-     * Returns an empty string if no subtitle is visible.
+     * Возвращает текст subtitle, отображаемого сейчас.
+     * Возвращает пустую строку, если subtitle не виден.
      */
     fun getSubtitleText(): String {
         val client = Minecraft.getInstance()
-        val gui = client.gui ?: return ""
+        val gui = client.gui.hud
         
         return try {
             val accessor = gui as GuiAccessor
             val subtitle = accessor.getSubtitle()
-            // Subtitle usually accompanies title, checking titleTime is good practice
+            // Subtitle обычно идёт вместе с title — проверять titleTime — хорошая практика
             if (subtitle != null && accessor.getTitleTime() > 0) {
                 subtitle.string
             } else {
@@ -52,11 +52,11 @@ object TitleDetector {
     }
 
     /**
-     * Checks if a title or subtitle is currently being displayed.
+     * Проверяет, отображается ли сейчас title или subtitle.
      */
     fun isTitleVisible(): Boolean {
         val client = Minecraft.getInstance()
-        val gui = client.gui ?: return false
+        val gui = client.gui.hud
         
         return try {
             val accessor = gui as GuiAccessor

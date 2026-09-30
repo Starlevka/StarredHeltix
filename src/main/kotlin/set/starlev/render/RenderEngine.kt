@@ -1,8 +1,9 @@
 package set.starlev.render
 
 import com.mojang.blaze3d.vertex.PoseStack
-import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.DeltaTracker
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.renderer.SubmitNodeCollector
 
 object RenderEngine {
     private val worldRenderers = mutableListOf<WorldRenderer>()
@@ -15,20 +16,20 @@ object RenderEngine {
     fun registerHud(renderer: HudRenderer) = hudRenderers.add(renderer)
 
     @JvmStatic
-    fun renderWorld(stack: PoseStack, buffer: MultiBufferSource, delta: Float) {
-        worldRenderers.forEach { it.render(stack, buffer, delta) }
+    fun renderWorld(context: RenderContext) {
+        worldRenderers.forEach { it.render(context) }
     }
 
     @JvmStatic
-    fun renderHud(graphics: GuiGraphics, delta: Float) {
-        hudRenderers.forEach { it.render(graphics, delta) }
+    fun renderHud(graphics: GuiGraphicsExtractor, delta: DeltaTracker) {
+        hudRenderers.forEach { it.render(graphics, delta.getGameTimeDeltaPartialTick(false)) }
     }
 
     interface WorldRenderer {
-        fun render(stack: PoseStack, buffer: MultiBufferSource, delta: Float)
+        fun render(context: RenderContext)
     }
 
     interface HudRenderer {
-        fun render(graphics: GuiGraphics, delta: Float)
+        fun render(graphics: GuiGraphicsExtractor, delta: Float)
     }
 }

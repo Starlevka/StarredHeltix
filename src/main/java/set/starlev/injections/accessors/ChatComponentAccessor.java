@@ -1,7 +1,7 @@
 package set.starlev.injections.accessors;
 
-import net.minecraft.client.GuiMessage;
 import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.client.multiplayer.chat.GuiMessage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
@@ -16,12 +16,7 @@ public interface ChatComponentAccessor {
     @Accessor("trimmedMessages")
     List<GuiMessage.Line> getTrimmedMessages();
 
-    @Accessor("chatScrollbarPos")
-    int getScroll();
-
-    @Invoker("screenToChatX")
-    double invokeScreenToChatX(double x);
-
-    @Invoker("screenToChatY")
-    double invokeScreenToChatY(double y);
+    @Invoker("refreshTrimmedMessages")
+    void shRefreshTrimmedMessages();
 }
+

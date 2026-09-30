@@ -5,94 +5,97 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.minecraft.client.gui.screens.Screen
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import set.starlev.render.RenderEngine
 import set.starlev.config.ConfigManager
 import set.starlev.config.Features
-import set.starlev.features.combat.dungeons.solvers.ThreeWeirdos
-import set.starlev.features.misc.MouseLock
-import set.starlev.features.misc.WelcomeMessage
-
-import net.minecraft.client.renderer.entity.EntityRenderers
-import net.minecraft.world.entity.monster.Monster
-import set.starlev.registry.EntityRegistry
-import set.starlev.render.MegaChestRenderer
 
 class StarredHeltix : ClientModInitializer {
     override fun onInitializeClient() {
-        LOGGER.info("Инициализация ЛлЛлЛлЛлЛл StarredHeltix...")
-        
-        EntityRegistry.init()
-        EntityRenderers.register(EntityRegistry.MEGA_CHEST_MAGMA, ::MegaChestRenderer)
-
-        // Регистрация атрибутов для кастомных сущностей (необходимо для работы ИИ и предотвращения крашей)
-        net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricDefaultAttributeRegistry.register(EntityRegistry.MEGA_CHEST_MAGMA, Monster.createMonsterAttributes())
+        LOGGER.info("Инициализация StarredHeltix v$modVersion...")
 
         configManager = ConfigManager
         configManager.firstLoad()
         set.starlev.secret.config.SecretMenuManager.load(forceSave = false)
 
-        ModSounds.register()
-
         set.starlev.commands.ConfigCommand.register()
         set.starlev.events.KeyBindHandler.init()
+        set.starlev.events.WorldChangeHandler.init()
         set.starlev.features.combat.EntityHighlight.init()
+        set.starlev.features.combat.ClickHighlight.init()
+        set.starlev.features.combat.BonemerangRange.init()
+        set.starlev.features.mining.EndHighlight.init()
         set.starlev.utils.detectors.SkillXpDetector.init()
         set.starlev.features.chat.PartyCommands.init()
-        set.starlev.features.combat.dungeons.DeathCounter.init()
         set.starlev.features.chat.CustomBindManager.init()
-        set.starlev.features.misc.MouseLock.init()
+        set.starlev.features.farming.MouseLock.init()
         set.starlev.features.combat.slayer.SlayerHud.init()
-        WelcomeMessage.init()
+        set.starlev.features.skyblock.UpdateOnJoin.init()
         set.starlev.features.visual.GhostFrameFeature.init()
-        // set.starlev.features.visual.GhostNPCHandler.init() - Удалено из меню
-        set.starlev.features.visual.MegaChestNPCHandler.init()
-        set.starlev.features.visual.Fullbright.init()
-        set.starlev.features.misc.InventoryHistoryLog.init()
-        set.starlev.features.misc.Waypoints.init()
+        set.starlev.render.ScriptNPCManager.init()
+        set.starlev.features.skyblock.InventoryHistoryLog.init()
+        set.starlev.features.skyblock.Waypoints.init()
         set.starlev.secret.features.SecretFunFeatures.init()
         set.starlev.features.chat.mod.MacroCheck.init()
+        set.starlev.features.chat.mod.StaffGreeting.init()
         set.starlev.features.mining.DwarvenWaypoints.init()
         set.starlev.features.mining.AutoCommissions.init()
         set.starlev.utils.detectors.ContainerDetector.init()
-        set.starlev.utils.detectors.ActionBarDetector
         set.starlev.utils.detectors.MuseumDetector.init()
         set.starlev.features.skyblock.Museum.init()
         set.starlev.features.mining.PickaxeCooldownHud.init()
         set.starlev.features.mining.SpeedBoostCooldownHud.init()
         set.starlev.features.farming.RancherSpeedHud.init()
-        set.starlev.features.inventory.InventoryButtonsManager.init()
-        set.starlev.features.inventory.EquipmentOverlay.init()
+        set.starlev.features.farming.garden.GardenPlotsOverlay.init()
+        set.starlev.features.farming.garden.PestHighlight.init()
+        set.starlev.features.fishing.GlowingMushroomHighlight.init()
+        set.starlev.features.skyblock.InventoryButtonsManager.init()
+        set.starlev.features.skyblock.EquipmentOverlay.init()
+        // Солверы стола экспериментов: подписки на открытие/закрытие контейнера,
+        // обновления слотов (EventBus), рендер подсветок и перехват кликов.
+        // init() обязателен — без него подсистема не регистрирует ни одного слушателя.
+        set.starlev.events.ContainerEventWire.init()
+        set.starlev.features.enchanting.ExperimentSolverManager.init()
 
-        // Инициализировать визуальную музыку по локациям
-        set.starlev.features.music.LocationMusicEngine.init()
-
-        // Инициализировать event listener для TreeCapCooldown (регистрирует TreeCapBlockBreakMixin с проверкой логов)
-        set.starlev.features.foraging.TreeCapCooldown
-        
         // Инициализировать HUD систему
-        set.starlev.hud.HudManager.init()
-        
-        // Инициализировать солверы подземелий
+        set.starlev.render.HudManager.init()
+
+        // Инициализировать данжи и солверы
         set.starlev.features.combat.dungeons.BloodRoomTimer.init()
+        set.starlev.features.combat.dungeons.DungeonMapHud.init()
         set.starlev.features.combat.dungeons.solvers.ThreeWeirdos.init()
         set.starlev.features.combat.dungeons.solvers.ThreeWeirdosChest.init()
         set.starlev.features.combat.dungeons.solvers.CreeperBeams.init()
         set.starlev.features.combat.dungeons.solvers.TicTacToe.init()
+        set.starlev.features.combat.dungeons.solvers.Waterboard.init()
+        set.starlev.features.combat.dungeons.LeapOverlay.init()
         set.starlev.features.combat.dungeons.DeathCounter.init()
         set.starlev.features.combat.dungeons.ScoreCounter.init()
         set.starlev.features.combat.dungeons.Floor4.init()
+        set.starlev.features.combat.dungeons.GreenWalls.init()
         set.starlev.features.fishing.LegendaryFishingNotifier.init()
-        
-        // Инициализировать Meow Music Rune III (фановая функция)
-        set.starlev.secret.features.MeowMusicRune.init()
-        
-        // Инициализировать Повторяшкинс (фановая функция)
         set.starlev.secret.features.Povtorayshkins.init()
-        
-        // Регистрация сохранения конфига при выходе из игры
+        set.starlev.utils.DiscordRPC.init()
+
+        // Инициализация JS движка и загрузка модулей
+        set.starlev.scripting.SHScriptEngine.init()
+        set.starlev.scripting.ModuleLoader.loadAll()
+
+        // Регистрация сохранения при выходе из игры.
+        // Порядок важен: сначала JS-модули (сохраняют свой storage),
+        // затем геометрия HUD, затем глобальный конфиг.
         ClientLifecycleEvents.CLIENT_STOPPING.register { client ->
+            set.starlev.scripting.SHScriptEngine.shutdown()
+            set.starlev.utils.DiscordRPC.shutdown()
+            set.starlev.render.HudManager.saveAllLayouts()
             configManager.saveConfig("client-stopping")
-            set.starlev.hud.HudManager.saveAllLayouts()
+            configManager.cancelAutoSave()
+            // Прибиваем оставшиеся не-daemon Timer'ы (Watchdog 15с — Timer-1 / HttpClient)
+            try {
+                Thread.getAllStackTraces().keys.forEach { t ->
+                    if (t.name.startsWith("Timer-") && !t.isDaemon) {
+                        try { t.interrupt() } catch (_: Exception) {}
+                    }
+                }
+            } catch (_: Exception) {}
         }
 
         LOGGER.info("StarredHeltix инициализирован.")
@@ -105,6 +108,19 @@ class StarredHeltix : ClientModInitializer {
     companion object {
         val LOGGER: Logger = LoggerFactory.getLogger("StarredHeltix")
         lateinit var configManager: ConfigManager
+
+        /** Версия мода из Fabric метаданных (fallback — из gradle.properties). */
+        @JvmStatic
+        val modVersion: String by lazy {
+            try {
+                net.fabricmc.loader.api.FabricLoader.getInstance()
+                    .getModContainer("starredheltix")
+                    .map { it.metadata.version.friendlyString }
+                    .orElse("1.0.0")
+            } catch (e: Exception) {
+                "1.0.0"
+            }
+        }
 
         @JvmStatic
         val feature: Features get() = configManager.features

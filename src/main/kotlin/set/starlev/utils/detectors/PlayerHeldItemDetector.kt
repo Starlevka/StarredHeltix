@@ -7,28 +7,28 @@ import net.minecraft.world.item.ItemStack
 object PlayerHeldItemDetector {
 
     /**
-     * Returns the item stack in the player's main hand.
+     * Возвращает стак предмета из главной руки игрока.
      */
     fun getMainHandItem(): ItemStack {
         return Minecraft.getInstance().player?.getItemInHand(InteractionHand.MAIN_HAND) ?: ItemStack.EMPTY
     }
 
     /**
-     * Returns the item stack in the player's off hand.
+     * Возвращает стак предмета из второй руки игрока.
      */
     fun getOffHandItem(): ItemStack {
         return Minecraft.getInstance().player?.getItemInHand(InteractionHand.OFF_HAND) ?: ItemStack.EMPTY
     }
 
     /**
-     * Returns the display name of the item in the main hand.
+     * Возвращает отображаемое имя предмета в главной руке.
      */
     fun getMainHandItemName(): String {
         return getMainHandItem().hoverName.string
     }
 
     /**
-     * Returns the display name of the item in the off hand.
+     * Возвращает отображаемое имя предмета во второй руке.
      */
     fun getOffHandItemName(): String {
         return getOffHandItem().hoverName.string

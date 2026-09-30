@@ -1,0 +1,297 @@
+package set.starlev.render
+
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import set.starlev.StarredHeltix
+import set.starlev.features.skyblock.HudScoreboard
+import set.starlev.render.RenderEngine
+import set.starlev.registry.ItemRegistry
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+
+object HudManager {
+    private val elements = mutableMapOf<String, HudElement>()
+    private val renderers = mutableMapOf<String, (GuiGraphicsExtractor) -> Unit>()
+    private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
+    private val hudLayoutFile: Path = Paths.get(System.getProperty("user.dir"), "config", "starredheltix", "hud-layouts.json")
+    private var loadedLayouts: Map<String, HudLayoutData> = emptyMap()
+
+    var isEditMode = false
+
+    enum class HudCategory(val label: String) {
+        ALL("Все"),
+        SKYBLOCK("Скайблок"),
+        DUNGEON("Данж"),
+        FARMING("Ферма"),
+        MINING("Шахта"),
+        FISHING("Рыбалка"),
+        FORAGING("Лес"),
+        COMBAT("Бой"),
+        MISC("Другое");
+        override fun toString() = label
+    }
+
+    var editorFilter: HudCategory = HudCategory.ALL
+
+    fun getHudCategory(id: String): HudCategory = when (id) {
+        "Scoreboard", "SkillXpHud", "EnchantmentProgressHud", "MuseumHud", "PetOverlay", "InventoryHistoryLog", "NpcDialogueOverlay" -> HudCategory.SKYBLOCK
+        "BloodRoomTimer", "DungeonMapHud" -> HudCategory.DUNGEON
+        "RancherSpeedHud", "MouseLock" -> HudCategory.FARMING
+        "CommissionsHud", "PickaxeCooldownHud", "SpeedBoostCooldownHud" -> HudCategory.MINING
+        "FishingNotifier", "LegendaryFishingNotifier" -> HudCategory.FISHING
+        "TreeCapCooldown" -> HudCategory.FORAGING
+        "SlayerHud" -> HudCategory.COMBAT
+        "BonemerangHud" -> HudCategory.COMBAT
+        else -> HudCategory.MISC
+    }
+
+    fun init() {
+        registerElement(set.starlev.features.fishing.FishingNotifier)
+        registerElement(set.starlev.features.fishing.LegendaryFishingNotifier)
+        registerElement(set.starlev.features.foraging.TreeCapCooldown)
+        registerElement(set.starlev.features.mining.PickaxeCooldownHud)
+        registerElement(set.starlev.features.mining.SpeedBoostCooldownHud)
+        registerElement(set.starlev.features.mining.CommissionsHud)
+        registerElement(set.starlev.features.combat.slayer.SlayerHud)
+        registerElement(set.starlev.features.combat.BonemerangRange)
+        registerElement(set.starlev.features.skyblock.SkillXpHud)
+        registerElement(set.starlev.features.skyblock.EnchantmentProgressHud)
+        registerElement(set.starlev.features.skyblock.Museum)
+        registerElement(set.starlev.features.skyblock.PetOverlay)
+        registerElement(set.starlev.features.combat.dungeons.BloodRoomTimer)
+        registerElement(set.starlev.features.combat.dungeons.DungeonMapHud)
+        registerElement(set.starlev.features.skyblock.NpcDialogueOverlay)
+        registerElement(set.starlev.features.farming.MouseLock)
+        registerElement(set.starlev.features.skyblock.HudScoreboard)
+        registerElement(set.starlev.features.skyblock.InventoryHistoryLog)
+        registerElement(set.starlev.features.farming.RancherSpeedHud)
+        registerElement(set.starlev.features.visual.CpsHud)
+        registerElement(set.starlev.features.visual.FpsHud)
+        registerElement(set.starlev.features.visual.PingHud)
+        registerElement(set.starlev.features.visual.BpsHud)
+
+        loadAllLayouts()
+        HudScoreboard.CustomLinesLayoutStore.getAllLayouts()
+        HudScoreboard.ScoreboardLinesOrderStore.getOrder()
+
+        val hudRenderer: RenderEngine.HudRenderer = object : RenderEngine.HudRenderer {
+            override fun render(graphics: GuiGraphicsExtractor, delta: Float) {
+                renderAll(graphics)
+            }
+        }
+        RenderEngine.registerHud(hudRenderer)
+    }
+
+    fun registerElement(element: HudElement) {
+        elements[element.id] = element
+        getLayoutForId(element.id)?.let { layout ->
+            applyLayout(element, layout)
+        }
+    }
+
+    /** Снять HUD-элемент (например, при выгрузке JS-модуля). */
+    fun unregisterElement(element: HudElement) {
+        elements.remove(element.id)
+    }
+
+    fun getElement(id: String): HudElement? = elements[id]
+
+    fun renderAll(GuiGraphicsExtractor: GuiGraphicsExtractor) {
+        val mc = net.minecraft.client.Minecraft.getInstance()
+        val inWorld = mc.player != null && mc.level != null
+        val screen = mc.gui.screen()
+        val inInventory = screen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>
+        val inScoreboardEditor = screen is ScoreboardEditorScreen
+        val rancherEditorOpen = set.starlev.features.farming.RancherSpeedHud.isPresetsEditorScreen(screen)
+        val inRancherSignEdit = screen is net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen &&
+            StarredHeltix.feature.farming.rancherSpeed.enabled
+
+        // Кастомные GUI мода — скрываем весь HUD
+        val inCustomGui = screen is set.starlev.features.skyblock.InventoryButtonsGui ||
+            screen is set.starlev.render.FilterGui ||
+            screen is set.starlev.render.BindsGui ||
+            screen is set.starlev.render.WaypointsGui
+
+        // Tab list открыт — скрываем scoreboard
+        val tabListOpen = mc.options.keyPlayerList.isDown
+
+        for ((id, element) in elements) {
+            if (isEditMode && !isVisibleInEditor(id)) continue
+            element.isEditing = isEditMode
+
+            if (!isEditMode) {
+                if (!inWorld) continue
+                if (rancherEditorOpen) continue
+                if (inRancherSignEdit && id != "RancherSpeedHud") continue
+                if (inScoreboardEditor && id == HudScoreboard.id) continue
+
+                // Скрываем HUD когда открыт кастомный GUI мода
+                if (inCustomGui) continue
+
+                // Скрываем scoreboard при нажатом Tab
+                if (tabListOpen && id == "Scoreboard") continue
+
+                val isMuseum = id == "MuseumHud"
+                val isDialogue = id == "NpcDialogueOverlay"
+                if (inInventory) {
+                    // Диалог как в SkyCubed: рендерится и при открытом контейнере (прижат слева)
+                    if (!isMuseum && !isDialogue) continue
+                } else {
+                    if (isMuseum) continue
+                }
+            }
+
+            try {
+                element.renderWithGraphics(GuiGraphicsExtractor)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            if (isEditMode && element.getScaledWidth() > 0 && element.getScaledHeight() > 0) {
+                drawHudBorder(GuiGraphicsExtractor, element)
+            }
+        }
+    }
+
+    fun getEditorElements(): List<HudElement> {
+        return elements.values.filter { isElementEnabledInConfig(it.id) }
+    }
+
+    fun getFilteredEditorElements(): List<HudElement> {
+        val base = getEditorElements()
+        return if (editorFilter == HudCategory.ALL) base else base.filter { getHudCategory(it.id) == editorFilter }
+    }
+
+    fun isVisibleInEditor(id: String): Boolean {
+        if (!isElementEnabledInConfig(id)) return false
+        if (editorFilter == HudCategory.ALL) return true
+        return getHudCategory(id) == editorFilter
+    }
+
+    private fun isElementEnabledInConfig(id: String): Boolean {
+        val f = StarredHeltix.feature
+        return when (id) {
+            "Scoreboard" -> f.skyblock.scoreboard.enabled
+            "EnchantmentProgressHud" -> f.skyblock.skills.enabled && f.skyblock.skills.showEnchantmentProgress
+            "BloodRoomTimer" -> f.dungeons.bloodRoom.enabled
+            "MuseumHud" -> f.skyblock.museum.enabled
+            "RancherSpeedHud" -> f.farming.rancherSpeed.enabled
+            "SkillXpHud" -> f.skyblock.skills.enabled
+            "DungeonMapHud" -> f.dungeons.visuals.dungeonMap.enabled || f.dungeons.visuals.crypts.enabled || f.dungeons.visuals.dungeonScore.enabled
+            "NpcDialogueOverlay" -> f.skyblock.npcDialogue.enabled
+            "SpeedBoostCooldownHud" -> f.mining.abilities.abilityCooldown.speedBoostEnabled
+            "TreeCapCooldown" -> f.foraging.axes.treeCapCooldown.enabled
+            "FishingNotifier" -> f.fishing.notifications.fishingNotifier
+            "LegendaryFishingNotifier" -> f.fishing.notifications.legendaryFishingNotifier
+            "SlayerHud" -> f.slayer.slayerHud.enabled
+            "BonemerangHud" -> f.combat.bonemerang.enabled
+            "PetOverlay" -> f.skyblock.pet.enabled
+            "PickaxeCooldownHud" -> f.mining.abilities.abilityCooldown.pickaxeBoostEnabled
+            "InventoryHistoryLog" -> f.skyblock.inventoryHistory.enabled
+            "CommissionsHud" -> f.mining.commissions.enabled
+            else -> true
+        }
+    }
+
+    private fun drawHudBorder(graphics: GuiGraphicsExtractor, element: HudElement) {
+        val x = element.x
+        val y = element.y
+        val width = element.getScaledWidth()
+        val height = element.getScaledHeight()
+        val color = 0xFF00FF00.toInt()
+
+        graphics.fill(x, y, x + width, y + 1, color)
+        graphics.fill(x, y + height - 1, x + width, y + height, color)
+        graphics.fill(x, y, x + 1, y + height, color)
+        graphics.fill(x + width - 1, y, x + width, y + height, color)
+    }
+
+    fun moveElement(id: String, dx: Int, dy: Int) {
+        val element = elements[id] ?: return
+        element.x = (element.x + dx).coerceAtLeast(0)
+        element.y = (element.y + dy).coerceAtLeast(0)
+    }
+
+    fun saveAllLayouts() {
+        try {
+            val layoutData = elements.mapValues { (_, element) ->
+                HudLayoutData(element.x, element.y, element.scale, element.showBackground, element.customWidth, element.customHeight)
+            }
+            Files.createDirectories(hudLayoutFile.parent)
+            val jsonString = gson.toJson(layoutData)
+            Files.write(hudLayoutFile, jsonString.toByteArray())
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        HudScoreboard.CustomLinesLayoutStore.save()
+        HudScoreboard.ScoreboardLinesOrderStore.save()
+    }
+
+    private fun loadAllLayouts() {
+        try {
+            if (!Files.exists(hudLayoutFile)) return
+            val jsonString = Files.readString(hudLayoutFile)
+            val layoutDataType = object : com.google.gson.reflect.TypeToken<Map<String, HudLayoutData>>() {}.type
+            val layoutData: Map<String, HudLayoutData> = gson.fromJson(jsonString, layoutDataType)
+            loadedLayouts = layoutData
+
+            for ((id, layout) in layoutData) {
+                val element = elements[id] ?: continue
+                applyLayout(element, layout)
+            }
+
+            elements["Scoreboard"]?.let { element ->
+                if (!layoutData.containsKey("Scoreboard")) {
+                    getLayoutForId("Scoreboard")?.let { applyLayout(element, it) }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun applyLayout(element: HudElement, layout: HudLayoutData) {
+        element.x = layout.x
+        element.y = layout.y
+        element.scale = layout.scale
+        element.showBackground = layout.showBackground
+        element.customWidth = layout.width
+        element.customHeight = layout.height
+        element.markAsInitialized()
+    }
+
+    private fun getLayoutForId(id: String): HudLayoutData? {
+        loadedLayouts[id]?.let { return it }
+        return when (id) {
+            "Scoreboard" -> loadedLayouts["HudScoreboard"] ?: loadedLayouts["ScoreboardHud"]
+            else -> null
+        }
+    }
+
+    private fun loadLayout(id: String) {
+    }
+
+    fun getAllElements(): Map<String, HudElement> = elements.toMap()
+
+    fun resetAllPositions() {
+        elements.forEach { (_, element) ->
+            element.x = element.getDefaultX()
+            element.y = element.getDefaultY()
+            element.scale = element.getDefaultScale()
+            element.customWidth = 0
+            element.customHeight = 0
+        }
+        saveAllLayouts()
+    }
+
+    data class HudLayoutData(
+        val x: Int,
+        val y: Int,
+        val scale: Float,
+        val showBackground: Boolean = true,
+        val width: Int = 0,
+        val height: Int = 0
+    )
+}

@@ -21,9 +21,17 @@ object DungeonDetector {
         return cachedResult
     }
 
+    /**
+     * Сбросить кэш при смене мира/сервера (вызывается из WorldChangeHandler).
+     */
+    fun resetCache() {
+        lastCheckTime = 0
+        cachedResult = false
+    }
+
     private fun detectDungeon(): Boolean {
         val level = mc.level ?: return false
-        val dimId = level.dimension().location().toString()
+        val dimId = level.dimension().identifier().toString()
         
         // 1. Проверка по ID измерения
         if (dimId.startsWith("minecraft:dungeon_") || dimId.contains("dungeon", ignoreCase = true)) return true
@@ -49,11 +57,7 @@ object DungeonDetector {
             s.contains("катакомб", ignoreCase = true) ||
             s.contains("зачищено", ignoreCase = true) ||
             s.contains("cleared", ignoreCase = true) ||
-            s.contains("boss", ignoreCase = true) ||
-            s.contains("босс", ignoreCase = true) ||
-            s.contains("очки", ignoreCase = true) ||
-            s.contains("баллы", ignoreCase = true) ||
-            s.contains("счёт", ignoreCase = true) ||
-            s.contains("прогресс", ignoreCase = true)
+            s.contains("склеп", ignoreCase = true) ||
+            s.contains("crypt", ignoreCase = true)
     }
 }

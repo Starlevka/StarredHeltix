@@ -20,3 +20,4 @@ public interface PlayerTabOverlayAccessor {
     @Invoker("getPlayerInfos")
     List<PlayerInfo> invokeGetPlayerInfos();
 }
+

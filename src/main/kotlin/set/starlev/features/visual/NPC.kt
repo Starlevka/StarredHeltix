@@ -10,20 +10,17 @@ import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.util.Mth
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import set.starlev.StarredHeltix
-import set.starlev.ModSounds
 import set.starlev.render.RenderEvents
 import set.starlev.render.RenderContext
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.EntityHitResult
 import net.minecraft.core.ClientAsset
 import java.util.*
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 class GhostPlayer(level: ClientLevel, profile: GameProfile) : RemotePlayer(level, profile) {
     
@@ -40,7 +37,7 @@ class GhostPlayer(level: ClientLevel, profile: GameProfile) : RemotePlayer(level
     }
 
     override fun getSkin(): net.minecraft.world.entity.player.PlayerSkin {
-        val skinLocation = ResourceLocation.fromNamespaceAndPath("starredheltix", "textures/penguin.png")
+        val skinLocation = Identifier.fromNamespaceAndPath("starredheltix", "textures/penguin.png")
         val bodyTex = ClientAsset.ResourceTexture(skinLocation, skinLocation)
         return net.minecraft.world.entity.player.PlayerSkin.insecure(bodyTex, null, null, PlayerModelType.SLIM)
     }
@@ -54,7 +51,6 @@ object GhostNPCHandler {
     private val NPC_NAME = "Penguin"
     private val NPC_UUID = UUID.fromString("8667ba71-b85a-4004-af54-445a97e63e11")
     private val OVERWORLD_DIM_ID = "minecraft:overworld"
-    private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
     private val DIALOGUE = listOf(
         "§7[§cPenguin§7]§f: Нашему Скайблоку исполнилось целых 100 лет! И только недавно мы оказались в 2026 году!",
@@ -115,7 +111,7 @@ object GhostNPCHandler {
             val now = System.currentTimeMillis()
             if (now - lastHintTime > 30000L) {
                 lastHintTime = now
-                player.displayClientMessage(Component.literal("§b[§cPenguin§b]§f: Эй! Подойди и §bкликни по мне ЛКМ§f, чтобы поговорить!"), false)
+                player.sendSystemMessage(Component.literal("§b[§cPenguin§b]§f: Эй! Подойди и §bкликни по мне ЛКМ§f, чтобы поговорить!"))
             }
         }
     }
@@ -150,7 +146,7 @@ object GhostNPCHandler {
             }
 
             val line = DIALOGUE[currentDialogueIndex]
-            mc.player?.displayClientMessage(Component.literal(line), false)
+            mc.player?.sendSystemMessage(Component.literal(line))
 
             currentDialogueIndex++
             if (currentDialogueIndex >= DIALOGUE.size) {
@@ -195,8 +191,8 @@ object GhostNPCHandler {
         val player = mc.player ?: return
         val now = System.currentTimeMillis()
         
-        // Check dimension
-        val currentDim = level.dimension().location().toString()
+        // Проверяем измерение
+        val currentDim = level.dimension().identifier().toString()
         if (currentDim != OVERWORLD_DIM_ID) {
             removeFakePlayer()
             return

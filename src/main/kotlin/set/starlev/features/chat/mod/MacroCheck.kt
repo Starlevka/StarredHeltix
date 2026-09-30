@@ -28,6 +28,14 @@ object MacroCheck {
 
     private fun getExpression(): String = "$currentA + $currentB"
 
+    /** Сброс при смене мира/сервера: иначе исходящий чат остаётся заблоканным на другом сервере. */
+    fun onWorldChange() {
+        isActive = false
+        checkerName = null
+        correctAnswer = 0
+        lastTitleTime = 0L
+    }
+
     fun activate(checker: String? = null) {
         if (isActive) return
         isActive = true
@@ -36,10 +44,7 @@ object MacroCheck {
         currentB = Random.nextInt(1, 99)
         correctAnswer = currentA + currentB
         
-        mc.player?.displayClientMessage(
-            Component.literal("§c§l[MACRO] §fАдминистратор начал проверку на макросы!\n§fВведите в чат результат выражения: §b$currentA + $currentB"),
-            false
-        )
+        mc.player?.sendSystemMessage(Component.literal("§c§l[MACRO] §fАдминистратор начал проверку на макросы!\n§fВведите в чат результат выражения: §b$currentA + $currentB"))
         
         showTitle("§c§lМакро-чек!", "§eРешите пример: §b$currentA + $currentB §e= ?")
         lastTitleTime = System.currentTimeMillis()
@@ -47,16 +52,14 @@ object MacroCheck {
 
     fun deactivate() {
         isActive = false
-        mc.gui.setTitle(Component.empty())
-        mc.gui.setSubtitle(Component.empty())
-        mc.player?.displayClientMessage(
-            Component.literal("§a§l[MACRO] §fПроверка на макросы успешно пройдена."),
-            false
-        )
+        mc.gui.hud.setTitle(Component.empty())
+        mc.gui.hud.setSubtitle(Component.empty())
+        mc.player?.sendSystemMessage(Component.literal("§a§l[MACRO] §fПроверка на макросы успешно пройдена."))
         
         // Отправляем сообщение проверяющему
         checkerName?.let { checker ->
             val message = "Я прошел макро-чек! Ответ: $correctAnswer"
+            mc.player?.connection?.sendCommand("unignore $checker")
             mc.player?.connection?.sendCommand("msg $checker $message")
             // На всякий случай дублируем в пати чат, если мы в пати
             mc.player?.connection?.sendCommand("pc $message")
@@ -76,7 +79,7 @@ object MacroCheck {
     fun isBlocked() = isActive
 
     private fun showTitle(title: String, subtitle: String) {
-        mc.gui.setTitle(Component.literal(title))
-        mc.gui.setSubtitle(Component.literal(subtitle))
+        mc.gui.hud.setTitle(Component.literal(title))
+        mc.gui.hud.setSubtitle(Component.literal(subtitle))
     }
 }

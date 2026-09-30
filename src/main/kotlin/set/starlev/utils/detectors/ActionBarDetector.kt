@@ -12,7 +12,7 @@ object ActionBarDetector {
     fun getActionBarText(): String {
         val client = Minecraft.getInstance()
         return try {
-            val gui = client.gui ?: return ""
+            val gui = client.gui.hud
             val accessor = gui as GuiAccessor
             val message = accessor.getOverlayMessageString()
             message?.string ?: ""

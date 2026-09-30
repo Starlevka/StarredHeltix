@@ -23,6 +23,11 @@ object TicTacToe {
     private val mc = Minecraft.getInstance()
     private var nextBestMove: BlockPos? = null
 
+    /** Сброс при смене мира/сервера. */
+    fun onWorldChange() {
+        nextBestMove = null
+    }
+
     fun init() {
         LOGGER.info("[StarredHeltix] Инициализация солвера Крестики-нолики")
 

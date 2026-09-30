@@ -1,6 +1,7 @@
 package set.starlev.features.combat.dungeons.solvers
 
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
+import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -8,19 +9,70 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.AABB
+import org.joml.Vector3f
 import set.starlev.StarredHeltix
 import set.starlev.utils.detectors.DungeonDetector
 import set.starlev.utils.detectors.MobHeadDisplayDetector
 import java.util.regex.Pattern
 import org.slf4j.LoggerFactory
 
+/**
+ * Солвер «Три незнакомца» по образцу Odin WeirdosSolver / Skyblocker ThreeWeirdos:
+ * - реакция на каждое сообщение: совпало с пулом решений — подсветку сразу (ждать все
+ *   три реплики не нужно, игра гарантирует ровно одну «решающую» фразу на комнату);
+ * - пул фраз двуязычный (RU-перевод Heltix + английские оригиналы Hypixel), сравнение
+ *   нормализованное (§-коды, ё=е, пробелы, регистр, хвостовая пунктуация);
+ * - РЕТРАИ: реплика приходит раньше, чем синхронизируются энтити НПС — поиск повторяется
+ *   каждые 5 тиков до 15 секунд (tick() из MinecraftMixin), раньше был один выстрел;
+ * - НПС: сначала точное совпадение имени, затем подстрока (подстрока сразу давала
+ *   матчи на похожие имена соседей);
+ * - сундук: предпочтение «за спиной» (против направления взгляда НПС), но с фоллбэком
+ *   на ближайший — при «взгляде в стену» раньше отбраковывались все три кандидата.
+ */
 object ThreeWeirdos {
     private val LOGGER = LoggerFactory.getLogger(ThreeWeirdos::class.java)
-    private val STRANGER_PATTERN = Pattern.compile("\\[Персонаж] (.+?):")
-    private val statements = mutableMapOf<String, String>()
-    private val strangerOrder = mutableListOf<String>() // Порядок NPC из чата
-    private var lastCorrectStranger: String? = null
-    
+    private val STRANGER_PATTERN = Pattern.compile("^\\[(?:npc|персонаж)\\]\\s*(.+?):\\s*(.+)$")
+
+    // Утверждения, произнёсший которые — владелец награды (6 фраз Hypixel, RU + EN)
+    private val SOLUTIONS = listOf(
+        // RU
+        "в моем сундуке находится награда",                    // My chest has the reward and I'm telling the truth!
+        "они оба говорят правду. также",                       // Both of them are telling the truth. Also, X has the reward...
+        "по крайней мере один из них лжет, и награды нет",     // At least one of them is lying, and the reward is not in X's chest!
+        "награды нет ни в одном из сундуков",                  // The reward isn't in any of our chests.
+        "награда не в моем сундуке",                           // The reward is not in my chest!
+        "в моем сундуке нет награды. мы все говорим правду",   // My chest doesn't have the reward. We are all telling the truth.
+        // EN (Heltix может слать оригинал)
+        "my chest has the reward and i'm telling the truth",
+        "both of them are telling the truth. also",
+        "at least one of them is lying, and the reward is not in",
+        "the reward isn't in any of our chests",
+        "the reward is not in my chest",
+        "my chest doesn't have the reward. we are all telling the truth",
+    )
+
+    // Ловушки лжецов: «решающая» фраза, содержащая одну из этих — не решение
+    private val TRAPS = listOf(
+        // RU
+        "они оба лгут",
+        "все лгут",
+        "один из нас говорит правду",
+        "по крайней мере один из других",
+        // EN
+        "they are both lying",
+        "one of us is telling the truth",
+        "at least one of the others",
+        "they are all lying",
+    )
+
+    private fun norm(s: String): String =
+        (ChatFormatting.stripFormatting(s) ?: s)
+            .replace('ё', 'е')
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .lowercase()
+            .trim('!', '.', ' ')
+
     // Публичные поля для ThreeWeirdosChest
     @Volatile
     var foundNpcPos: BlockPos? = null
@@ -29,10 +81,15 @@ object ThreeWeirdos {
     var foundChestPos: BlockPos? = null
         private set
 
+    // Очередь ретраев: кого ищем и до какого момента
+    private var pendingName: String? = null
+    private var pendingUntil = 0L
+    private var tickCounter = 0
+
     fun init() {
         ClientReceiveMessageEvents.GAME.register(this::onChat)
     }
-    
+
     /**
      * Проверка, решена ли уже головоломка (для ThreeWeirdosChest)
      */
@@ -40,245 +97,201 @@ object ThreeWeirdos {
     var puzzleSolved: Boolean = false
         private set
 
+    private var lastCorrectStranger: String? = null
+
     /**
      * Возвращает имя последнего правильного незнакомца.
      */
     fun getCorrectStranger(): String? = lastCorrectStranger
-    
+
     private fun onChat(message: Component, overlay: Boolean) {
-        if (!StarredHeltix.feature.dungeons.solvers.threeWeirdos) {
-            return
-        }
-        
-        val text = message.string
-        
-        // Проверяем сообщение о решении или провале головоломки
-        if (text.contains("ГОЛОВОЛОМКА РЕШЕНА") || text.contains("выбрал правильный сундук")) {
+        if (overlay) return
+        if (!StarredHeltix.feature.dungeons.solvers.threeWeirdos) return
+        if (!DungeonDetector.isInDungeon()) return
+
+        val text = norm(message.string)
+
+        // Сообщения о решении/провале головоломки
+        if (text.contains("головоломка решена") || text.contains("выбрал правильный сундук")) {
             puzzleSolved = true
             resetFound()
-            strangerOrder.clear()
             LOGGER.info("[ThreeWeirdos] Головоломка решена, сброс подсветки")
             return
         }
-
-        // Проверяем сообщение о провале головоломки
-        if (text.contains("ГОЛОВОЛОМКА ПРОВАЛЕНА") || text.contains("обхитрил")) {
+        if (text.contains("головоломка провалена") || text.contains("обхитрил")) {
             puzzleSolved = true
             resetFound()
-            strangerOrder.clear()
             LOGGER.info("[ThreeWeirdos] Головоломка провалена, сброс подсветки")
             return
         }
-        
-        // Check if this is a stranger message
+
         val matcher = STRANGER_PATTERN.matcher(text)
-        if (matcher.find()) {
-            val name = matcher.group(1)
-            val statement = text.substring(matcher.end()).trim()
+        if (!matcher.find()) return
+        val name = matcher.group(1).trim()
+        val statement = matcher.group(2).trim()
+        if (name.isEmpty() || statement.isEmpty()) return
 
-            // Store the statement
-            statements[name] = statement
-
-            // Store the order of strangers (only if not already in list)
-            if (!strangerOrder.contains(name)) {
-                strangerOrder.add(name)
-            }
-            
-            // Check if we have exactly 3 statements to solve
-            if (statements.size == 3) {
-                // Wait a bit to ensure all messages are processed, then solve
-                Thread {
-                    try {
-                        Thread.sleep(500) // Wait 0.5 seconds
-                        Minecraft.getInstance().execute(this::solve)
-                    } catch (e: InterruptedException) {
-                        Thread.currentThread().interrupt()
-                    }
-                }.start()
-            }
+        // Новая головоломка после решённой (детект по строке мог не сработать на Heltix)
+        if (puzzleSolved) {
+            puzzleSolved = false
+            fullReset()
         }
+
+        val isSolution = SOLUTIONS.any { statement.contains(it) } &&
+            TRAPS.none { statement.contains(it) }
+        if (!isSolution) return
+
+        puzzleSolved = false
+        lastCorrectStranger = name
+        LOGGER.info("[ThreeWeirdos] Решение: '$name' («$statement»)")
+        Minecraft.getInstance().player?.sendSystemMessage(Component.literal("§a§l[Три незнакомца] §aНаграда в сундуке: §e$name"))
+
+        // Первая попытка сразу + ретраи в tick() (энтити НПС могут ещё не долететь)
+        pendingName = name
+        pendingUntil = System.currentTimeMillis() + 15000
+        tryLocate()
     }
-    
-    private fun solve() {
+
+    /** Вызывается из MinecraftMixin.tick(): повторяет поиск, пока НПС/сундук не найдены. */
+    fun tick() {
+        val name = pendingName ?: return
+        if (foundChestPos != null) {
+            pendingName = null
+            return
+        }
+        if (System.currentTimeMillis() > pendingUntil) {
+            LOGGER.warn("[ThreeWeirdos] Истекло время поиска НПС '$name' — сундук так и не найден")
+            pendingName = null
+            Minecraft.getInstance().player?.sendSystemMessage(Component.literal("§e§l[Три незнакомца] §eНе удалось найти сундук незнакомца"))
+            return
+        }
+        tickCounter++
+        if (tickCounter % 5 != 0) return
+        tryLocate()
+    }
+
+    private fun tryLocate() {
+        val name = pendingName ?: return
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
         val player = mc.player ?: return
-        
-        // Проверка на нахождение в подземельях
-        if (!DungeonDetector.isInDungeon()) {
-            statements.clear()
-            return
-        }
-
-        var correct: String? = null
-        
-        for ((name, statement) in statements) {
-            // Проверяем все верные случаи
-            if (statement.contains("В моем сундуке находится награда, и я говорю правду!") ||
-                statement.startsWith("Они оба говорят правду. Также") ||
-                statement.startsWith("По крайней мере один из них лжёт, и награды нет в сундуке") ||
-                statement == "Награды нет ни в одном из сундуков." ||
-                statement == "Награда не в моём сундуке!") {
-                correct = name
-                break
-            }
-        }
-        if (correct != null) {
-            puzzleSolved = false // Сбрасываем флаг для новой головоломки
-            lastCorrectStranger = correct
-            mc.player!!.displayClientMessage(Component.literal("§a§l[Три незнакомца] §aНаграда в сундуке: §e$correct"), false)
-            
-            // Сразу ищем НПС и сундук после решения
-            findNpcAndChest(level, player, correct, strangerOrder)
-        }
-
-        // Clear statements for next puzzle
-        statements.clear()
+        findNpcAndChest(level, player, name)
     }
-    
+
     /**
-     * Найти НПС по имени (через MobHeadDisplayDetector) и ближайший сундук
+     * Найти НПС по имени (текст над головой / customName) и сундук за ним.
+     * @return true, если сундук найден и подсвечен.
      */
-    private fun findNpcAndChest(level: net.minecraft.world.level.Level, player: net.minecraft.world.entity.player.Player, correctName: String, strangerOrder: List<String>) {
+    private fun findNpcAndChest(level: net.minecraft.world.level.Level, player: net.minecraft.world.entity.player.Player, correctName: String): Boolean {
         // Радиус поиска НПС от игрока
         val searchBox = AABB(
             player.x - 15, player.y - 10, player.z - 15,
             player.x + 15, player.y + 10, player.z + 15
         )
-        
+
         val entities = level.getEntities(null, searchBox) { e ->
             e is LivingEntity || e is ArmorStand
         }
-        
+
         var npcPos: BlockPos? = null
-        val normalizedName = correctName.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
-        
-        LOGGER.info("[ThreeWeirdos] Ищем НПС '$correctName' (нормализованное: '$normalizedName') среди ${entities.size} сущностей")
-        
-        // 1. Ищем НПС через MobHeadDisplayDetector (текст над головой)
-        for (entity in entities) {
-            if (entity !is LivingEntity) continue
+        var npcLook: Vector3f? = null
+        val target = norm(correctName)
 
-            val headDisplays = MobHeadDisplayDetector.getHeadDisplays(entity)
-            for (displayComp in headDisplays.textDisplays) {
-                val cleanName = displayComp.string.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
-
-                if (cleanName.equals(normalizedName, ignoreCase = true) || 
-                    cleanName.contains(normalizedName, ignoreCase = true) ||
-                    normalizedName.contains(cleanName, ignoreCase = true)) {
+        // Два прохода: сначала точное совпадение имени, только потом подстрока —
+        // иначе короткое имя матчилось на длинное похожее имя соседа
+        for (exactPass in 0..1) {
+            for (entity in entities) {
+                val displayName = when (entity) {
+                    is LivingEntity -> {
+                        val head = MobHeadDisplayDetector.getHeadDisplays(entity).textDisplays.maxByOrNull { it.string.length }
+                        head?.string ?: entity.customName?.string
+                    }
+                    is ArmorStand -> entity.customName?.string
+                    else -> null
+                } ?: continue
+                val cleanName = norm(displayName)
+                val hit = if (exactPass == 0) cleanName == target
+                    else cleanName.contains(target) || target.contains(cleanName)
+                if (hit) {
                     npcPos = entity.blockPosition()
-                    LOGGER.info("[ThreeWeirdos] Найден НПС через MobHeadDisplay '$cleanName' на позиции $npcPos")
+                    if (entity is LivingEntity) {
+                        val v = entity.lookAngle
+                        npcLook = Vector3f(v.x.toFloat(), 0f, v.z.toFloat())
+                    }
+                    LOGGER.info("[ThreeWeirdos] Найден НПС '$displayName' (${if (exactPass == 0) "точно" else "по подстроке"}) на $npcPos")
                     break
                 }
             }
             if (npcPos != null) break
         }
 
-        // 2. Если не нашли, ищем по customName
         if (npcPos == null) {
-            for (entity in entities) {
-                val nameTag = when (entity) {
-                    is LivingEntity -> entity.customName?.string
-                    is ArmorStand -> entity.customName?.string
-                    else -> null
-                } ?: continue
-
-                val cleanName = nameTag.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
-
-                if (cleanName.equals(normalizedName, ignoreCase = true) || 
-                    cleanName.contains(normalizedName, ignoreCase = true) ||
-                    normalizedName.contains(cleanName, ignoreCase = true)) {
-                    npcPos = entity.blockPosition()
-                    LOGGER.info("[ThreeWeirdos] Найден НПС по customName '$cleanName' на позиции $npcPos")
-                    break
-                }
-            }
+            LOGGER.debug("[ThreeWeirdos] НПС '$correctName' ещё не найден (энтити не синхронизированы?), ждём ретрай")
+            return false
         }
-        
-        // 3. Фоллбэк: ищем всех NPC и выбираем по порядку из чата (если текст над головой пустой)
-        if (npcPos == null) {
-            LOGGER.warn("[ThreeWeirdos] НПС '$correctName' не найден точно, используем порядок из чата...")
 
-            // Находим всех NPC в области
-            val npcPositions = mutableListOf<BlockPos>()
-            for (entity in entities) {
-                if (entity !is LivingEntity) continue
-                // Исключаем игроков и мобов которые явно не NPC
-                if (entity is net.minecraft.world.entity.player.Player) continue
-                npcPositions.add(entity.blockPosition())
-            }
-
-            if (npcPositions.size >= 3 && strangerOrder.size >= 3) {
-                // Сортируем NPC по координате X (предполагаем что они стоят в линию)
-                npcPositions.sortBy { it.x }
-
-                // Находим индекс правильного NPC в порядке из чата
-                val correctIndex = strangerOrder.indexOf(correctName)
-                if (correctIndex >= 0 && correctIndex < npcPositions.size) {
-                    npcPos = npcPositions[correctIndex]
-                    LOGGER.info("[ThreeWeirdos] Выбран NPC на позиции $npcPos по порядку из чата (индекс $correctIndex из ${strangerOrder.joinToString()})")
-                } else {
-                    LOGGER.warn("[ThreeWeirdos] Не удалось определить индекс NPC: $correctName не найден в порядке ${strangerOrder.joinToString()}")
-                }
-            } else {
-                LOGGER.warn("[ThreeWeirdos] Недостаточно NPC или данных о порядке: NPC=${npcPositions.size}, order=${strangerOrder.size}")
-            }
-        }
-        
-        if (npcPos == null) {
-            LOGGER.warn("[ThreeWeirdos] Не удалось найти НПС")
-            return
-        }
-        
         foundNpcPos = npcPos
-        
-        // Ищем ближайший сундук/бочку к НПС в радиусе 3 блоков
-        var nearestChest: BlockPos? = null
-        var nearestDist = Double.MAX_VALUE
 
-        val searchRadius = 3
+        // Сундуки стоят за спинами NPC (те смотрят на игрока): кандидаты «впереди по взгляду»
+        // оштрафованы, но НЕ отброшены — если все варианты «впереди» (взгляд в стену), берём ближайший.
+        var best: BlockPos? = null
+        var bestScore = Double.MAX_VALUE
+
+        val searchRadius = 5
         for (x in npcPos.x - searchRadius..npcPos.x + searchRadius) {
-            for (y in npcPos.y - 1..npcPos.y + 1) {
+            for (y in npcPos.y - 1..npcPos.y + 2) {
                 for (z in npcPos.z - searchRadius..npcPos.z + searchRadius) {
                     val pos = BlockPos(x, y, z)
-                    val state = level.getBlockState(pos)
-                    val block = state.block
-                    if (block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST || block == Blocks.BARREL) {
-                        val dist = pos.distSqr(npcPos)
-                        if (dist < nearestDist) {
-                            nearestDist = dist
-                            nearestChest = pos
+                    val block = level.getBlockState(pos).block
+                    if (block != Blocks.CHEST && block != Blocks.TRAPPED_CHEST && block != Blocks.BARREL) continue
+                    var score = pos.distSqr(npcPos).toDouble()
+                    npcLook?.let { look ->
+                        if (look.lengthSquared() > 0.01f) {
+                            look.normalize()
+                            val dx = (pos.x - npcPos.x).toDouble()
+                            val dz = (pos.z - npcPos.z).toDouble()
+                            val len = Math.sqrt(dx * dx + dz * dz).coerceAtLeast(1e-3)
+                            val dot = (dx / len) * look.x + (dz / len) * look.z // >0 — впереди НПС
+                            if (dot > 0.3) score += 20.0 // штраф, но не запрет
                         }
+                    }
+                    if (score < bestScore) {
+                        bestScore = score
+                        best = pos
                     }
                 }
             }
         }
-        
-        if (nearestChest != null) {
-            foundChestPos = nearestChest
-            LOGGER.info("[ThreeWeirdos] Найден сундук на позиции $nearestChest, дистанция: ${String.format("%.2f", Math.sqrt(nearestDist))} блоков")
-            player.displayClientMessage(Component.literal("§c§l[Три незнакомца] §cСундук подсвечен!"), false)
-        } else {
-            LOGGER.warn("[ThreeWeirdos] Сундук не найден в радиусе 5 блоков от НПС на позиции $npcPos")
-            player.displayClientMessage(Component.literal("§e§l[Три незнакомца] §eСундук не найден рядом с НПС"), false)
+
+        if (best != null) {
+            val wasNull = foundChestPos == null
+            foundChestPos = best
+            pendingName = null
+            LOGGER.info("[ThreeWeirdos] Найден сундук на позиции $best, дистанция: ${String.format("%.2f", Math.sqrt(bestScore))} блоков")
+            if (wasNull) {
+                player.sendSystemMessage(Component.literal("§c§l[Три незнакомца] §cСундук подсвечен!"))
+            }
+            return true
         }
+
+        LOGGER.debug("[ThreeWeirdos] Сундук рядом с $npcPos пока не виден, ждём ретрай")
+        return false
     }
-    
+
     /**
      * Сброс найденных позиций
      */
     fun resetFound() {
         foundNpcPos = null
         foundChestPos = null
-        strangerOrder.clear()
+        pendingName = null
     }
-    
+
     /**
      * Полный сброс (для ThreeWeirdosChest.reset())
      */
     fun fullReset() {
-        foundNpcPos = null
-        foundChestPos = null
+        resetFound()
         puzzleSolved = false
     }
 }

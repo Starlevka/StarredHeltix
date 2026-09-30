@@ -53,7 +53,7 @@ object ChatFormatting {
             }
             
             if (argsChanged) {
-                result = Component.translatable(contents.key, *newArgs).withStyle(component.style)
+                result = Component.translatable(contents.key, *newArgs.map { it ?: "" }.toTypedArray()).withStyle(component.style)
             }
         }
 
@@ -92,10 +92,10 @@ object ChatFormatting {
         // В text_effects_utils.glsl: 
         // if (colorMatchMain(c, 255, 255) && c.b >= 243 && c.b <= 254) { effectID = 255 - c.b; ... }
         
-        // Rainbow (ID 3): 255 - 3 = 252 (FC) -> 0xFFFFFC
+        // Радуга (ID 3): 255 - 3 = 252 (FC) -> 0xFFFFFC
         val rainbowTriggerColor = TextColor.fromRgb(0xFFFFFC)
         
-        // Delayed Spin (ID 8): 255 - 8 = 247 (F7) -> 0xFFFFF7
+        // Замедленное вращение (ID 8): 255 - 8 = 247 (F7) -> 0xFFFFF7
         val spinTriggerColor = TextColor.fromRgb(0xFFFFF7)
         
         val whiteColor = TextColor.fromRgb(0xFFFFFF)

@@ -7,7 +7,11 @@ import net.minecraft.resources.Identifier
 import net.minecraft.world.item.MapItem
 import set.starlev.StarredHeltix
 import set.starlev.features.chat.ChatEventsManager
+import set.starlev.features.combat.dungeons.ScoreCounter
+import set.starlev.render.CustomHudTextures
 import set.starlev.render.HudElement
+import set.starlev.render.blitStretched
+import set.starlev.render.drawSmoothRoundedPanel
 import set.starlev.utils.detectors.DungeonDetector
 import set.starlev.utils.detectors.TabListDetector
 
@@ -15,6 +19,9 @@ import set.starlev.utils.detectors.TabListDetector
  * Рендер карты подземелий 1в1 как в heltix-моде (HeltixMod.java):
  * карта читается из офф-хенда, decorations всегда видимы.
  * Кастомизация: текстура фона вкл/выкл, разметка (decorations) вкл/выкл.
+ * Кастомная текстура фона: config/starredheltix/textures/map_background.png
+ * (только PNG, любое разрешение — растягивается под структуру). Рисуется и как
+ * фон HUD (за картой и склепами), и как рамка самой карты.
  * Позиция/масштаб — через HUD-редактор (HudElement), размер 1в1 = 144x144 с фоном, 128x128 без фона.
  */
 object DungeonMapHud : HudElement("DungeonMapHud") {
@@ -23,42 +30,14 @@ object DungeonMapHud : HudElement("DungeonMapHud") {
     private val mapBackground: Identifier = Identifier.fromNamespaceAndPath("minecraft", "textures/map/map_background.png")
     private val mapBackgroundDark: Identifier = Identifier.fromNamespaceAndPath("starredheltix", "textures/map/map_background_dark.png")
     private val mapBackgroundChecker: Identifier = Identifier.fromNamespaceAndPath("minecraft", "textures/map/map_background_checkerboard.png")
-    private val mapBackgroundCustom: Identifier = Identifier.fromNamespaceAndPath("starredheltix", "dungeon_map/background_custom")
 
-    // Кастомный фон: config/starredheltix/textures/map/map_background.png — DynamicTexture,
-    // перезагружается по lastModified. srcW/H — реальные размеры файла (для blit-растяжки).
-    private var customSrcW = 0
-    private var customSrcH = 0
-    private var customLoadedMtime = -1L
-    private var customRegistered = false
-
-    /** @return true, если файл есть и текстурa загружена; иначе false (фолбэк на ванильную). */
-    private fun ensureCustomBackground(): Boolean {
-        val file = java.io.File(mc.gameDirectory, "config/starredheltix/textures/map/map_background.png")
-        if (!file.isFile) return false
-        val mtime = file.lastModified()
-        if (customRegistered && mtime == customLoadedMtime) return true
-        return try {
-            val bytes = file.readBytes()
-            val image = com.mojang.blaze3d.platform.NativeImage.read(bytes)
-            customSrcW = image.width
-            customSrcH = image.height
-            val tm = mc.textureManager
-            if (customRegistered) {
-                try {
-                    tm.getTexture(mapBackgroundCustom).close()
-                    tm.release(mapBackgroundCustom)
-                } catch (_: Exception) {}
-            }
-            tm.register(mapBackgroundCustom, net.minecraft.client.renderer.texture.DynamicTexture({ "SHDungeonMapBg" }, image))
-            customRegistered = true
-            customLoadedMtime = mtime
-            true
-        } catch (e: Exception) {
-            set.starlev.StarredHeltix.LOGGER.error("[DungeonMap] Не удалось загрузить кастомный фон: ${e.message}")
-            false
-        }
-    }
+    /** Кастомный фон из конфига/папки textures — только PNG, любое разрешение. */
+    private fun ensureCustomBackground(): CustomHudTextures.Handle? =
+        CustomHudTextures.ensure(
+            "map_background", "map_background.png",
+            subfolder = "map",
+            explicitPath = StarredHeltix.feature.dungeons.visuals.dungeonMap.customImagePath,
+        )
 
     private var cryptsCount: Int? = null
     private var lastCryptsUpdate = 0L
@@ -76,17 +55,22 @@ object DungeonMapHud : HudElement("DungeonMapHud") {
     override fun render() {
         val mapConfig = StarredHeltix.feature.dungeons.visuals.dungeonMap
         val cryptsConfig = StarredHeltix.feature.dungeons.visuals.crypts
-        if (!mapConfig.enabled && !cryptsConfig.enabled) return
-        if (!isEditing && StarredHeltix.feature.dungeons.visuals.onlyInDungeons && !DungeonDetector.isInDungeon()) return
+        val scoreConfig = StarredHeltix.feature.dungeons.visuals.dungeonScore
+        if (!mapConfig.enabled && !cryptsConfig.enabled && !scoreConfig.enabled) return
+        if (!isEditing && !DungeonDetector.isInDungeon()) return
 
         val graphics = cachedGraphics ?: return
 
-        // Вне редактора не показываем пустой худ (только фон) — проверяем наличие контента заранее
+        // Вне редактора не показываем пустой худ — проверяем наличие контента заранее (карта/склепы/очки)
         if (!isEditing) {
             if (cryptsConfig.enabled) updateCrypts()
             val hasCrypts = cryptsCount != null
             val hasMap = if (mapConfig.enabled) hasMapData() else false
-            if (!hasCrypts && !hasMap) return
+            val hasScore = if (scoreConfig.enabled) {
+                val s = try { ScoreCounter.getCurrentScore() } catch (_: Exception) { 0 }
+                s > 0
+            } else false
+            if (!hasCrypts && !hasMap && !hasScore) return
         } else {
             if (cryptsConfig.enabled) updateCrypts()
         }
@@ -97,9 +81,23 @@ object DungeonMapHud : HudElement("DungeonMapHud") {
 
         // Фон рисуем только если есть что показать или в редакторе, и уважая showBackground
         val shouldDrawMapBackground = mapConfig.enabled && (isEditing || hasMapData())
+        val customStyle = mapConfig.background == set.starlev.config.categories.MapBackgroundStyle.CUSTOM
+        val customHandle = if (customStyle) ensureCustomBackground() else null
         if (shouldDrawMapBackground) {
             this.showBackground = mapConfig.showBackground
-            if (showBackground) drawBackground(totalSize, totalSize)
+            // Прозрачность фона единая для всех стилей (HUD-панель / своя картинка / рамка).
+            val bgColor = set.starlev.utils.ColorUtils.alphaColor(mapConfig.backgroundAlpha)
+            // Кастомная текстура — фон HUD независимо от галки «Фон HUD»:
+            // выбор стиля CUSTOM сам по себе означает «рендерить картинку фоном»,
+            // растяжка под структуру (totalSize x totalSize) при любом разрешении файла.
+            if (customHandle != null) {
+                graphics.blitStretched(
+                    customHandle.id, x, y, totalSize, totalSize, customHandle.srcW, customHandle.srcH, bgColor
+                )
+            } else if (showBackground) {
+                // Гладкий скруглённый фон вместо резкого fill (как drawBackground, но smooth)
+                graphics.drawSmoothRoundedPanel(x - 4, y - 4, totalSize + 8, totalSize + 8, bgColor, 4)
+            }
         } else if (cryptsConfig.enabled && cryptsCount != null) {
             // Если карты нет, но есть склепы — фон карты не рисуем, только фон склепов (отдельно ниже)
             this.showBackground = false
@@ -117,18 +115,56 @@ object DungeonMapHud : HudElement("DungeonMapHud") {
             }
         }
 
+        // Склепы и очки — уменьшенный текст (0.65x) и привязаны к карте
+        val smallScale = 0.65f
+        var extraY = 0
         if (cryptsConfig.enabled) {
             val count = cryptsCount
             if (count != null || isEditing) {
                 val n = count ?: 5
                 val color = if (n >= 5) "§a" else "§c"
                 val text = "§7Склепы: $color$n"
-                val textY = y + totalSize + 4
+                val textY = y + totalSize + 4 + extraY
+                // Фон под уменьшенным текстом — считаем с учётом скейла
                 if (cryptsConfig.showBackground) {
-                    graphics.fill(x, textY - 2, x + mc.font.width(text) + 8, textY + mc.font.lineHeight + 2, 0x70000000.toInt())
+                    val w = (mc.font.width(text) * smallScale).toInt() + 8
+                    val h = (mc.font.lineHeight * smallScale).toInt() + 4
+                    graphics.drawSmoothRoundedPanel(x, textY - 1, w, h + 1, 0x70000000, 3)
                 }
-                val g2 = cachedGraphics ?: return
-                g2.text(mc.font, text, x + 4, textY, 0xFFFFFFFF.toInt(), true)
+                val pose = graphics.pose()
+                pose.pushMatrix()
+                pose.translate(x + 4f, textY.toFloat())
+                pose.scale(smallScale, smallScale)
+                pose.translate(-(x + 4f), -textY.toFloat())
+                graphics.text(mc.font, text, x + 4, textY, 0xFFFFFFFF.toInt(), true)
+                pose.popMatrix()
+                extraY += (mc.font.lineHeight * smallScale).toInt() + 4
+            }
+        }
+        val scoreCfg = StarredHeltix.feature.dungeons.visuals.dungeonScore
+        if (scoreCfg.enabled) {
+            val score = try { ScoreCounter.getCurrentScore() } catch (_: Exception) { 0 }
+            if (score > 0 || isEditing) {
+                val s = if (isEditing && score == 0) 300 else score
+                val sColor = when {
+                    s >= 300 -> "§6"
+                    s >= 270 -> "§a"
+                    else -> "§c"
+                }
+                val textScore = "§7Очков: $sColor$s"
+                val textY2 = y + totalSize + 4 + extraY
+                if (scoreCfg.showBackground) {
+                    val w2 = (mc.font.width(textScore) * smallScale).toInt() + 8
+                    val h2 = (mc.font.lineHeight * smallScale).toInt() + 4
+                    graphics.drawSmoothRoundedPanel(x, textY2 - 1, w2, h2 + 1, 0x70000000, 3)
+                }
+                val pose2 = graphics.pose()
+                pose2.pushMatrix()
+                pose2.translate(x + 4f, textY2.toFloat())
+                pose2.scale(smallScale, smallScale)
+                pose2.translate(-(x + 4f), -textY2.toFloat())
+                graphics.text(mc.font, textScore, x + 4, textY2, 0xFFFFFFFF.toInt(), true)
+                pose2.popMatrix()
             }
         }
     }
@@ -164,28 +200,24 @@ object DungeonMapHud : HudElement("DungeonMapHud") {
             pose.translate(x.toFloat(), y.toFloat())
             if (mapConfig.showBackgroundTexture) {
                 val style = mapConfig.background
-                val useCustom = style == set.starlev.config.categories.MapBackgroundStyle.CUSTOM && ensureCustomBackground()
-                when {
-                    useCustom -> {
-                        // Растягиваем файл произвольного размера в квадрат 144x144
-                        graphics.blit(
-                            net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
-                            mapBackgroundCustom, 0, 0, 0.0f, 0.0f,
-                            144, 144, customSrcW, customSrcH, customSrcW, customSrcH
-                        )
+                val bgColor = set.starlev.utils.ColorUtils.alphaColor(mapConfig.backgroundAlpha)
+                val handle = if (style == set.starlev.config.categories.MapBackgroundStyle.CUSTOM) ensureCustomBackground() else null
+                if (handle != null) {
+                    // Рамка карты: файл любого разрешения растягивается в квадрат 144x144
+                    graphics.blitStretched(
+                        handle.id, 0, 0, 144, 144, handle.srcW, handle.srcH, bgColor
+                    )
+                } else {
+                    val bg = when (style) {
+                        set.starlev.config.categories.MapBackgroundStyle.DARK -> mapBackgroundDark
+                        set.starlev.config.categories.MapBackgroundStyle.CHECKER -> mapBackgroundChecker
+                        else -> mapBackground
                     }
-                    else -> {
-                        val bg = when (style) {
-                            set.starlev.config.categories.MapBackgroundStyle.DARK -> mapBackgroundDark
-                            set.starlev.config.categories.MapBackgroundStyle.CHECKER -> mapBackgroundChecker
-                            else -> mapBackground
-                        }
-                        graphics.blit(
-                            net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
-                            bg, 0, 0, 0.0f, 0.0f,
-                            144, 144, 144, 144
-                        )
-                    }
+                    graphics.blit(
+                        net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
+                        bg, 0, 0, 0.0f, 0.0f,
+                        144, 144, 144, 144, 144, 144, bgColor
+                    )
                 }
                 pose.translate(pad.toFloat(), pad.toFloat())
             }

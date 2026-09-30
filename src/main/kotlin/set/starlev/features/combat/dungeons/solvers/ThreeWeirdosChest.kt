@@ -31,7 +31,6 @@ object ThreeWeirdosChest {
             }
             
             val chestPos = ThreeWeirdos.foundChestPos ?: return@register
-            val correctName = ThreeWeirdos.getCorrectStranger() ?: "Незнакомец"
 
             // Подсвечиваем сундук (красный)
             try {

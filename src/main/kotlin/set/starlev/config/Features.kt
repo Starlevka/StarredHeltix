@@ -3,19 +3,23 @@ package set.starlev.config
 import com.google.gson.annotations.Expose
 import net.fabricmc.loader.api.FabricLoader
 import io.github.notenoughupdates.moulconfig.Config
+import io.github.notenoughupdates.moulconfig.Social
 import io.github.notenoughupdates.moulconfig.annotations.Category
+import io.github.notenoughupdates.moulconfig.common.MyResourceLocation
+import io.github.notenoughupdates.moulconfig.common.text.StructuredText
+import net.minecraft.util.Util
 import set.starlev.StarredHeltix
 import set.starlev.config.categories.AboutModConfig
 import set.starlev.config.categories.ChatConfig
 import set.starlev.config.categories.CombatConfig
-import set.starlev.config.categories.DisplayConfig
 import set.starlev.config.categories.DungeonsConfig
+import set.starlev.config.categories.EnchantingConfig
 import set.starlev.config.categories.FarmingConfig
 import set.starlev.config.categories.FishingConfig
 import set.starlev.config.categories.ForagingConfig
+import set.starlev.config.categories.JSConfig
 import set.starlev.config.categories.MiningConfig
-import set.starlev.config.categories.MiscConfig
-import set.starlev.config.categories.MusicConfig
+import set.starlev.config.categories.SoundConfig
 import set.starlev.config.categories.SlayerConfig
 import set.starlev.config.categories.OptimizationConfig
 import set.starlev.config.categories.SkyblockConfig
@@ -34,23 +38,51 @@ class Features : Config() {
     }
 
     private fun buildTitle(): String {
-        return "§6§lStarredHeltix §f§l| §6§lv${getModVersion()}"
+        return "§6§lStarredHeltix §7| §6§lv${getModVersion()} §7сделал §cStarlev"
+    }
+
+    /**
+     * Иконки-ссылки в строке заголовка (встроенная фича MoulConfig: рендерит
+     * 16x16 иконки справа от названия, тултип при наведении, клик открывает URL).
+     *
+     * Наследуемся от Social и переопределяем onClick: базовый Social.forLink
+     * дёргает AWT Desktop.getDesktop().browse(), что в клиенте Minecraft
+     * ненадёжно. Util.getPlatform().openUri — штатный способ для 26.2.
+     */
+    override fun getSocials(): MutableList<Social> = mutableListOf(
+        UrlSocial("Discord", "textures/gui/social/discord.png", "https://discord.com/invite/pBdty4wquF"),
+        UrlSocial("Telegram — Heltix News", "textures/gui/social/telegram.png", "https://t.me/heltixnews"),
+        UrlSocial("Telegram — Heltix Network", "textures/gui/social/telegram.png", "https://t.me/heltixnetwork"),
+    )
+
+    private class UrlSocial(
+        private val label: String,
+        iconPath: String,
+        private val url: String,
+    ) : Social() {
+        private val icon = MyResourceLocation("starredheltix", iconPath)
+
+        override fun onClick() = Util.getPlatform().openUri(url)
+
+        override fun getTooltip(): List<StructuredText> = listOf(StructuredText.of(label))
+
+        override fun getIcon(): MyResourceLocation = icon
     }
 
     private fun getModVersion(): String {
         return FabricLoader.getInstance()
             .getModContainer("starredheltix")
             .map { it.metadata.version.friendlyString }
-            .orElse("0.1.1")
+            .orElse("1.0.0")
     }
 
-    @Expose
-    @Category(name = "Основные", desc = "· Общие настройки мода.")
-    var misc = MiscConfig()
-
-    @Expose
-    @Category(name = "Дисплей", desc = "· Настройки HUD.")
-    var display = DisplayConfig()
+    override fun formatCategoryName(category: io.github.notenoughupdates.moulconfig.processor.ProcessedCategory, isSelected: Boolean): io.github.notenoughupdates.moulconfig.common.text.StructuredText {
+        return if (isSelected) {
+            category.displayName.copyShallow().gold().underlined()
+        } else {
+            category.displayName.copyShallow().grey()
+        }
+    }
 
     @Expose
     @Category(name = "Визуал", desc = "· Визуальные эффекты и анимации.")
@@ -93,12 +125,20 @@ class Features : Config() {
     var foraging = ForagingConfig()
 
     @Expose
+    @Category(name = "✦ Чародейство", desc = "· Функции для стола экспериментов.")
+    var enchanting = EnchantingConfig()
+
+    @Expose
     @Category(name = "✦ Шахтёрство", desc = "· Функции для навыка шахтёрства.")
     var mining = MiningConfig()
 
     @Expose
     @Category(name = "𝄞 Аудио", desc = "· Визуальная музыка и эффекты по локациям.")
-    var music = MusicConfig()
+    var music = SoundConfig()
+
+    @Expose
+    @Category(name = "🌠 Модули", desc = "· Управление JavaScript модулями и скриптами")
+    var scripting = JSConfig()
     
     @Expose
     @Category(name = "О моде", desc = "· Информация о моде и его обновления.")

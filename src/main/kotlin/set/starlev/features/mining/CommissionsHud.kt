@@ -3,14 +3,22 @@ package set.starlev.features.mining
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudElement
+import set.starlev.render.HudElement
 import set.starlev.utils.ColorUtils
 import set.starlev.utils.detectors.TabListDetector
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 object CommissionsHud : HudElement("CommissionsHud") {
     private val mc = Minecraft.getInstance()
     private var commissions: List<Component> = emptyList()
     private var lastUpdate = 0L
+
+    /** Сброс кэша коммиссий при смене мира/сервера. */
+    fun onWorldChange() {
+        commissions = emptyList()
+        lastUpdate = 0L
+    }
 
     override fun getAccentColor(): Int {
         val config = StarredHeltix.feature.mining.commissions

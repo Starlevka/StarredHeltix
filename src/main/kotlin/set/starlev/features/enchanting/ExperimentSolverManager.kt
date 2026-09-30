@@ -2,7 +2,7 @@ package set.starlev.features.enchanting
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.gui.screens.inventory.ContainerScreen
 import net.minecraft.world.inventory.Slot
@@ -77,10 +77,29 @@ object ExperimentSolverManager : Feature(
         
         // Регистрируем обработчик рендера
         GuiEvents.registerForeground { graphics, mouseX, mouseY, screen ->
-            val solver = currentSolver
+            var solver = currentSolver
             if (solver != null) {
                 val containerScreen = screen as? ContainerScreen
                 if (containerScreen != null) {
+                    // Перепроверка солвера: заголовок мог смениться без переоткрытия
+                    // (следующая игра в том же окне). Переключаемся только при ПОЗИТИВНОМ
+                    // совпадении другого солвера — иначе секвенсор «ведёт» суперпары
+                    // со своим порядком кликов и рандомными заливками.
+                    if (!solver.matches(containerScreen)) {
+                        val best = bestSolverFor(containerScreen)
+                        if (best != null && best != solver) {
+                            LOGGER.info("[ExperimentSolverManager] Switching solver: ${solver.javaClass.simpleName} -> ${best.javaClass.simpleName} for screen: ${containerScreen.title.string}")
+                            clearScreen()
+                            currentSolver = best
+                            best.start(containerScreen)
+                            ContainerEventWire.attach(containerScreen.menu)
+                            for ((idx, slot) in containerScreen.menu.slots.withIndex()) {
+                                try { best.onSlotUpdate(containerScreen.menu, idx, slot.item) } catch (_: Exception) {}
+                            }
+                            markHighlightsDirty()
+                            solver = best
+                        }
+                    }
                     solver.tick(containerScreen)
                 }
                 onDraw(graphics, mouseX, mouseY, screen)
@@ -105,15 +124,18 @@ object ExperimentSolverManager : Feature(
     /**
      * Вызывается при открытии экрана контейнера.
      */
+    /** Порядок как в эталоне HeltixSuperpairs.detectMode: суперпары → секвенсор → ритмотрон. */
+    private fun bestSolverFor(screen: ContainerScreen): ExperimentSolver? = when {
+        superpairs.matches(screen) && superpairs.isEnabled() -> superpairs
+        ultrasequencer.matches(screen) && ultrasequencer.isEnabled() -> ultrasequencer
+        chronomatron.matches(screen) && chronomatron.isEnabled() -> chronomatron
+        else -> null
+    }
+
     private fun onScreenOpened(screen: ContainerScreen) {
         val title = screen.title.string
-        
-        val newSolver = when {
-            superpairs.matches(screen) && superpairs.isEnabled() -> superpairs
-            chronomatron.matches(screen) && chronomatron.isEnabled() -> chronomatron
-            ultrasequencer.matches(screen) && ultrasequencer.isEnabled() -> ultrasequencer
-            else -> null
-        }
+
+        val newSolver = bestSolverFor(screen)
 
         if (newSolver != null) {
             clearScreen()
@@ -123,6 +145,10 @@ object ExperimentSolverManager : Feature(
             // Подключаем форвардер для публикации SlotUpdateEvent в EventBus.
             // После этого обновления слотов приходят в солвер через onSlotUpdate().
             ContainerEventWire.attach(screen.menu)
+            // Сразу проталкиваем уже существующие слоты (контент мог прийти до attach)
+            for ((idx, slot) in screen.menu.slots.withIndex()) {
+                try { newSolver.onSlotUpdate(screen.menu, idx, slot.item) } catch (_: Exception) {}
+            }
             markHighlightsDirty()
         }
     }
@@ -154,6 +180,28 @@ object ExperimentSolverManager : Feature(
         for (entry in replacements.int2ObjectEntrySet()) {
             originalMap.put(entry.intKey, entry.value)
         }
+    }
+
+    /**
+     * Возвращает стек для рендера слота (заменяет скрытую карту на запомненную для Superpairs,
+     * добавляет номера шагов для Chronomatron/Ultrasequencer). Используется в миксине рендера.
+     */
+    fun getRenderStack(slot: Slot, original: ItemStack): ItemStack {
+        val solver = currentSolver ?: return original
+        // Для Superpairs визуальная замена — по конфигу
+        if (solver is SuperpairsSolver && !StarredHeltix.feature.enchanting.tableSolvers.superpairsShowItems) {
+            return original
+        }
+        return solver.getDisplayStack(slot.index, original) ?: original
+    }
+
+    /**
+     * Возвращает стек для тултипа — для Superpairs всегда показывает запомненный предмет
+     * (даже если superpairsShowItems=false), чтобы подсказка с NBT/названием/лором была доступна.
+     */
+    fun getTooltipStack(slot: Slot, original: ItemStack): ItemStack {
+        val solver = currentSolver ?: return original
+        return solver.getDisplayStack(slot.index, original) ?: original
     }
 
     /**
@@ -195,7 +243,7 @@ object ExperimentSolverManager : Feature(
     /**
      * Рендерит подсветки слотов.
      */
-    private fun onDraw(graphics: GuiGraphics, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
+    private fun onDraw(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         val containerScreen = screen as? ContainerScreen ?: return
         val solver = currentSolver ?: return
         
@@ -244,7 +292,7 @@ object ExperimentSolverManager : Feature(
     fun tick() {
         currentSolver?.let { solver ->
             val mc = net.minecraft.client.Minecraft.getInstance()
-            val screen = mc.screen
+            val screen = mc.gui.screen()
             if (screen is ContainerScreen && mc.player != null) {
                 solver.tick(screen)
             }

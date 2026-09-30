@@ -119,6 +119,7 @@ object EventBus {
 
     /** @deprecated Используйте [subscribe] возвращающий [Subscription]; unsubscribe не работает с лямбдами по ссылке === */
     @Deprecated("Используйте subscribe() возвращающий Subscription; unsubscribe не работает с лямбдами по ссылке ===")
+    @Suppress("DEPRECATION")
     inline fun <reified T : Any> unsubscribe(noinline handler: (T) -> Unit) {
         unsubscribe(T::class.java, handler)
     }

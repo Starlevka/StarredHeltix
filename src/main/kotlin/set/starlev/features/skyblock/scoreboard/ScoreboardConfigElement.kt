@@ -3,7 +3,6 @@ package set.starlev.features.skyblock.scoreboard
 import set.starlev.features.skyblock.scoreboard.elements.*
 
 enum class ScoreboardConfigElement(val element: ScoreboardElement) {
-    PURSE(ScoreboardElementPurse),
     BANK(ScoreboardElementBank),
     GEMS(ScoreboardElementGems),
     COOKIE(ScoreboardElementCookie),
@@ -11,6 +10,7 @@ enum class ScoreboardConfigElement(val element: ScoreboardElement) {
     PING(ScoreboardElementPing),
     CPS(ScoreboardElementCPS),
     BPS(ScoreboardElementBPS),
+    POWER(ScoreboardElementPower),
     LOCATION(ScoreboardElementLocation),
     EMPTY_LINE(ScoreboardElementEmptyLine),
     EMPTY_LINE2(ScoreboardElementEmptyLine),
@@ -29,7 +29,6 @@ enum class ScoreboardConfigElement(val element: ScoreboardElement) {
             EMPTY_LINE,
             LOCATION,
             EMPTY_LINE2,
-            PURSE,
             BANK,
             GEMS,
             EMPTY_LINE3,
@@ -37,6 +36,7 @@ enum class ScoreboardConfigElement(val element: ScoreboardElement) {
             PING,
             CPS,
             BPS,
+            POWER,
             EMPTY_LINE4,
             COOKIE,
             EMPTY_LINE5

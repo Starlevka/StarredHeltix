@@ -3,7 +3,7 @@ package set.starlev.features.farming
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -16,11 +16,13 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import set.starlev.StarredHeltix
 import set.starlev.events.GuiEvents
-import set.starlev.hud.HudElement
-import set.starlev.skyblock.ItemRegistry
+import set.starlev.render.HudElement
+import set.starlev.registry.ItemRegistry
 import set.starlev.utils.detectors.ItemLoreDetector
 import set.starlev.utils.detectors.PlayerHeldItemDetector
 import java.lang.reflect.Modifier
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 object RancherSpeedHud : HudElement("RancherSpeedHud") {
     private val mc = Minecraft.getInstance()
@@ -43,18 +45,23 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
         "MUSHROOM" to 233
     )
 
-    private val cropMetas: List<CropMeta> = listOf(
-        CropMeta("WHEAT", "Пшеница", ItemStack(Items.WHEAT)),
-        CropMeta("CARROT", "Морковь", ItemStack(Items.CARROT)),
-        CropMeta("POTATO", "Картошка", ItemStack(Items.POTATO)),
-        CropMeta("NETHER_WART", "Нарост", ItemStack(Items.NETHER_WART)),
-        CropMeta("COCOA", "Какао", ItemStack(Items.COCOA_BEANS)),
-        CropMeta("SUGAR_CANE", "Сахарный тростник", ItemStack(Items.SUGAR_CANE)),
-        CropMeta("CACTUS", "Кактус", ItemStack(Items.CACTUS)),
-        CropMeta("PUMPKIN", "Тыква", ItemStack(Items.PUMPKIN)),
-        CropMeta("MELON", "Арбуз", ItemStack(Items.MELON_SLICE)),
-        CropMeta("MUSHROOM", "Грибы", ItemStack(Items.RED_MUSHROOM))
-    )
+    // ВАЖНО: ItemStack нельзя создавать на этапе clinit/entrypoint на MC 26.2 —
+    // компоненты ещё не привязаны ("Components not bound yet"). Ленивая инициализация:
+    // иконки создаются при первом обращении (рендер), после полной загрузки клиента.
+    private val cropMetas: List<CropMeta> by lazy {
+        listOf(
+            CropMeta("WHEAT", "Пшеница", ItemStack(Items.WHEAT)),
+            CropMeta("CARROT", "Морковь", ItemStack(Items.CARROT)),
+            CropMeta("POTATO", "Картошка", ItemStack(Items.POTATO)),
+            CropMeta("NETHER_WART", "Нарост", ItemStack(Items.NETHER_WART)),
+            CropMeta("COCOA", "Какао", ItemStack(Items.COCOA_BEANS)),
+            CropMeta("SUGAR_CANE", "Сахарный тростник", ItemStack(Items.SUGAR_CANE)),
+            CropMeta("CACTUS", "Кактус", ItemStack(Items.CACTUS)),
+            CropMeta("PUMPKIN", "Тыква", ItemStack(Items.PUMPKIN)),
+            CropMeta("MELON", "Арбуз", ItemStack(Items.MELON_SLICE)),
+            CropMeta("MUSHROOM", "Грибы", ItemStack(Items.RED_MUSHROOM))
+        )
+    }
 
     private var lastBootsSpeed: Int? = null
     private var lastBootsIcon: ItemStack? = null
@@ -66,8 +73,8 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
     private var editBuffer = ""
 
     fun openPresetsEditor() {
-        val parent = mc.screen
-        mc.setScreen(RancherSpeedPresetsEditorScreen(parent))
+        val parent = mc.gui.screen()
+        mc.gui.setScreen(RancherSpeedPresetsEditorScreen(parent))
     }
 
     fun isPresetsEditorScreen(screen: Screen?): Boolean {
@@ -90,7 +97,7 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
         val config = StarredHeltix.feature.farming.rancherSpeed
         if (!config.enabled) return
 
-        val screen = mc.screen ?: return
+        val screen = mc.gui.screen() ?: return
         val signScreen = screen is AbstractSignEditScreen
 
         val player = mc.player
@@ -156,7 +163,7 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
 
             val isEditing = editingPresetIndex == i
             val icon = preset.icon.copy().also { it.count = 1 }
-            g.renderItem(icon, boxX1 + 2, boxY1 + 1)
+            g.item(icon, boxX1 + 2, boxY1 + 1)
 
             val nameX = boxX1 + 20
             val valueX = boxX2 - 6
@@ -229,7 +236,7 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
         val config = StarredHeltix.feature.farming.rancherSpeed
         if (!config.enabled) return false
 
-        val screen = mc.screen ?: return false
+        val screen = mc.gui.screen() ?: return false
         if (screen !is AbstractSignEditScreen) return false
 
         val player = mc.player ?: return false
@@ -277,7 +284,7 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
         val config = StarredHeltix.feature.farming.rancherSpeed
         if (!config.enabled) return false
 
-        val screen = mc.screen ?: return false
+        val screen = mc.gui.screen() ?: return false
         if (screen !is AbstractSignEditScreen) return false
 
         val idx = editingPresetIndex ?: return false
@@ -320,7 +327,7 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
         val config = StarredHeltix.feature.farming.rancherSpeed
         if (!config.enabled) return false
 
-        val screen = mc.screen ?: return false
+        val screen = mc.gui.screen() ?: return false
         if (screen !is AbstractSignEditScreen) return false
 
         if (editingPresetIndex == null) return false
@@ -387,9 +394,9 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
             buffer = ""
         }
 
-        override fun render(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-            guiGraphics.fill(0, 0, width, height, 0xC0101010.toInt())
-            guiGraphics.drawCenteredString(
+        override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, partialTick: Float) {
+            graphics.fill(0, 0, width, height, 0xC0101010.toInt())
+            graphics.drawCenteredString(
                 this.font,
                 Component.literal("§7ЛКМ: выбрать  §7Цифры: ввод  §7Enter: сохранить  §7Esc: выйти"),
                 this.width / 2,
@@ -410,16 +417,16 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
 
                 val selected = selectedIndex == i
                 val bg: Int = if (selected) 0x80333333.toInt() else 0x60222222
-                guiGraphics.fill(x1, y1, x2, y2, bg)
+                graphics.fill(x1, y1, x2, y2, bg)
 
-                guiGraphics.renderItem(e.icon.copy().also { it.count = 1 }, x1 + 4, y1 + 2)
+                graphics.item(e.icon.copy().also { it.count = 1 }, x1 + 4, y1 + 2)
                 val shownSpeed = if (selected) {
                     val v = if (buffer.isBlank()) e.speed.toString() else buffer
                     "§e$v§b_"
                 } else {
                     "§b${e.speed}"
                 }
-                guiGraphics.drawString(
+                graphics.drawString(
                     this.font,
                     Component.literal("§f${e.name} - $shownSpeed"),
                     x1 + 24,
@@ -430,7 +437,7 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
                 y += rowH + 2
             }
 
-            super.render(guiGraphics, mouseX, mouseY, partialTick)
+            super.extractRenderState(graphics, mouseX, mouseY, partialTick)
         }
 
         override fun mouseClicked(event: MouseButtonEvent, isDoubleClick: Boolean): Boolean {
@@ -491,13 +498,13 @@ object RancherSpeedHud : HudElement("RancherSpeedHud") {
             return super.keyPressed(event)
         }
 
-        override fun renderBackground(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
-            guiGraphics.fill(0, 0, width, height, 0x80000000.toInt())
+        override fun extractBackground(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+            graphics.fill(0, 0, width, height, 0x80000000.toInt())
         }
 
         override fun onClose() {
             commitSelected()
-            mc.setScreen(parent)
+            if (parent != null) mc.gui.setScreen(parent) else super.onClose()
         }
 
         override fun isPauseScreen(): Boolean = false

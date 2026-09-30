@@ -11,7 +11,7 @@ import set.starlev.StarredHeltix
 import set.starlev.render.RenderEvents
 import set.starlev.utils.ColorUtils
 import set.starlev.utils.detectors.DungeonDetector
-import set.starlev.utils.detectors.MobHeadDisplayDetector
+import set.starlev.utils.detectors.EntityNameCache
 
 /**
     * Функции для Ф4 (Floor 4) подземелий:
@@ -38,22 +38,45 @@ object Floor4 {
         }
 
         RenderEvents.register { context ->
-            if (!config.bearSpiritHighlight && !config.chickenSpiritAlert) return@register
-            if (!DungeonDetector.isInDungeon()) return@register
+            val level = mc.level
+            if (!config.bearSpiritHighlight && !config.chickenSpiritAlert) {
+                if (level != null && managedGlowIds.isNotEmpty()) {
+                    clearAllGlow(level)
+                } else if (managedGlowIds.isNotEmpty()) {
+                    managedGlowIds.clear()
+                    glowColorsByEntityId.clear()
+                    seenGlowIds.clear()
+                }
+                return@register
+            }
+            if (!DungeonDetector.isInDungeon()) {
+                if (level != null && managedGlowIds.isNotEmpty()) {
+                    clearAllGlow(level)
+                } else if (managedGlowIds.isNotEmpty()) {
+                    managedGlowIds.clear()
+                    glowColorsByEntityId.clear()
+                    seenGlowIds.clear()
+                }
+                return@register
+            }
 
             val player = mc.player ?: return@register
             val playerPos = player.position()
-            val level = mc.level ?: return@register
+            if (level == null) return@register
             seenGlowIds.clear()
 
             for (entity in level.entitiesForRendering()) {
                 if (entity !is LivingEntity) continue
 
-                val displayName = getEntityDisplayName(entity)
+                val displayName = EntityNameCache.getName(entity)
                 if (displayName.isBlank()) continue
 
+                val isBear = config.bearSpiritHighlight && displayName.contains("Дух медведя", ignoreCase = true)
+                val isChicken = config.chickenSpiritAlert && displayName.contains("Дух курицы", ignoreCase = true)
+                if (!isBear && !isChicken) continue
+
                 // Дух медведя — подсветка + glow
-                if (config.bearSpiritHighlight && displayName.contains("Дух медведя", ignoreCase = true)) {
+                if (isBear) {
                     val color = ColorUtils.parseColor(config.bearSpiritColorV2)
                     val r = ((color shr 16) and 0xFF) / 255f
                     val g = ((color shr 8) and 0xFF) / 255f
@@ -83,14 +106,15 @@ object Floor4 {
                     applyGlow(entity, color)
                 }
 
-                // Дух курицы — алерт в радиусе 64 блоков
-                if (config.chickenSpiritAlert && displayName.contains("Дух курицы", ignoreCase = true)) {
-                    val dist = playerPos.distanceTo(entity.position())
-                    if (dist <= DETECTION_RADIUS) {
+                // Дух курицы — алерт в радиусе 64 блоков (квадрат дистанции, без sqrt)
+                if (isChicken) {
+                    val dx = entity.x - playerPos.x
+                    val dz = entity.z - playerPos.z
+                    if (dx * dx + dz * dz <= DETECTION_RADIUS * DETECTION_RADIUS) {
                         val now = System.currentTimeMillis()
                         if (now - lastChickenAlert >= CHICKEN_ALERT_COOLDOWN) {
                             lastChickenAlert = now
-                            triggerChickenAlert(dist)
+                            triggerChickenAlert(kotlin.math.sqrt(dx * dx + dz * dz))
                         }
                     }
                 }
@@ -100,27 +124,13 @@ object Floor4 {
         }
     }
 
-    private fun getEntityDisplayName(entity: LivingEntity): String {
-        // 1. Проверяем кастомное имя
-        entity.customName?.let { return cleanText(it.string) }
-
-        // 2. Проверяем TextDisplay над головой (через MobHeadDisplayDetector)
-        val headDisplays = MobHeadDisplayDetector.getHeadDisplays(entity)
-        for (comp in headDisplays.textDisplays) {
-            val text = cleanText(comp.string)
-            if (text.isNotBlank()) return text
-        }
-
-        return ""
-    }
-
     private fun triggerChickenAlert(distance: Double) {
         val config = StarredHeltix.feature.dungeons.floor4
 
         if (config.chickenTitleEnabled) {
-            mc.gui.setTitle(Component.literal(config.chickenTitleText))
-            mc.gui.setSubtitle(Component.literal(config.chickenSubtitleText))
-            mc.gui.setTimes(10, 80, 20)
+            mc.gui.hud.setTitle(Component.literal(config.chickenTitleText))
+            mc.gui.hud.setSubtitle(Component.literal(config.chickenSubtitleText))
+            mc.gui.hud.setTimes(10, 80, 20)
         }
 
         if (config.chickenSoundEnabled) {
@@ -135,9 +145,7 @@ object Floor4 {
         managedGlowIds.add(id)
         seenGlowIds.add(id)
         glowColorsByEntityId[id] = color
-        if (!entity.isCurrentlyGlowing) {
-            entity.setGlowingTag(true)
-        }
+        // Без setGlowingTag — используется только EntityMixin
     }
 
     private fun cleanupGlow(level: net.minecraft.client.multiplayer.ClientLevel) {
@@ -146,15 +154,44 @@ object Floor4 {
         while (iter.hasNext()) {
             val id = iter.next()
             if (seenGlowIds.contains(id)) continue
-            val entity = level.getEntity(id)
-            if (entity != null) {
-                entity.setGlowingTag(false)
-            }
+            try { level.getEntity(id)?.let { if (it.hasGlowingTag()) it.setGlowingTag(false) } } catch (_: Exception) {}
             glowColorsByEntityId.remove(id)
+            EntityNameCache.invalidate(id)
             iter.remove()
         }
     }
-    private fun cleanText(text: String): String {
-        return text.replace(Regex("(?i)§[0-9a-fk-orlnmxz]"), "").trim()
+
+    private fun clearAllGlow(level: net.minecraft.client.multiplayer.ClientLevel) {
+        if (managedGlowIds.isNotEmpty()) {
+            for (id in managedGlowIds) {
+                try { level.getEntity(id)?.let { if (it.hasGlowingTag()) it.setGlowingTag(false) } } catch (_: Exception) {}
+                glowColorsByEntityId.remove(id)
+                EntityNameCache.invalidate(id)
+            }
+        }
+        // Зачистка застрявшего флага у всех энтити (старые версии ставили hasGlowingTag)
+        try {
+            for (entity in level.entitiesForRendering()) {
+                if (entity.hasGlowingTag() && getGlowColor(entity.id) == -1 &&
+                    set.starlev.features.combat.EntityHighlight.getGlowColor(entity.id) == -1 &&
+                    set.starlev.features.combat.ClickHighlight.getGlowColor(entity.id) == -1 &&
+                    set.starlev.scripting.ModuleGlowRegistry.getGlowColor(entity.id) == -1
+                ) {
+                    entity.setGlowingTag(false)
+                }
+            }
+        } catch (_: Exception) {}
+        managedGlowIds.clear()
+        glowColorsByEntityId.clear()
+        seenGlowIds.clear()
     }
+
+    fun onWorldChange() {
+        managedGlowIds.clear()
+        glowColorsByEntityId.clear()
+        seenGlowIds.clear()
+    }
+
+    @JvmStatic
+    fun getGlowColor(entityId: Int): Int = glowColorsByEntityId[entityId] ?: -1
 }

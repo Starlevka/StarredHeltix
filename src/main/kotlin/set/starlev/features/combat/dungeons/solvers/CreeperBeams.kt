@@ -21,6 +21,12 @@ object CreeperBeams {
     private val list = mutableListOf<Beam>()
     private var base: BlockPos? = null
 
+    /** Сброс при смене мира/сервера. */
+    fun onWorldChange() {
+        list.clear()
+        base = null
+    }
+
     private const val FLOOR_Y = 68
     private const val BASE_Y = 74
     private const val TARGET_SEARCH_XZ = 16
@@ -28,11 +34,11 @@ object CreeperBeams {
     private const val TARGET_SEARCH_Y_MAX = 86
 
     private val COLORS = arrayOf(
-        0xFF00FFFF.toInt(), // LIGHT_BLUE
-        0xFF00FF00.toInt(), // LIME
-        0xFFFFFF00.toInt(), // YELLOW
-        0xFFFF00FF.toInt(), // MAGENTA
-        0xFFFFC0CB.toInt()  // PINK
+        0xFF00FFFF.toInt(), // ГОЛУБОЙ
+        0xFF00FF00.toInt(), // ЛАЙМОВЫЙ
+        0xFFFFFF00.toInt(), // ЖЁЛТЫЙ
+        0xFFFF00FF.toInt(), // МАДЖЕНТА
+        0xFFFFC0CB.toInt()  // РОЗОВЫЙ
     )
     private val GREEN = 0xFF00FF00.toInt()
 

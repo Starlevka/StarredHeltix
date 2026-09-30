@@ -11,17 +11,10 @@ build/
 run/
 logs/
 
-# ── IDE / Editor / Vibe ──
-.kilo/
-.kilocode/
+# ── IDE / Editor──
 .idea/
 *.iml
 .vscode/
 
-# ── OS ──
-Thumbs.db
-.DS_Store
-
 # ── Other project files not part of the mod source ──
-/SOURCE CODE/
-/OTHER_MODS/
+/scripts/

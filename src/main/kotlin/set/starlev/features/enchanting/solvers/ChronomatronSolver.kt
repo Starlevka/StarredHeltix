@@ -4,215 +4,184 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap
 import net.minecraft.client.gui.screens.inventory.ContainerScreen
 import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.item.ItemStack
-import net.minecraft.core.component.DataComponents
 import set.starlev.StarredHeltix
 import set.starlev.features.enchanting.ColorHighlight
 import set.starlev.features.enchanting.ExperimentSolver
-import set.starlev.utils.detectors.SlotPhaseDetector
 
 /**
- * Chronomatron (Ритмотрон) — решатель мини-игры «Хронометрон».
+ * Ритмотрон (Rhythmatron) — решатель мини-игры Heltix «Ритмотрон».
  *
- * Архитектура:
- * — Event-driven: получает обновления слотов через [onSlotUpdate] (от EventBus).
- * — Не подписывается на [net.minecraft.world.inventory.ContainerListener] напрямую.
- * — Детект фазы через [SlotPhaseDetector] (Item enum + текст displayName).
- * — Хранит **слоты**, а не предметы. Не нужен TERRACOTTA_TO_GLASS Map на 16 пар.
+ * Порт логики `heltix-superpairs/RhythmatronHandler` (scripts/SOURCES/SOLVERS EXPERIMENTAL):
+ * на Heltix это НЕ Hypixel-хрономатрон (позиции), а ЦВЕТОВАЯ последовательность на
+ * фиксированном стеклянном поле:
+ *  - поле — «стеклянные» слоты, каждый имеет свой цвет (boardColors);
+ *  - фаза «запомните» (GLOWSTONE/«запомн») — по полю бегут вспышки из керамики/терракоты/бетона,
+ *    их цвета по порядку = искомая последовательность (sequenceColors);
+ *  - фаза «повторите» (CLOCK/«часы») — подсветка всех ячеек текущего шага-цвета, клик
+ *    по любой из них переводит к следующему шагу.
  *
- * Что исправлено по сравнению со старой реализацией:
- * — Баг #1: после записи первого highlight переходил в WAIT — остальные highlight'ы фазы
- *   REMEMBER терялись. Теперь состояние остаётся REMEMBER до прихода CLOCK/GLOWSTONE-text.
- * — Баг #2: хранил только ОДИН слот за раз (`chronomatronCurrentSlot`). Теперь накапливаем
- *   ВСЕ подсвеченные слоты текущего шага через `pendingSlots: MutableSet<Int>`. Это критично,
- *   потому что Chronomatron подсвечивает все слоты одного цвета разом.
- * — Баг #3: убрана мёртвая ветка `chronomatronChainLengthCount++` с непонятной логикой.
- * — Баг #4: детект фазы через [SlotPhaseDetector] — Item enum ИЛИ текст displayName
- *   (для Heltix, где предмет может быть не GLOWSTONE/CLOCK).
- * — Баг #5: убран TERRACOTTA_TO_GLASS Map (16 пар) — мы работаем со слотами, цвета не нужны.
- *
- * Состояния:
- * 1. [State.REMEMBER] — сервер показывает последовательность.
- *    Накапливаем подсвеченные слоты в `pendingSlots`.
- * 2. [State.SHOW] — сервер ждёт клика. Подсвечиваем слоты текущего шага.
- * 3. [State.END] — все шаги пройдены.
+ * Сканирование меню — каждый кадр в [tick] (как в эталоне), а не по событиям слотов:
+ * Heltix шлёт вспышки быстро и событийно их легко пропустить.
  */
-class ChronomatronSolver : ExperimentSolver(Regex("Ритмотрон|Chronomatron")) {
+class ChronomatronSolver : ExperimentSolver(Regex("Ритмотрон|Rhythmatron|Chronomatron|Хронометрон")) {
 
-    /**
-     * Последовательность шагов. Каждый шаг — список slot-индексов одного цвета.
-     * Например: [[11,14,22,31], [12,23,33], [15,25]] — 3 шага по 4/3/2 слота.
-     */
-    private val chronoSequence: MutableList<List<Int>> = mutableListOf()
+    /** slot -> цвет стеклянной ячейки поля (фиксированная доска). */
+    private val boardColors = HashMap<Int, String>()
 
-    /** Текущий шаг, на котором находится игрок (0-indexed). */
-    private var currentStep = 0
+    /** Запомненная последовательность цветов. */
+    private val sequenceColors = ArrayList<String>()
 
-    /** Слоты, подсвеченные в текущем шаге (накапливаются во время REMEMBER, сохраняя порядок). */
-    private val pendingSlots: MutableList<Int> = mutableListOf()
+    /** Текущий шаг (1-базный). */
+    @Volatile private var currentStep: Int = 1
 
-    /** Индекс следующего клика внутри текущего шага */
-    private var stepClickIndex = 0
+    /** true = фаза «повторите» (ждём кликов); false = фаза «запомните»/NONE. */
+    @Volatile private var isGamePhase: Boolean = false
 
-    /** Текущая фаза по последнему обновлению слота 49 (инструкция). */
-    @Volatile private var lastPhase: SlotPhaseDetector.Phase = SlotPhaseDetector.Phase.NONE
+    private var lastRoundText: String = ""
+    private var lastFlashedColor: String = ""
 
-    override fun isEnabled(): Boolean {
-        return StarredHeltix.feature.enchanting.tableSolvers.chronomatron
-    }
+    override fun isEnabled(): Boolean = StarredHeltix.feature.enchanting.tableSolvers.chronomatron
 
     override fun start(screen: ContainerScreen) {
         super.start(screen)
-        chronoSequence.clear()
-        currentStep = 0
-        stepClickIndex = 0
-        pendingSlots.clear()
-        lastPhase = SlotPhaseDetector.Phase.NONE
-        StarredHeltix.LOGGER.info("[Chronomatron] Started, title=${screen.title.string}")
+        hardReset()
+        StarredHeltix.LOGGER.info("[Rhythmatron] Started, title=${screen.title.string}")
     }
 
-    /**
-     * tick() не используется — вся логика работает на событиях [onSlotUpdate].
-     */
-    override fun tick(screen: ContainerScreen) {}
+    private fun hardReset() {
+        boardColors.clear()
+        sequenceColors.clear()
+        currentStep = 1
+        isGamePhase = false
+        lastFlashedColor = ""
+        lastRoundText = ""
+    }
 
-    /**
-     * Обрабатывает обновление одного слота.
-     * Поставляется через [set.starlev.events.EventBus] (см. [set.starlev.events.SlotUpdateEvent]).
-     *
-     * Логика фазы:
-     * — Сканируем ВСЕ слоты на предмет phase-индикатора (GLOWSTONE / CLOCK / текст).
-     *   Это нужно потому, что Heltix может класть инструкцию в другой слот, не 49.
-     * — Игровое поле (slots 9..44) обрабатываем только в фазе REMEMBER.
-     */
-    override fun onSlotUpdate(menu: AbstractContainerMenu, slotId: Int, stack: ItemStack) {
-        // 1. Фазовая инструкция — только слот 49 (или нижний ряд 45-53).
-        //    НЕ проверяем слоты игрового поля (9-44), чтобы случайно не
-        //    сдетектить GLOWSTONE/CLOCK из сетки как фазу.
-        if (slotId in 45..53) {
-            val newPhase = SlotPhaseDetector.detect(stack)
-            if (newPhase != SlotPhaseDetector.Phase.NONE) {
-                if (newPhase != lastPhase) {
-                    onPhaseChanged(newPhase)
-                    lastPhase = newPhase
+    override fun tick(screen: ContainerScreen) {
+        // Смена заголовка (переход на следующий уровень) — полный сброс, как resetAllHandlers в эталоне
+        if (checkTitleChanged(screen)) hardReset()
+        val slots = screen.menu.slots
+        val containerSlots = slots.size - 36
+        if (containerSlots <= 0) return
+
+        var foundGlowstone = false
+        var foundClock = false
+
+        // 1. Раунд-текст, индикаторы фазы
+        for (i in 0 until slots.size) {
+            val stack = slots[i].item
+            if (stack.isEmpty) continue
+            val hover = ExperimentUtil.hover(stack)
+            if (ExperimentUtil.isRoundFlag(stack) && hover != lastRoundText) {
+                // Новый раунд/уровень — полный сброс доски и последовательности
+                lastRoundText = hover
+                boardColors.clear()
+                sequenceColors.clear()
+                currentStep = 1
+                isGamePhase = false
+                lastFlashedColor = ""
+            }
+            if (ExperimentUtil.isRememberFlag(stack)) foundGlowstone = true
+            if (ExperimentUtil.isWaitFlag(stack)) foundClock = true
+        }
+
+        if (foundGlowstone) {
+            if (isGamePhase) { isGamePhase = false; currentStep = 1; sequenceColors.clear(); lastFlashedColor = "" }
+        } else if (foundClock) {
+            isGamePhase = true
+        }
+
+        // 2. Доска: стеклянные ячейки и их цвета (постоянно обновляем)
+        for (i in 0 until containerSlots) {
+            val stack = slots[i].item
+            if (stack.isEmpty) continue
+            if (!ExperimentUtil.isGlass(stack)) continue
+            ExperimentUtil.parseColor(stack)?.let { boardColors[i] = it }
+        }
+
+        // 3. Фаза «запомните»: ловим вспышки (не-стеклянные цветные блоки) в порядке появления
+        if (!isGamePhase) {
+            for (i in 0 until containerSlots) {
+                val stack = slots[i].item
+                if (stack.isEmpty) continue
+                val hover = ExperimentUtil.hover(stack)
+                val isGlassOrSystem = ExperimentUtil.isGlass(stack) || ExperimentUtil.isPane(stack) ||
+                    ExperimentUtil.isSystemItem(hover)
+                if (isGlassOrSystem) continue
+                if (!ExperimentUtil.isCeramic(stack)) continue
+                val color = ExperimentUtil.parseColor(stack) ?: boardColors[i] ?: continue
+                if (color != lastFlashedColor) {
+                    sequenceColors.add(color)
+                    lastFlashedColor = color
+                    setState(State.REMEMBER)
                 }
-                return
             }
         }
 
-        // 2. Игровое поле Chronomatron (slots 9..44).
-        if (slotId !in 9..44) return
-
-        // В фазе REMEMBER записываем подсвеченные слоты.
-        // Проверяем hasFoil() ИЛИ тип предмета (терракотта/стекло/шерсть).
-        if (lastPhase == SlotPhaseDetector.Phase.REMEMBER && isMarkedChronomatronSlot(stack)) {
-            pendingSlots.add(slotId)
+        // 4. Авто-продвижение: если ожидаемую ячейку уже «закрыли» (перестала быть стеклом)
+        if (isGamePhase && sequenceColors.isNotEmpty()) {
+            val target = currentStep - 1
+            if (target < sequenceColors.size) {
+                val expected = sequenceColors[target]
+                for ((slotIdx, color) in boardColors) {
+                    if (color != expected) continue
+                    if (slotIdx >= slots.size) continue
+                    val stack = slots[slotIdx].item
+                    if (stack.isEmpty) continue
+                    val hover = ExperimentUtil.hover(stack)
+                    val stillGlass = ExperimentUtil.isGlass(stack) || hover.contains("закрыто")
+                    if (!stillGlass) {
+                        advanceStep()
+                        break
+                    }
+                }
+            }
+            if (currentStep > sequenceColors.size) setState(State.END)
+            else setState(State.SHOW)
         }
     }
 
-    private fun onPhaseChanged(newPhase: SlotPhaseDetector.Phase) {
-        when (newPhase) {
-            SlotPhaseDetector.Phase.REMEMBER -> {
-                // Новый раунд (или первый) — сбрасываем последовательность.
-                chronoSequence.clear()
-                currentStep = 0
-                stepClickIndex = 0
-                pendingSlots.clear()
-                setState(State.REMEMBER)
-                StarredHeltix.LOGGER.info("[Chronomatron] → REMEMBER")
-            }
-            SlotPhaseDetector.Phase.WAIT -> {
-                // CLOCK / "Оставшееся" = конец показа. Закрываем текущий шаг (если есть открытые слоты)
-                // и переходим к фазе клика.
-                if (pendingSlots.isNotEmpty()) {
-                    chronoSequence.add(pendingSlots.toList())
-                    pendingSlots.clear()
-                }
-                if (chronoSequence.isNotEmpty()) {
-                    setState(State.SHOW)
-                    StarredHeltix.LOGGER.info(
-                        "[Chronomatron] → SHOW. ${chronoSequence.size} шагов: " +
-                            chronoSequence.joinToString(" → ") { "${it.size} сл." }
-                    )
-                } else {
-                    StarredHeltix.LOGGER.debug(
-                        "[Chronomatron] WAIT без последовательности — ничего не записали."
-                    )
-                }
-            }
-            SlotPhaseDetector.Phase.NONE -> {
-                // Неизвестный предмет в инструкции. Не критично.
-            }
-        }
-    }
-
-    private fun isMarkedChronomatronSlot(stack: ItemStack): Boolean {
-        if (stack.isEmpty) return false
-        if (stack.hasFoil()) return true
-        val item = stack.item
-        val name = item.toString().lowercase()
-        return name.contains("terracotta") ||
-               name.contains("stained_glass") ||
-               name.contains("wool") ||
-               name.contains("concrete_powder") ||
-               name.contains("glazed_terracotta")
+    private fun advanceStep() {
+        if (currentStep <= sequenceColors.size) currentStep++
     }
 
     override fun getColors(displaySlots: Int2ObjectMap<ItemStack>): List<ColorHighlight> {
-        if (getState() != State.SHOW) return emptyList()
-        if (currentStep >= chronoSequence.size) return emptyList()
-        val step = chronoSequence[currentStep]
-        if (stepClickIndex >= step.size) return emptyList()
-        return listOf(ColorHighlight.green(step[stepClickIndex]))
-    }
-
-    override fun getReplacementItems(displaySlots: Int2ObjectMap<ItemStack>): Int2ObjectMap<ItemStack> {
-        val replacements = it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap<ItemStack>()
-        if (getState() != State.SHOW) return replacements
-
-        for ((stepIndex, step) in chronoSequence.withIndex()) {
-            for (slotIndex in step) {
-                val display = displaySlots.get(slotIndex) ?: continue
-                if (display.isEmpty) continue
-                val copy = display.copy()
-                val stepColor = when (stepIndex) {
-                    currentStep -> "§a"
-                    in 0 until currentStep -> "§7"
-                    else -> "§8"
-                }
-                val newName = "${stepColor}[${stepIndex + 1}] §f${copy.hoverName.string}"
-                copy.set(DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal(newName))
-                replacements.put(slotIndex, copy)
-            }
+        if (!isGamePhase || sequenceColors.isEmpty()) return emptyList()
+        val target = currentStep - 1
+        if (target >= sequenceColors.size) return emptyList()
+        val expected = sequenceColors[target]
+        val result = ArrayList<ColorHighlight>()
+        for ((slotIdx, color) in boardColors) {
+            if (color == expected) result.add(ColorHighlight.green(slotIdx))
         }
-        return replacements
+        return result
     }
+
+    override fun getDisplayStack(slotId: Int, original: ItemStack): ItemStack? = null
+
+    override fun getReplacementItems(displaySlots: Int2ObjectMap<ItemStack>): Int2ObjectMap<ItemStack> =
+        it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap()
 
     override fun onClickSlot(slot: Int, stack: ItemStack, button: Int): Boolean {
-        if (getState() != State.SHOW) return shouldBlockIncorrectClicks()
-        if (currentStep >= chronoSequence.size) return false
-
-        val step = chronoSequence[currentStep]
-        if (stepClickIndex >= step.size) return false
-        if (slot != step[stepClickIndex]) return shouldBlockIncorrectClicks()
-
-        stepClickIndex++
-        if (stepClickIndex >= step.size) {
-            currentStep++
-            stepClickIndex = 0
-            if (currentStep >= chronoSequence.size) {
-                setState(State.END)
-                StarredHeltix.LOGGER.info("[Chronomatron] Все шаги пройдены → END.")
-            }
+        if (!isGamePhase || sequenceColors.isEmpty()) return false
+        val target = currentStep - 1
+        if (target >= sequenceColors.size) return false
+        val expected = sequenceColors[target]
+        val clickedColor = boardColors[slot]
+        return if (clickedColor == expected) {
+            advanceStep()
+            false // клик правильный — пропускаем, сервер сам закроет ячейку
+        } else {
+            StarredHeltix.feature.enchanting.tableSolvers.blockIncorrectClicks
         }
-        return false
+    }
+
+    override fun onSlotUpdate(menu: AbstractContainerMenu, slotId: Int, stack: ItemStack) {
+        // Вся логика в tick(screen) — событийная модель тут ненадёжна (Heltix шлёт быстро).
     }
 
     override fun reset() {
-        chronoSequence.clear()
-        currentStep = 0
-        stepClickIndex = 0
-        pendingSlots.clear()
-        lastPhase = SlotPhaseDetector.Phase.NONE
+        hardReset()
         super.reset()
     }
 }

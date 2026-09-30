@@ -83,4 +83,17 @@ object ColorUtils {
             default
         }
     }
+
+    /**
+     * Строит ARGB-цвет из ползунка прозрачности 0-100% и RGB-составляющей.
+     * 0% — фон полностью невидим, 100% — полностью непрозрачен.
+     * Единая точка для всех фонов (табло, карта подземелий), чтобы ползунки
+     * вели себя одинаково: 45% ≈ прежний хардкод 0x70000000.
+     */
+    fun alphaColor(percent: Float, rgb: Int = 0x000000): Int {
+        val a = ((percent.coerceIn(0f, 100f) / 100f) * 255f + 0.5f).toInt().coerceIn(0, 255)
+        return (a shl 24) or (rgb and 0x00FFFFFF)
+    }
 }
+
+// stripColor вынесен в TextUtils (единый regex-кэш через CacheManager)

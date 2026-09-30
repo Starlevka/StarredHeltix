@@ -2,7 +2,9 @@ package set.starlev.features.mining
 
 import net.minecraft.client.Minecraft
 import set.starlev.StarredHeltix
-import set.starlev.hud.HudElement
+import set.starlev.render.HudElement
+import set.starlev.render.drawString
+import set.starlev.render.drawCenteredString
 
 object SpeedBoostCooldownHud : HudElement("SpeedBoostCooldownHud") {
     private val mc = Minecraft.getInstance()
