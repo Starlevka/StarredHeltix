@@ -19,7 +19,12 @@ object ItemLoreDetector {
         if (cached != null) return cached
 
         val lore = generateLore(stack)
-        CacheManager.cacheLore(hash, lore)
+        // Пустой результат НЕ кэшируем: generateLore возвращает emptyList, если на момент
+        // вызова не было player/level. Раньше такой пустой список заливался в кеш и больше
+        // никогда не перечитывался — лора предмета «исчезала» до смены мира.
+        if (lore.isNotEmpty()) {
+            CacheManager.cacheLore(hash, lore)
+        }
         return lore
     }
 

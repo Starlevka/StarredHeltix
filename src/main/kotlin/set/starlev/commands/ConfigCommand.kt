@@ -210,6 +210,17 @@ object ConfigCommand {
             .then(literal("install").executes { set.starlev.utils.ModUpdater.installUpdate(); 1 })
         )
         .then(literal("coords").executes(::showCoords))
+        // Диагностика «Текущая сила»: открыть меню с мешком и выполнить — покажет,
+        // что именно мод видит в слотах и на каком шаге не находит магическую силу.
+        .then(literal("powertest").executes {
+            set.starlev.features.skyblock.scoreboard.elements.ScoreboardElementPower.debugDump(); 1
+        })
+        .then(literal("powerdump2").executes {
+            set.starlev.features.skyblock.scoreboard.elements.ScoreboardElementPower.debugDumpAll(); 1
+        })
+        .then(literal("powerreset").executes {
+            set.starlev.features.skyblock.scoreboard.elements.ScoreboardElementPower.resetCache(); 1
+        })
         .then(literal("mouselock")
             .executes { ctx ->
                 MouseLock.toggle()
