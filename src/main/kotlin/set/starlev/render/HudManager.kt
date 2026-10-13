@@ -21,15 +21,15 @@ object HudManager {
     var isEditMode = false
 
     enum class HudCategory(val label: String) {
-        ALL("Все"),
-        SKYBLOCK("Скайблок"),
-        DUNGEON("Данж"),
-        FARMING("Ферма"),
-        MINING("Шахта"),
-        FISHING("Рыбалка"),
-        FORAGING("Лес"),
-        COMBAT("Бой"),
-        MISC("Другое");
+    ALL("Все"),
+    SKYBLOCK("Нёб"),
+    DUNGEON("Данж"),
+    FARMING("Ферма"),
+    MINING("Шахта"),
+    FISHING("Рыбалка"),
+    FORAGING("Лес"),
+    COMBAT("Бой"),
+    MISC("Другое");
         override fun toString() = label
     }
 
@@ -40,7 +40,7 @@ object HudManager {
         "BloodRoomTimer", "DungeonMapHud" -> HudCategory.DUNGEON
         "RancherSpeedHud", "MouseLock" -> HudCategory.FARMING
         "CommissionsHud", "PickaxeCooldownHud", "SpeedBoostCooldownHud" -> HudCategory.MINING
-        "FishingNotifier", "LegendaryFishingNotifier" -> HudCategory.FISHING
+        "FishingNotifier" -> HudCategory.FISHING
         "TreeCapCooldown" -> HudCategory.FORAGING
         "SlayerHud" -> HudCategory.COMBAT
         "BonemerangHud" -> HudCategory.COMBAT
@@ -49,7 +49,6 @@ object HudManager {
 
     fun init() {
         registerElement(set.starlev.features.fishing.FishingNotifier)
-        registerElement(set.starlev.features.fishing.LegendaryFishingNotifier)
         registerElement(set.starlev.features.foraging.TreeCapCooldown)
         registerElement(set.starlev.features.mining.PickaxeCooldownHud)
         registerElement(set.starlev.features.mining.SpeedBoostCooldownHud)
@@ -136,7 +135,7 @@ object HudManager {
                 val isMuseum = id == "MuseumHud"
                 val isDialogue = id == "NpcDialogueOverlay"
                 if (inInventory) {
-                    // Диалог как в SkyCubed: рендерится и при открытом контейнере (прижат слева)
+                    // Диалог рендерится и при открытом контейнере (прижат слева)
                     if (!isMuseum && !isDialogue) continue
                 } else {
                     if (isMuseum) continue
@@ -184,7 +183,6 @@ object HudManager {
             "SpeedBoostCooldownHud" -> f.mining.abilities.abilityCooldown.speedBoostEnabled
             "TreeCapCooldown" -> f.foraging.axes.treeCapCooldown.enabled
             "FishingNotifier" -> f.fishing.notifications.fishingNotifier
-            "LegendaryFishingNotifier" -> f.fishing.notifications.legendaryFishingNotifier
             "SlayerHud" -> f.slayer.slayerHud.enabled
             "BonemerangHud" -> f.combat.bonemerang.enabled
             "PetOverlay" -> f.skyblock.pet.enabled

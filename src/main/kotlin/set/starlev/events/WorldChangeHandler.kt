@@ -51,8 +51,7 @@ object WorldChangeHandler {
         safe("ClickHighlight") { set.starlev.features.combat.ClickHighlight.onWorldChange() }
         safe("ModuleGlowRegistry") { set.starlev.scripting.ModuleGlowRegistry.onWorldChange() }
         safe("Floor4") { Floor4.onWorldChange() }
-        safe("GreenWalls") { set.starlev.features.combat.dungeons.GreenWalls.onWorldChange() }
-        safe("SeeThroughWindow") { set.starlev.features.visual.SeeThroughWindow.onWorldChange() }
+        safe("SeeThroughWindow") { set.starlev.features.farming.SeeThroughWindow.onWorldChange() }
         safe("BloodRoomTimer") { set.starlev.features.combat.dungeons.BloodRoomTimer.reset() }
         safe("EndHighlight") { EndHighlight.clearCache() }
         safe("GlowingMushroomHighlight") { set.starlev.features.fishing.GlowingMushroomHighlight.onWorldChange() }
@@ -72,6 +71,5 @@ object WorldChangeHandler {
         safe("CreeperBeams") { set.starlev.features.combat.dungeons.solvers.CreeperBeams.onWorldChange() }
         safe("TicTacToe") { set.starlev.features.combat.dungeons.solvers.TicTacToe.onWorldChange() }
         safe("LeapOverlay") { set.starlev.features.combat.dungeons.LeapOverlay.onWorldChange() }
-        StarredHeltix.LOGGER.info("[WorldChange] Кэши сброшены (reason=$reason)")
     }
 }

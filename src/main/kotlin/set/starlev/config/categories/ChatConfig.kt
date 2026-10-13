@@ -28,6 +28,26 @@ class ChatConfig {
     @Category(name = "Алиасы команд", desc = "Свои сокращения для серверных команд: /dh → /warp dungeon_hub (/sh aliases)")
     var aliases = AliasesConfig()
 
+    @Expose
+    @Category(name = "Уведомления", desc = "Свои уведомления по тексту чата: ванильные титры и звук (/sh notifiers)")
+    var notifiers = NotifiersConfig()
+
+    class NotifiersConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Показывать заголовок и звук, когда в чате совпало правило")
+        @ConfigEditorBoolean
+        var enabled = true
+
+        @ConfigOption(name = "Меню уведомлений", desc = "Добавить правила, настроить заголовок, звук и длительность")
+        @ConfigEditorButton(buttonText = "Открыть")
+        val openNotifiersMenu = Runnable {
+            set.starlev.StarredHeltix.screenToOpen = set.starlev.render.NotifierGui(null)
+        }
+
+        @Expose
+        var rules = mutableListOf<set.starlev.features.chat.NotifierRule>()
+    }
+
     class AliasesConfig {
         @Expose
         @ConfigOption(name = "Включить?", desc = "Включает переписывание команд по алиасам")

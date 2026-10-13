@@ -5,6 +5,7 @@ import io.github.notenoughupdates.moulconfig.observer.PropertyTypeAdapterFactory
 import io.github.notenoughupdates.moulconfig.processor.BuiltinMoulConfigGuis
 import io.github.notenoughupdates.moulconfig.processor.ConfigProcessorDriver
 import io.github.notenoughupdates.moulconfig.processor.MoulConfigProcessor
+import io.github.notenoughupdates.moulconfig.processor.ProcessedCategory
 import io.github.notenoughupdates.moulconfig.processor.ProcessedOption
 import set.starlev.StarredHeltix
 import set.starlev.config.categories.OptimizationConfig
@@ -138,7 +139,6 @@ object ConfigManager {
             val entries = features.skyblock.scoreboard.scoreboardEntries
             val cleaned = entries.filterNotNull()
             if (cleaned.size != entries.size) {
-                StarredHeltix.LOGGER.info("[Config] Санитайзер: убрано ${entries.size - cleaned.size} битых элементов порядка скорборда")
                 entries.clear()
                 entries.addAll(cleaned)
                 saveConfig("sanitize-scoreboard-entries")
@@ -155,19 +155,33 @@ object ConfigManager {
                 val bpsIdx = entries.indexOfFirst { it == ScoreboardConfigElement.BPS }
                 if (bpsIdx >= 0) entries.add(bpsIdx + 1, ScoreboardConfigElement.POWER)
                 else entries.add(ScoreboardConfigElement.POWER)
-                StarredHeltix.LOGGER.info("[Config] Миграция: строка «Текущая сила» добавлена в порядок скорборда")
             }
             features.skyblock.scoreboard.migratedPowerLine = true
             saveConfig("migrate-power-scoreboard-line")
         }
 
-        // Тумблеры буста Windows/Linux взаимоисключающие. В конфиге могли остаться оба
-        // (правка руками или старый конфиг) — оставляем платформу текущей системы.
-        if (set.starlev.utils.GameModeBoost.enforceSinglePlatform(System.getProperty("os.name", ""))) {
-            saveConfig("fix-exclusive-boost-toggles")
+        // Буст приоритета раньше был двумя взаимоисключающими тумблерами (Windows/Linux),
+        // теперь это один флаг, а платформа определяется по системе. Переносим значение.
+        val perf = features.optimization.performance
+        if (!perf.migratedSinglePriorityToggle) {
+            if (perf.windows || perf.linux) {
+                perf.threadPriority = true
+            }
+            perf.migratedSinglePriorityToggle = true
+            saveConfig("migrate-single-priority-toggle")
         }
 
-        // Миграция старой системы анимации удара в редактор (как в Skysoft)
+        // Порядок каналов в цветах: старые значения были в порядке `Chroma:A:R:G:B`,
+        // а пикер MoulConfig читает ChromaColour как B:G:R:A:Chroma. С 4-частной строкой
+        // (например дефолт цвета неба) он падает с ArrayIndexOutOfBounds, с 5-частной —
+        // показывает переставленные R и B. Переводим все @ConfigEditorColour-поля разом.
+        if (!features.migratedColourOrder) {
+            val converted = convertColourFieldsToMoulConfigOrder(features)
+            features.migratedColourOrder = true
+            saveConfig("migrate-colour-order")
+        }
+
+        // Миграция старой системы анимации удара в редактор
         if (!features.visuals.animations.swingAnimation.migratedToEditor) {
             features.visuals.animations.swingAnimation.applyLegacyMigration()
             saveConfig("migrate-swing-to-editor")
@@ -179,7 +193,9 @@ object ConfigManager {
         val driver = ConfigProcessorDriver(processor)
         driver.warnForPrivateFields = false
         driver.processConfig(StarredHeltix.feature)
-        linkExclusiveBoostToggles()
+        hideCategories("inputMath")
+        addSubcategoryHints()
+        addColourResetButtons()
 
         autoSaveTimer = fixedRateTimer(name = "starredheltix-config-auto-save", daemon = true, period = 600_000L, initialDelay = 600_000L) {
             try {
@@ -190,56 +206,242 @@ object ConfigManager {
         }
     }
 
-    /**
-     * Тумблеры «Windows» и «Linux» в секции «Приоритет процесса» взаимоисключающие:
-     * включение одного сразу гасит другой. MoulConfig пишет значение прямо в поле,
-     * поэтому подменяем ProcessedOption на обёртку, которая при set(true) сбрасывает
-     * соседний тумблер. Сами ProcessedCategory.options — mutable ArrayList, заменяем
-     * элемент на месте, чтобы подхватил и уже созданный GUI.
-     */
-    private fun linkExclusiveBoostToggles() {
-        try {
-            val windowsField = OptimizationConfig.PerformanceConfig::class.java.getDeclaredField("windows")
-            val linuxField = OptimizationConfig.PerformanceConfig::class.java.getDeclaredField("linux")
-            val windowsOption = processor.getOptionFromField(windowsField) ?: return
-            val linuxOption = processor.getOptionFromField(linuxField) ?: return
-            replaceOption(windowsOption, ExclusiveToggleOption(windowsOption, linuxOption))
-            replaceOption(linuxOption, ExclusiveToggleOption(linuxOption, windowsOption))
-        } catch (t: Throwable) {
-            StarredHeltix.LOGGER.warn("[Config] Не удалось связать тумблеры Windows/Linux: ${t.message}")
-        }
-    }
-
-    private fun replaceOption(original: ProcessedOption, replacement: ProcessedOption) {
-        for (category in processor.allCategories.values) {
-            // ProcessedCategory.options — ArrayList, но Kotlin видит его как List<out ProcessedOption>
-            @Suppress("UNCHECKED_CAST")
-            val options = category.options as MutableList<ProcessedOption>
-            val index = options.indexOf(original)
-            if (index >= 0) {
-                options[index] = replacement
-                return
+/**
+ * Рекурсивно переводит строковые поля с @ConfigEditorColour в порядок `B:G:R:A:Chroma`.
+ * Возвращает количество переведённых полей.
+ */
+private fun convertColourFieldsToMoulConfigOrder(root: Any): Int {
+    var converted = 0
+    val visited = HashSet<Any>()
+    val queue = ArrayDeque<Any>()
+    queue.add(root)
+    while (queue.isNotEmpty()) {
+        val target = queue.removeFirst()
+        if (!visited.add(target)) continue
+        for (field in target.javaClass.declaredFields) {
+            if (field.isSynthetic || java.lang.reflect.Modifier.isStatic(field.modifiers)) continue
+            val value = try {
+                field.isAccessible = true
+                field.get(target)
+            } catch (_: Throwable) {
+                continue
+            }
+            when {
+                value is String && field.getAnnotation(io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour::class.java) != null -> {
+                    val fixed = set.starlev.utils.ColorUtils.toMoulConfigOrder(value)
+                    if (fixed != null && fixed != value) {
+                        try {
+                            field.set(target, fixed)
+                            converted++
+                        } catch (_: Throwable) {
+                        }
+                    }
+                }
+                value != null && !value.javaClass.isPrimitive && !value.javaClass.isEnum &&
+                    !value.javaClass.name.startsWith("java.") && !value.javaClass.name.startsWith("kotlin.") -> queue.add(value)
             }
         }
-        StarredHeltix.LOGGER.warn("[Config] Опция ${original.path} не найдена в категориях — тумблеры не связаны")
+    }
+    return converted
+}
+
+/**
+ * ВРЕМЕННО: спрятать категорию из меню настроек.
+ *
+ * Само поле конфига остаётся на месте — Gson его читает и пишет как обычно, код фичи
+ * продолжает работать, сохранённые настройки не теряются. Прячется только запись в
+ * `MoulConfigEditor`. Когда фича починится — просто удали вызов `hideCategories`.
+ */
+private fun hideCategories(vararg fieldNames: String) {
+    try {
+        val map = processor.allCategories as MutableMap<String, io.github.notenoughupdates.moulconfig.processor.ProcessedCategory>
+        val hidden = map.keys.filter { id -> fieldNames.any { id.contains(it, ignoreCase = true) } }
+        hidden.forEach { map.remove(it) }
+    } catch (t: Throwable) {
+        StarredHeltix.LOGGER.warn("[Config] Не удалось скрыть категорию: ${t.message}")
+    }
+}
+
+    /**
+     * Подсказка в правой панели для категорий, у которых есть только подкатегории.
+     *
+     * Без неё MoulConfig рисует свой английский текст («Seems like your search is found
+     * in a subcategory…»), т.к. список опций пустой. Своя опция-инфотекст выглядит
+     * аккуратнее и говорит по-русски, что делать дальше.
+     */
+    private fun addSubcategoryHints() {
+        try {
+            val config = StarredHeltix.feature
+            val all = processor.allCategories
+            val parents = HashSet<String>()
+            all.values.forEach { category ->
+                val parentId = category.parentCategoryId ?: return@forEach
+                parents.add(parentId)
+            }
+            all.values.forEach { category ->
+                if (category.identifier !in parents) return@forEach
+                // ProcessedCategory.options — ArrayList, но Kotlin видит List<out ProcessedOption>
+                @Suppress("UNCHECKED_CAST")
+                val options = category.options as MutableList<ProcessedOption>
+                if (options.isNotEmpty()) return@forEach
+                val parent = category.parentCategoryId?.let { all[it] }
+                options.add(SubcategoryHintOption(category, parent, config))
+            }
+        } catch (t: Throwable) {
+            StarredHeltix.LOGGER.warn("[Config] Не удалось добавить подсказки подкатегорий: ${t.message}")
+        }
     }
 
-    /** Обёртка тумблера: при включении выключает соседний (взаимоисключение Windows/Linux). */
-    private class ExclusiveToggleOption(
-        private val delegate: ProcessedOption,
-        private val sibling: ProcessedOption
-    ) : ProcessedOption by delegate {
-        override fun set(value: Any?): Boolean {
-            val result = delegate.set(value)
-            if (value == true) {
-                sibling.set(false)
-                try {
-                    sibling.explicitNotifyChange()
-                } catch (_: Throwable) {
+    /** Неизменяемая опция-заголовок «вы находитесь здесь» (вставка в ProcessedCategory.options). */
+    private class SubcategoryHintOption(
+        private val owner: ProcessedCategory,
+        private val parent: ProcessedCategory?,
+        private val config: Features
+    ) : ProcessedOption {
+        private val title = owner.displayName
+
+        private val subtitle = io.github.notenoughupdates.moulconfig.common.text.StructuredText.of(
+            buildString {
+                parent?.displayName?.text?.let { append(it).append("  →  ") }
+                append(owner.displayName.text)
+            }
+        ).grey()
+
+        private val footnote = io.github.notenoughupdates.moulconfig.common.text.StructuredText
+            .of("Все настройки этой категории — в подкатегориях в списке слева.")
+            .grey()
+
+        private val editor by lazy {
+            set.starlev.config.gui.SubcategoryHintEditor(this, title, subtitle, footnote)
+        }
+
+        override fun getSearchTags(): Array<io.github.notenoughupdates.moulconfig.annotations.SearchTag> = emptyArray()
+        override fun getAccordionId(): Int = -1
+        override fun getCategory(): ProcessedCategory = owner
+        override fun getConfig(): io.github.notenoughupdates.moulconfig.Config = config
+        override fun getName(): io.github.notenoughupdates.moulconfig.common.text.StructuredText =
+            io.github.notenoughupdates.moulconfig.common.text.StructuredText.of("")
+
+        override fun getDescription(): io.github.notenoughupdates.moulconfig.common.text.StructuredText =
+            io.github.notenoughupdates.moulconfig.common.text.StructuredText.of("")
+
+        override fun getPath(): String = "${owner.identifier}.subcategoryHint"
+        override fun getType(): Class<*> = String::class.java
+        override fun getEditor(): io.github.notenoughupdates.moulconfig.gui.GuiOptionEditor = editor
+        override fun get(): Any? = null
+        override fun set(value: Any?): Boolean = false
+        override fun explicitNotifyChange() {}
+        override fun getDebugDeclarationLocation(): String = "subcategory-hint:${owner.identifier}"
+    }
+
+    /**
+     * Кнопка «Сброс» **справа от цвета**, в одной строке — вернуть дефолт.
+     *
+     * Раньше это была отдельная синтетическая опция ПОД цветом (целая лишняя строка).
+     * Теперь сама опция заменяется на обёртку с кастомным редактором
+     * (`config/gui/ColourWithResetEditor.kt`), который рисует образец цвета и кнопку рядом.
+     * Заменить редактор у `ProcessedOptionImpl` нельзя — сеттера нет, поэтому оборачиваем.
+     *
+     * Дефолт берём из ЧИСТОГО `Features()` (у него в полях записаны инициализаторы),
+     * а не из загруженного конфига — иначе «сброс» просто записал бы текущее значение.
+     * Ключ дефолта — «класс#поле»: значение по умолчанию принадлежит полю класса,
+     * а не экземпляру, поэтому одинаковые вложенные классы не путаются.
+     */
+    private fun addColourResetButtons() {
+        try {
+            val defaults = collectColourDefaults(Features())
+            if (defaults.isEmpty()) return
+            val seen = HashSet<ProcessedOption>()
+            var added = 0
+            processor.allCategories.values.forEach { category ->
+                @Suppress("UNCHECKED_CAST")
+                val options = category.options as MutableList<ProcessedOption>
+                // Идём по копии: список меняется прямо здесь
+                for (option in options.toList()) {
+                    if (!seen.add(option)) continue
+                    val field = (option as? ProcessedOption.HasField)?.field ?: continue
+                    if (field.getAnnotation(io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour::class.java) == null) {
+                        continue
+                    }
+                    val default = defaults["${field.declaringClass.name}#${field.name}"] ?: continue
+                    val index = options.indexOf(option)
+                    if (index < 0) continue
+                    options[index] = ColourResetOption(option, default, category, this)
+                    added++
                 }
             }
-            return result
+        } catch (t: Throwable) {
+            StarredHeltix.LOGGER.warn("[Config] Не удалось добавить сброс цвета: ${t.message}")
         }
+    }
+
+    /** Рекурсивный обход: все строковые `@ConfigEditorColour` поля → «класс#поле» → дефолт. */
+    private fun collectColourDefaults(root: Any): Map<String, String> {
+        val out = HashMap<String, String>()
+        val visited = HashSet<Any>()
+        val queue = ArrayDeque<Any>()
+        queue.add(root)
+        while (queue.isNotEmpty()) {
+            val target = queue.removeFirst()
+            if (!visited.add(target)) continue
+            for (field in target.javaClass.declaredFields) {
+                if (field.isSynthetic || java.lang.reflect.Modifier.isStatic(field.modifiers)) continue
+                val value = try {
+                    field.isAccessible = true
+                    field.get(target)
+                } catch (_: Throwable) {
+                    continue
+                }
+                when {
+                    value is String &&
+                        field.getAnnotation(io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour::class.java) != null -> {
+                        out.putIfAbsent("${field.declaringClass.name}#${field.name}", value)
+                    }
+                    value != null && !value.javaClass.isPrimitive && !value.javaClass.isEnum &&
+                        !value.javaClass.name.startsWith("java.") && !value.javaClass.name.startsWith("kotlin.") -> queue.add(value)
+                }
+            }
+        }
+        return out
+    }
+
+    /**
+     * Обёртка цветовой опции: всё поведение — исходной опции, но редактор свой
+     * (образец цвета + кнопка «Сброс» справа). Сам список опций категории не меняется —
+     * цвет занимает ровно одну строку, как ванильный.
+     */
+    private class ColourResetOption(
+        private val target: ProcessedOption,
+        private val defaultValue: String,
+        private val owner: ProcessedCategory,
+        private val manager: ConfigManager
+    ) : ProcessedOption, ProcessedOption.HasField {
+
+        private val editor by lazy {
+            set.starlev.config.gui.ColourWithResetEditor(target, defaultValue) {
+                target.set(defaultValue)
+                target.explicitNotifyChange()
+                manager.saveConfig("colour-reset")
+            }
+        }
+
+        override fun getSearchTags(): Array<io.github.notenoughupdates.moulconfig.annotations.SearchTag> = target.searchTags
+        override fun getAccordionId(): Int = target.accordionId
+        override fun getCategory(): ProcessedCategory = owner
+        override fun getConfig(): io.github.notenoughupdates.moulconfig.Config = target.config
+        override fun getName(): io.github.notenoughupdates.moulconfig.common.text.StructuredText = target.name
+        override fun getDescription(): io.github.notenoughupdates.moulconfig.common.text.StructuredText =
+            target.description
+        override fun getPath(): String = target.path
+        override fun getType(): java.lang.reflect.Type = target.type
+        override fun getEditor(): io.github.notenoughupdates.moulconfig.gui.GuiOptionEditor = editor
+        override fun get(): Any? = target.get()
+        override fun set(value: Any?): Boolean = target.set(value)
+        override fun explicitNotifyChange() = target.explicitNotifyChange()
+        override fun getDebugDeclarationLocation(): String? = target.getDebugDeclarationLocation()
+
+        // HasField — по нему GUI/MoulConfig узнаёт исходное поле (например, при поиске)
+        override fun getField() = (target as ProcessedOption.HasField).field
     }
 
     fun saveConfig(reason: String) {

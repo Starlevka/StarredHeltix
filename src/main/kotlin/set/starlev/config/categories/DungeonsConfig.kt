@@ -34,7 +34,7 @@ class DungeonsConfig {
     var autoReady = AutoReadyConfig()
 
     @Expose
-    @Category(name = "Детект смерти §c☠", desc = "Отправляет сообщение в пати чат при нахождении иконки смерти")
+    @Category(name = "Смерть §c☠", desc = "Отправляет сообщение в пати чат при нахождении иконки смерти")
     var deathCounter = DeathCounterConfig()
 
     @Expose
@@ -46,7 +46,7 @@ class DungeonsConfig {
     var floor4 = Floor4Config()
 
     @Expose
-    @Category(name = "Оверлей прыжка духа", desc = "Крупные кнопки тиммейтов в меню Прыжок духа + хоткеи 1-4 для телепорта")
+    @Category(name = "Прыжок духа", desc = "Крупные кнопки тиммейтов в меню Прыжок духа + хоткеи 1-4 для телепорта")
     var leap = LeapOverlayConfig()
 
     class Floor4Config {
@@ -63,7 +63,7 @@ class DungeonsConfig {
         @Expose
         @ConfigOption(name = "Дух медведя - Цвет", desc = "Цвет подсветки для Духа медведя")
         @ConfigEditorColour
-        var bearSpiritColorV2 = "0:255:255:105:180"
+        var bearSpiritColorV2 = "180:105:255:255:0"
 
         @Expose
         @ConfigOption(name = "Дух курицы - Алерт", desc = "Показывает предупреждение и звук при обнаружении Духа курицы в радиусе 64 блоков")
@@ -129,16 +129,6 @@ class DungeonsConfig {
         @ConfigOption(name = "Зеленые летучие мыши", desc = "Окрашивает летучих мышей в зеленый цвет для лучшей видимости. §cПонижает ФПС")
         @ConfigEditorBoolean
         var greenBats = true
-
-        @Expose
-        @ConfigOption(name = "Зеленые стены", desc = "Сплошная зелёная заливка потресканного каменного кирпича в данжах. Вкл/вылк подгружает и выгружает подсветку на лету")
-        @ConfigEditorBoolean
-        var greenWalls = true
-
-        @Expose
-        @ConfigOption(name = "Цвет стен", desc = "Цвет заливки стен (по умолчанию — под зелёный сундук)")
-        @ConfigEditorColour
-        var greenWallsColorV2 = "0:255:43:180:73"
     }
 
     class StarredMobHighlightConfig {
@@ -165,7 +155,7 @@ class DungeonsConfig {
         @Expose
         @ConfigOption(name = "Цвет", desc = "Цвет подсветки звёздных мобов")
         @ConfigEditorColour
-        var colorV2 = "0:255:245:119:56"
+        var colorV2 = "56:119:245:255:0"
 
         @Expose
         @ConfigOption(name = "Прозрачность", desc = "Прозрачность бокса подсветки")
@@ -258,7 +248,7 @@ class DungeonsConfig {
         @Expose
         @ConfigOption(name = "Цвет рамки", desc = "Обводка кнопок (и подсветка наведения)")
         @ConfigEditorColour
-        var accentColorV2 = "0:255:255:85:255"
+        var accentColorV2 = "255:85:255:255:0"
 
         @Expose
         @ConfigOption(name = "Размер текста", desc = "Масштаб имён и подписей хоткеев")
@@ -310,12 +300,12 @@ class DungeonsConfig {
         @Expose
         @ConfigOption(name = "Цвет подсветки активного рычага", desc = "Формат: 0:А:R:G:B")
         @ConfigEditorColour
-        var activeColorV2 = "0:255:40:90:40"
+        var activeColorV2 = "40:90:40:255:0"
 
         @Expose
         @ConfigOption(name = "Цвет подсветки ожидания", desc = "Когда ждём стечения воды")
         @ConfigEditorColour
-        var waitingColorV2 = "0:255:90:40:40"
+        var waitingColorV2 = "40:40:90:255:0"
     }
 
     class BloodRoomConfig {

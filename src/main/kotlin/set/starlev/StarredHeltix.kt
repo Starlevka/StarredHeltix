@@ -10,7 +10,6 @@ import set.starlev.config.Features
 
 class StarredHeltix : ClientModInitializer {
     override fun onInitializeClient() {
-        LOGGER.info("Инициализация StarredHeltix v$modVersion...")
 
         configManager = ConfigManager
         configManager.firstLoad()
@@ -20,6 +19,7 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.events.KeyBindHandler.init()
         set.starlev.events.WorldChangeHandler.init()
         set.starlev.utils.GameModeBoost.init()
+        set.starlev.features.optimization.BorderlessFullscreen.init()
         set.starlev.features.combat.EntityHighlight.init()
         set.starlev.features.combat.ClickHighlight.init()
         set.starlev.features.combat.BonemerangRange.init()
@@ -28,11 +28,12 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.features.chat.PartyCommands.init()
         set.starlev.features.chat.CustomBindManager.init()
         set.starlev.features.chat.CommandAliases.init()
+        set.starlev.features.chat.NotifierCenter.init()
         set.starlev.features.farming.MouseLock.init()
         set.starlev.features.combat.slayer.SlayerHud.init()
         set.starlev.features.skyblock.UpdateOnJoin.init()
         set.starlev.features.visual.GhostFrameFeature.init()
-        set.starlev.features.visual.SeeThroughWindow.init()
+        set.starlev.features.farming.SeeThroughWindow.init()
         set.starlev.render.ScriptNPCManager.init()
         set.starlev.features.skyblock.InventoryHistoryLog.init()
         set.starlev.features.skyblock.Waypoints.init()
@@ -44,6 +45,8 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.utils.detectors.ContainerDetector.init()
         set.starlev.utils.detectors.MuseumDetector.init()
         set.starlev.features.skyblock.Museum.init()
+        // Скан магической силы по открытому контейнеру — после ContainerDetector.init().
+        set.starlev.features.skyblock.scoreboard.elements.ScoreboardElementPower.init()
         set.starlev.features.mining.PickaxeCooldownHud.init()
         set.starlev.features.mining.SpeedBoostCooldownHud.init()
         set.starlev.features.farming.RancherSpeedHud.init()
@@ -72,8 +75,6 @@ class StarredHeltix : ClientModInitializer {
         set.starlev.features.combat.dungeons.DeathCounter.init()
         set.starlev.features.combat.dungeons.ScoreCounter.init()
         set.starlev.features.combat.dungeons.Floor4.init()
-        set.starlev.features.combat.dungeons.GreenWalls.init()
-        set.starlev.features.fishing.LegendaryFishingNotifier.init()
         set.starlev.secret.features.Povtorayshkins.init()
         set.starlev.utils.DiscordRPC.init()
 
@@ -100,11 +101,12 @@ class StarredHeltix : ClientModInitializer {
             } catch (_: Exception) {}
         }
 
-        LOGGER.info("StarredHeltix инициализирован.")
-
         Runtime.getRuntime().addShutdownHook(Thread {
             configManager.saveConfig("shutdown-hook")
         })
+
+        // Единственная запись в лог от мода: всё поднято, можно работать.
+        LOGGER.info("StarredHeltix v$modVersion инициализирован.")
     }
 
     companion object {

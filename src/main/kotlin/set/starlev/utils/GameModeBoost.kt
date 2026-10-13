@@ -55,7 +55,7 @@ object GameModeBoost {
     /** Потоки, которым уже подняли приоритет (чтобы не трогать повторно). */
     private val handled = ConcurrentHashMap.newKeySet<Thread>()
 
-    /** Что реально применилось — для лога и `/sh boost`. */
+    /** Что реально применилось — для лога (команды `/sh boost` больше нет). */
     private val report = CopyOnWriteArrayList<String>()
 
     @Volatile
@@ -95,33 +95,19 @@ object GameModeBoost {
             return
         }
 
-        if (!cfg.windows && !cfg.linux) {
-            LOGGER.info("[Boost] Выключено в настройках (Оптимизация → Приоритет процесса)")
+        if (!cfg.threadPriority) {
             return
         }
 
-        // Тумблеры взаимоисключающие, но конфиг могли отредактировать руками — решаем по фактической ОС.
-        val useWindows = cfg.windows && (cfg.linux.not() || os == BoostOs.WINDOWS)
-        val useLinux = cfg.linux && (cfg.windows.not() || os == BoostOs.LINUX)
-
-        when {
-            useWindows && os != BoostOs.WINDOWS -> LOGGER.warn(
-                "[Boost] Включён режим Windows, а система — ${os.label}. Пропускаю."
-            )
-            useLinux && os != BoostOs.LINUX -> LOGGER.warn(
-                "[Boost] Включён режим Linux, а система — ${os.label}. Пропускаю."
-            )
-        }
-        if (!useWindows && !useLinux) {
-            LOGGER.info("[Boost] Нечего применять: система ${os.label}")
+        // Платформа одна, тумблер тоже один — определяем систему сами.
+        if (os == BoostOs.OTHER) {
             return
         }
 
         running = true
-        LOGGER.info("[Boost] Система: ${os.label}, режим: ${if (useWindows) "Windows" else "Linux"}")
 
         try {
-            if (useWindows) {
+            if (os == BoostOs.WINDOWS) {
                 WindowsBoost.applyProcessLevel()
             } else {
                 LinuxBoost.applyProcessLevel()
@@ -131,7 +117,7 @@ object GameModeBoost {
         }
 
         // Главный поток клиента — он уже исполняет этот код.
-        boostCurrentThread(if (useWindows) "client" else "client")
+        boostCurrentThread("client")
 
         // Поток интегрированного сервера вызывается из самого сервера.
         ServerLifecycleEvents.SERVER_STARTED.register { boostCurrentThread("server") }
@@ -139,8 +125,6 @@ object GameModeBoost {
 
         startWatcher()
 
-        LOGGER.info("[Boost] Готово: ${report.joinToString("; ")}")
-        LOGGER.info("[Boost] Настройки читаются только при старте — после переключения перезапусти игру")
     }
 
     /**
@@ -170,15 +154,6 @@ object GameModeBoost {
         } catch (t: Throwable) {
             LOGGER.warn("[Boost] Не удалось выключить GameMode: ${t.message}")
         }
-        LOGGER.info("[Boost] Остановлен. Итог: ${report.joinToString("; ")}")
-    }
-
-    /** Строка со статусом для `/sh boost`. */
-    @JvmStatic
-    fun status(): String = buildString {
-        append("система: ").append(os.label)
-        append(" | активен: ").append(if (running) "да" else "нет")
-        if (report.isNotEmpty()) append(" | ").append(report.joinToString("; "))
     }
 
     // ─────────────────────────── внутреннее ───────────────────────────
@@ -280,29 +255,15 @@ object GameModeBoost {
 
     private fun note(message: String) {
         report.add(message)
-        LOGGER.info("[Boost] $message")
     }
 
     /**
-     * Сброс взаимного исключения тумблеров: включены обе платформы → оставляем ту,
-     * что совпадает с системой. Возвращает true, если конфиг изменился.
-     * Вызывается из ConfigManager при загрузке (конфиг могли отредактировать руками).
+     * Устаревшее: тумблеры Windows/Linux заменены одним флагом threadPriority,
+     * платформа определяется автоматически. Метод оставлен как no-op, чтобы старые
+     * вызовы из конфига не падали.
      */
-    fun enforceSinglePlatform(osName: String): Boolean {
-        val cfg = try {
-            config
-        } catch (t: Throwable) {
-            return false
-        }
-        if (!cfg.windows || !cfg.linux) return false
-        val keepWindows = osName.startsWith("Windows")
-        if (keepWindows) cfg.linux = false else cfg.windows = false
-        LOGGER.warn(
-            "[Boost] Включены Windows и Linux одновременно — оставляю ${if (keepWindows) "Windows" else "Linux"} " +
-                "(система $osName)"
-        )
-        return true
-    }
+    @Deprecated("Взаимоисключающих тумблеров больше нет, используй threadPriority")
+    fun enforceSinglePlatform(osName: String): Boolean = false
 
     // ───────────────────────────── Windows ─────────────────────────────
 
@@ -382,7 +343,6 @@ object GameModeBoost {
             val avrtLib = avrt() ?: return
             try {
                 avrtLib.AvRevertMmThreadCharacteristics(handle)
-                LOGGER.info("[Boost] MMCSS снят с потока ${thread.name}")
             } catch (t: Throwable) {
                 LOGGER.warn("[Boost] Не удалось снять MMCSS: ${t.message}")
             }

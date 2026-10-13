@@ -7,23 +7,38 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class OptimizationConfig {
     @Expose
-    @Category(name = "Визуальные оптимизации", desc = "Настройки для повышения FPS или уменьшения визуального мусора")
+    @Category(name = "Визуал", desc = "Меньше визуального мусора и лишней отрисовки")
     var visualOptimizations = VisualOptimizationsConfig()
 
     @Expose
-    @Category(name = "Приоритет процесса", desc = "Отдаёт ОС знать, что это игра: максимальный приоритет потоков рендера и сервера. Действует на весь клиент, нужен перезапуск игры")
+    @Category(name = "Окно", desc = "Безрамочное окно во весь экран")
+    var window = WindowConfig()
+
+    @Expose
+    @Category(name = "Приоритет", desc = "Приоритет потоков клиента")
     var performance = PerformanceConfig()
+
+    class WindowConfig {
+        @Expose
+        @ConfigOption(name = "Режим Безграниц", desc = "Окно без рамки во весь экран (fullscrean). Переключается сразу")
+        @ConfigEditorBoolean
+        var borderless = false
+    }
 
     class PerformanceConfig {
         @Expose
-        @ConfigOption(name = "Windows", desc = "MMCSS-задача «Games» + HIGH_PRIORITY_CLASS клиенту + HIGHEST потокам рендера и сервера. Взаимоисключающе с Linux. Нужен перезапуск")
+        @ConfigOption(name = "Приоритет потоков", desc = "Windows MMCSS / Linux GameMode. Нужен перезапуск")
         @ConfigEditorBoolean
+        var threadPriority = false
+
+        @Expose
         var windows = false
 
         @Expose
-        @ConfigOption(name = "Linux", desc = "Feral GameMode (libgamemode → D-Bus), renice -20 процессу, nice -20/-15 потокам рендера и сервера. Взаимоисключающе с Windows. Нужен перезапуск")
-        @ConfigEditorBoolean
         var linux = false
+
+        @Expose
+        var migratedSinglePriorityToggle = false
     }
 
     class VisualOptimizationsConfig {
@@ -53,7 +68,7 @@ class OptimizationConfig {
         var fullbright = false
 
         @Expose
-        @ConfigOption(name = "Частицы ломания блоков", desc = "Отключает частицы, которые появляются при добыче блоков")
+        @ConfigOption(name = "Частицы ломания", desc = "Отключает частицы, которые появляются при добыче блоков")
         @ConfigEditorBoolean
         var disableBlockBreakingParticles = false
 

@@ -191,6 +191,12 @@ object ConfigCommand {
                 1
             })
         )
+        .then(literal("notifiers")
+            .executes {
+                StarredHeltix.screenToOpen = set.starlev.render.NotifierGui(null)
+                1
+            }
+        )
         // Алиасы команд: /dh → /warp dungeon_hub
         .then(literal("aliases")
             .executes {
@@ -240,22 +246,6 @@ object ConfigCommand {
             .then(literal("install").executes { set.starlev.utils.ModUpdater.installUpdate(); 1 })
         )
         .then(literal("coords").executes(::showCoords))
-        // Статус системного буста процесса (Windows MMCSS «Games» / Linux GameMode).
-        .then(literal("boost").executes { ctx ->
-            ctx.source.sendFeedback(Component.literal("§6[Boost] §7${set.starlev.utils.GameModeBoost.status()}"))
-            1
-        })
-        // Диагностика «Текущая сила»: открыть меню с мешком и выполнить — покажет,
-        // что именно мод видит в слотах и на каком шаге не находит магическую силу.
-        .then(literal("powertest").executes {
-            set.starlev.features.skyblock.scoreboard.elements.ScoreboardElementPower.debugDump(); 1
-        })
-        .then(literal("powerdump2").executes {
-            set.starlev.features.skyblock.scoreboard.elements.ScoreboardElementPower.debugDumpAll(); 1
-        })
-        .then(literal("powerreset").executes {
-            set.starlev.features.skyblock.scoreboard.elements.ScoreboardElementPower.resetCache(); 1
-        })
         .then(literal("mouselock")
             .executes { ctx ->
                 MouseLock.toggle()
