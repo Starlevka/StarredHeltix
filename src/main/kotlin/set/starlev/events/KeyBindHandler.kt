@@ -45,6 +45,9 @@ object KeyBindHandler {
 
             // Обработка кастомных биндов
             CustomBindManager.tick()
+
+            // See Through Farming: клавиша прозрачности окна
+            set.starlev.features.visual.SeeThroughWindow.tick()
         }
     }
 }

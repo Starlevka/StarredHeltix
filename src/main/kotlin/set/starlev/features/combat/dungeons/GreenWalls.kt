@@ -1,10 +1,12 @@
 package set.starlev.features.combat.dungeons
 
+import com.mojang.blaze3d.vertex.VertexConsumer
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.AABB
+import org.joml.Matrix4f
 import set.starlev.StarredHeltix
 import set.starlev.render.RenderContext
 import set.starlev.render.RenderEvents
@@ -13,15 +15,22 @@ import set.starlev.utils.ColorUtils
 import set.starlev.utils.detectors.DungeonDetector
 
 /**
- * Зелёные стены в подземельях — сплошная зелёная заливка потресканного
- * каменного кирпича (фулл-заливка тем же оттенком, что зелёный сундук).
+ * Зелёные стены в подземельях — сплошная заливка потресканного каменного кирпича
+ * цветом из конфига (`dungeons.visuals.greenTextures`).
  *
- * Почему заливка, а не подмена текстуры как у сундука: сундуки/мыши выбирают
- * спрайт каждый кадр, а обычные блоки запекают UV в меши чанков один раз —
- * PNG подменился бы глобально, а не только в данжах. Поэтому открытые грани
- * кирпичей перекрываются заливкой: скан рядом с игроком раз в 500мс
- * (кэш позиций + битмаска граней), затем один submitCustomGeometry на кадр.
- * Только в данжах.
+ * Вкл/выкл — тумблер «Зеленые стены»: состояние читается каждый кадр, поэтому
+ * переключение мгновенное, а при выключении кэш позиций сбрасывается (фича
+ * «выгружается» и не держит геометрию в памяти).
+ *
+ * Почему без текстуры кирпича (атлас, `Sheets.chooseSprite`, кастомный
+ * `core/position_tex_color`): у блоков UV запекаются в меши чанков один раз
+ * (`SectionCompiler.compile` → `MeshData`), подмена PNG ударила бы по всей игре,
+ * а не только по данжам. Плюс атлас пересобирается при ресорспаках — UV спрайтов
+ * едут, и близкая стена начинает мерцать. Сундуки и летучие мыши спрайт выбирают
+ * каждый кадр, поэтому там подмена спрайта осталась (см. рендереры сундуков/мышей).
+ *
+ * Скан рядом с игроком раз в 500мс (кэш позиций + битмаска граней), затем один
+ * submitCustomGeometry на кадр. Только в данжах.
  */
 object GreenWalls {
     private val mc = Minecraft.getInstance()
@@ -32,6 +41,26 @@ object GreenWalls {
     private const val EPS = 0.0025
 
     private data class Brick(val x: Int, val y: Int, val z: Int, val faces: Int)
+
+    /**
+     * Таблица граней: 4 вершины как смещения (dx,dy,dz) внутри блока, затем ось U,
+     * ось V и нормаль (для EPS-смещения наружу). Порядок граней совпадает с
+     * Direction.ordinal, развёртка обратная продублируется в эмиттере (cull выкл).
+     */
+    private val FACES = arrayOf(
+        // DOWN: u=X, v=Z
+        floatArrayOf(0f, 0f, 0f, 1f, 0f, 0f, 1f, 0f, 1f, 0f, 0f, 1f, 0f, 2f, 0f, -1f, 0f),
+        // UP: u=X, v=Z
+        floatArrayOf(0f, 0f, 0f, 0f, 0f, 1f, 1f, 0f, 1f, 1f, 0f, 0f, 0f, 2f, 0f, 1f, 0f),
+        // NORTH: u=X, v=Y
+        floatArrayOf(0f, 0f, 0f, 1f, 0f, 0f, 1f, 1f, 0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f, -1f),
+        // SOUTH: u=X, v=Y
+        floatArrayOf(0f, 0f, 0f, 1f, 0f, 0f, 1f, 1f, 0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f, 1f),
+        // WEST: u=Z, v=Y
+        floatArrayOf(0f, 0f, 0f, 0f, 0f, 1f, 0f, 1f, 1f, 0f, 1f, 0f, 2f, 1f, -1f, 0f, 0f),
+        // EAST: u=Z, v=Y
+        floatArrayOf(0f, 0f, 0f, 1f, 0f, 1f, 1f, 1f, 1f, 0f, 1f, 0f, 2f, 1f, 1f, 0f, 0f),
+    )
 
     @Volatile
     private var cached: List<Brick> = emptyList()
@@ -84,56 +113,55 @@ object GreenWalls {
             context.matrices.translate(-cam.x, -cam.y, -cam.z)
             context.submitNodeCollector.submitCustomGeometry(context.matrices, SHRenderTypes.FILLED) { pose, buffer ->
                 val m = pose.pose()
-                fun quad(
-                    ax: Double, ay: Double, az: Double,
-                    bx: Double, by: Double, bz: Double,
-                    cx: Double, cy: Double, cz: Double,
-                    dx: Double, dy: Double, dz: Double,
-                ) {
-                    buffer.addVertex(m, ax.toFloat(), ay.toFloat(), az.toFloat()).setColor(r, g, b, a)
-                    buffer.addVertex(m, bx.toFloat(), by.toFloat(), bz.toFloat()).setColor(r, g, b, a)
-                    buffer.addVertex(m, cx.toFloat(), cy.toFloat(), cz.toFloat()).setColor(r, g, b, a)
-                    buffer.addVertex(m, dx.toFloat(), dy.toFloat(), dz.toFloat()).setColor(r, g, b, a)
-                    // Обратный обход — та же грань с другой стороны
-                    buffer.addVertex(m, dx.toFloat(), dy.toFloat(), dz.toFloat()).setColor(r, g, b, a)
-                    buffer.addVertex(m, cx.toFloat(), cy.toFloat(), cz.toFloat()).setColor(r, g, b, a)
-                    buffer.addVertex(m, bx.toFloat(), by.toFloat(), bz.toFloat()).setColor(r, g, b, a)
-                    buffer.addVertex(m, ax.toFloat(), ay.toFloat(), az.toFloat()).setColor(r, g, b, a)
-                }
                 for (br in bricks) {
                     if (!context.isBoxVisible(AABB(br.x.toDouble(), br.y.toDouble(), br.z.toDouble(), br.x + 1.0, br.y + 1.0, br.z + 1.0))) continue
                     val x = br.x.toDouble()
                     val y = br.y.toDouble()
                     val z = br.z.toDouble()
-                    val f = br.faces
-                    if (f and (1 shl Direction.DOWN.ordinal) != 0) {
-                        val yy = y - EPS
-                        quad(x, yy, z, x + 1, yy, z, x + 1, yy, z + 1, x, yy, z + 1)
-                    }
-                    if (f and (1 shl Direction.UP.ordinal) != 0) {
-                        val yy = y + 1 + EPS
-                        quad(x, yy, z, x, yy, z + 1, x + 1, yy, z + 1, x + 1, yy, z)
-                    }
-                    if (f and (1 shl Direction.NORTH.ordinal) != 0) {
-                        val zz = z - EPS
-                        quad(x, y, zz, x + 1, y, zz, x + 1, y + 1, zz, x, y + 1, zz)
-                    }
-                    if (f and (1 shl Direction.SOUTH.ordinal) != 0) {
-                        val zz = z + 1 + EPS
-                        quad(x, y, zz, x, y + 1, zz, x + 1, y + 1, zz, x + 1, y, zz)
-                    }
-                    if (f and (1 shl Direction.WEST.ordinal) != 0) {
-                        val xx = x - EPS
-                        quad(xx, y, z, xx, y, z + 1, xx, y + 1, z + 1, xx, y + 1, z)
-                    }
-                    if (f and (1 shl Direction.EAST.ordinal) != 0) {
-                        val xx = x + 1 + EPS
-                        quad(xx, y, z, xx, y + 1, z, xx, y + 1, z + 1, xx, y, z + 1)
+                    for (face in 0..5) {
+                        if (br.faces and (1 shl face) == 0) continue
+                        emitFlat(buffer, m, x, y, z, FACES[face], r, g, b, a)
                     }
                 }
             }
         } finally {
             context.matrices.popPose()
+        }
+    }
+
+    /** Плоская заливка: формат POSITION_COLOR, атрибут только цвет. */
+    private fun emitFlat(
+        buffer: VertexConsumer,
+        m: Matrix4f,
+        bx: Double,
+        by: Double,
+        bz: Double,
+        face: FloatArray,
+        r: Float,
+        g: Float,
+        b: Float,
+        a: Float,
+    ) {
+        val x0 = bx + face[14] * EPS
+        val y0 = by + face[15] * EPS
+        val z0 = bz + face[16] * EPS
+        for (i in 0 until 4) {
+            val o = i * 3
+            buffer.addVertex(
+                m,
+                (x0 + face[o]).toFloat(),
+                (y0 + face[o + 1]).toFloat(),
+                (z0 + face[o + 2]).toFloat()
+            ).setColor(r, g, b, a)
+        }
+        for (i in 3 downTo 0) {
+            val o = i * 3
+            buffer.addVertex(
+                m,
+                (x0 + face[o]).toFloat(),
+                (y0 + face[o + 1]).toFloat(),
+                (z0 + face[o + 2]).toFloat()
+            ).setColor(r, g, b, a)
         }
     }
 

@@ -2,6 +2,7 @@ package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorText
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
@@ -9,8 +10,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 class ForagingConfig {
 
     @Expose
-    @ConfigOption(name = "Топоры", desc = "Настройки для работы с топорами и их способностями")
-    @Accordion
+    @Category(name = "Топоры", desc = "Настройки для работы с топорами и их способностями")
     var axes = AxesConfig()
 
     class AxesConfig {

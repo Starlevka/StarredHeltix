@@ -1,15 +1,30 @@
 package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class OptimizationConfig {
     @Expose
-    @ConfigOption(name = "Визуальные оптимизации", desc = "Настройки для повышения FPS или уменьшения визуального мусора")
-    @Accordion
+    @Category(name = "Визуальные оптимизации", desc = "Настройки для повышения FPS или уменьшения визуального мусора")
     var visualOptimizations = VisualOptimizationsConfig()
+
+    @Expose
+    @Category(name = "Приоритет процесса", desc = "Отдаёт ОС знать, что это игра: максимальный приоритет потоков рендера и сервера. Действует на весь клиент, нужен перезапуск игры")
+    var performance = PerformanceConfig()
+
+    class PerformanceConfig {
+        @Expose
+        @ConfigOption(name = "Windows", desc = "MMCSS-задача «Games» + HIGH_PRIORITY_CLASS клиенту + HIGHEST потокам рендера и сервера. Взаимоисключающе с Linux. Нужен перезапуск")
+        @ConfigEditorBoolean
+        var windows = false
+
+        @Expose
+        @ConfigOption(name = "Linux", desc = "Feral GameMode (libgamemode → D-Bus), renice -20 процессу, nice -20/-15 потокам рендера и сервера. Взаимоисключающе с Windows. Нужен перезапуск")
+        @ConfigEditorBoolean
+        var linux = false
+    }
 
     class VisualOptimizationsConfig {
         @Expose

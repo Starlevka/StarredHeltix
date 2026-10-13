@@ -1,7 +1,7 @@
 package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
@@ -9,8 +9,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 class GardenConfig {
 
     @Expose
-    @ConfigOption(name = "Участки (HUD)", desc = "Показывает текущий участок Garden — сетка 5x5")
-    @Accordion
+    @Category(name = "Участки (HUD)", desc = "Показывает текущий участок Garden — сетка 5x5")
     var plots = PlotsConfig()
 
     class PlotsConfig {

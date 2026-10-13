@@ -191,6 +191,36 @@ object ConfigCommand {
                 1
             })
         )
+        // Алиасы команд: /dh → /warp dungeon_hub
+        .then(literal("aliases")
+            .executes {
+                StarredHeltix.screenToOpen = set.starlev.render.AliasesGui(null)
+                1
+            }
+            .then(literal("create")
+                .then(argument("alias", StringArgumentType.word())
+                    .then(argument("command", StringArgumentType.greedyString())
+                        .executes { ctx ->
+                            val alias = StringArgumentType.getString(ctx, "alias")
+                            val command = StringArgumentType.getString(ctx, "command")
+                            if (set.starlev.features.chat.CommandAliases.create(alias, command)) 1 else 0
+                        }
+                    )
+                )
+            )
+            .then(literal("delete")
+                .then(argument("alias", StringArgumentType.word())
+                    .executes { ctx ->
+                        val alias = StringArgumentType.getString(ctx, "alias")
+                        if (set.starlev.features.chat.CommandAliases.delete(alias)) 1 else 0
+                    }
+                )
+            )
+            .then(literal("list").executes { ctx ->
+                set.starlev.features.chat.CommandAliases.list()
+                1
+            })
+        )
         // Конфигурация
         .then(literal("config")
             .then(literal("password")
@@ -210,6 +240,11 @@ object ConfigCommand {
             .then(literal("install").executes { set.starlev.utils.ModUpdater.installUpdate(); 1 })
         )
         .then(literal("coords").executes(::showCoords))
+        // Статус системного буста процесса (Windows MMCSS «Games» / Linux GameMode).
+        .then(literal("boost").executes { ctx ->
+            ctx.source.sendFeedback(Component.literal("§6[Boost] §7${set.starlev.utils.GameModeBoost.status()}"))
+            1
+        })
         // Диагностика «Текущая сила»: открыть меню с мешком и выполнить — покажет,
         // что именно мод видит в слотах и на каком шаге не находит магическую силу.
         .then(literal("powertest").executes {

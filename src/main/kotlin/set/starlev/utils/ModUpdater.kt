@@ -59,7 +59,7 @@ object ModUpdater {
                                         Component.literal("§6§l[StarredHeltix] §e§lДоступно обновление: §a§l$ver! §7(Текущая: $currentVersion)")
                                     )
                                     mc.player?.sendSystemMessage(
-                                        Component.literal("§7Используйте §f/sh update install §7для автоматической установки.")
+                                        Component.literal("§7Используйте §f/starredheltix update install §7для автоматической установки.")
                                     )
                                 }
                             }, 3, TimeUnit.SECONDS)

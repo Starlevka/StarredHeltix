@@ -1,10 +1,11 @@
 <div align="center">
 
+![SH icon](https://cdn.modrinth.com/data/cached_images/d3a60aee792f0e76c6384e7fe2b2fbb40799edd6.png)
 # StarredHeltix
 
-Современный клиентский мод для Fabric с QOL-фичами для Heltix SkyBlock.
+Современный клиентский мод для Fabric/Quilt загрузчиков модов с QOL-фичами для Heltix SkyBlock.
 
-**v1.0.0** · Minecraft 26.2 · Java 25 · клиентский, серверная установка не нужна
+**Версия 1.0.0** · Minecraft 26.2 · Java 25
 
 <img src="docs/images/badges/fabric.png" alt="Fabric" height="46">
 <img src="docs/images/badges/java25.png" alt="Java 25" height="46">

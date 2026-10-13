@@ -1,7 +1,7 @@
 package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
@@ -10,13 +10,11 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 class CombatConfig {
 
     @Expose
-    @ConfigOption(name = "Подсветка по клику", desc = "Клик колёсиком мыши по мобу — мод определяет ник сущности и обводит её. Повторный клик по той же — снять, клик по другой — переключиться")
-    @Accordion
+    @Category(name = "Подсветка по клику", desc = "Клик колёсиком мыши по мобу — мод определяет ник сущности и обводит её. Повторный клик по той же — снять, клик по другой — переключиться")
     var clickHighlight = ClickHighlightConfig()
 
     @Expose
-    @ConfigOption(name = "Костеранг", desc = "Показывает дотянется ли костеранг до моба: счётчик целей в прицеле и их подсветка (как BonemerangOverlay в Firmament)")
-    @Accordion
+    @Category(name = "Костеранг", desc = "Показывает дотянется ли костеранг до моба: счётчик целей в прицеле и их подсветка (как BonemerangOverlay в Firmament)")
     var bonemerang = BonemerangConfig()
 
     class BonemerangConfig {

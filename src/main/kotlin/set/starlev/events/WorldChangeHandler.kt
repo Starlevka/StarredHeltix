@@ -52,6 +52,7 @@ object WorldChangeHandler {
         safe("ModuleGlowRegistry") { set.starlev.scripting.ModuleGlowRegistry.onWorldChange() }
         safe("Floor4") { Floor4.onWorldChange() }
         safe("GreenWalls") { set.starlev.features.combat.dungeons.GreenWalls.onWorldChange() }
+        safe("SeeThroughWindow") { set.starlev.features.visual.SeeThroughWindow.onWorldChange() }
         safe("BloodRoomTimer") { set.starlev.features.combat.dungeons.BloodRoomTimer.reset() }
         safe("EndHighlight") { EndHighlight.clearCache() }
         safe("GlowingMushroomHighlight") { set.starlev.features.fishing.GlowingMushroomHighlight.onWorldChange() }
@@ -67,7 +68,6 @@ object WorldChangeHandler {
         safe("PlotsHud") { set.starlev.features.farming.garden.GardenPlotsOverlay.onWorldChange() }
         // Солверы данжей.
         safe("ThreeWeirdos") { set.starlev.features.combat.dungeons.solvers.ThreeWeirdos.fullReset() }
-        safe("ThreeWeirdosChest") { set.starlev.features.combat.dungeons.solvers.ThreeWeirdosChest.reset() }
         safe("Waterboard") { set.starlev.features.combat.dungeons.solvers.Waterboard.reset() }
         safe("CreeperBeams") { set.starlev.features.combat.dungeons.solvers.CreeperBeams.onWorldChange() }
         safe("TicTacToe") { set.starlev.features.combat.dungeons.solvers.TicTacToe.onWorldChange() }

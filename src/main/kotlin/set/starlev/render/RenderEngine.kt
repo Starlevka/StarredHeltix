@@ -22,6 +22,9 @@ object RenderEngine {
 
     @JvmStatic
     fun renderHud(graphics: GuiGraphicsExtractor, delta: DeltaTracker) {
+        // Здесь мы на потоке рендера — отдаём его ОС как игровой (MMCSS «Games» / nice).
+        // Внутри после первого раза остаётся одна volatile-проверка.
+        set.starlev.utils.GameModeBoost.onRenderThread()
         hudRenderers.forEach { it.render(graphics, delta.getGameTimeDeltaPartialTick(false)) }
     }
 

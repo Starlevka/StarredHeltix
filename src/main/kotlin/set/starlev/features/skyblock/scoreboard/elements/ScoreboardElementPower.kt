@@ -44,6 +44,16 @@ object ScoreboardElementPower : ScoreboardElement() {
     @Volatile
     private var cachedMp: Int? = null
 
+    /** Бенч: сколько предметов просмотрено, откуда взяли значение, сколько занял скан. */
+    @Volatile
+    private var lastScannedItems = 0
+
+    @Volatile
+    private var lastSource = "—"
+
+    @Volatile
+    private var lastScanDurationMs = 0.0
+
     init {
         // Подхватываем персистентный кэш из конфига (SkyHanni/Skyblocker-стиль)
         try {
@@ -60,18 +70,20 @@ object ScoreboardElementPower : ScoreboardElement() {
         maybeRescan()
         val name = cachedName
         val mp = cachedMp
-        if (name.isNullOrBlank() && mp == null) return emptyList()
         val color = ColorUtils.parseColor(
             StarredHeltix.feature.skyblock.scoreboard.infoElements.power.valueColorV2,
             0xFF55FFFF.toInt()
         )
-        val valueText = when {
-            !name.isNullOrBlank() && mp != null -> "$name ($mp МС)"
-            !name.isNullOrBlank() -> name
-            else -> "$mp МС"
+        // Показываем строку всегда, даже когда данных нет: пользователь ждёт значения,
+        // а не пустоты. Без данных — заготовка «—», чтобы место в табло не «прыгало».
+        val value = when {
+            !name.isNullOrBlank() && mp != null -> Component.literal("$name ($mp МС)").withColor(color)
+            !name.isNullOrBlank() -> Component.literal(name).withColor(color)
+            mp != null -> Component.literal("$mp МС").withColor(color)
+            else -> Component.literal("—")
         }
         val processed = SecretFunFeatures.processComponent(
-            Component.literal("§7Текущая сила: ").append(Component.literal(valueText).withColor(color)),
+            Component.literal("§7Текущая сила: ").append(value),
             true
         )
         return listOf(ScoreboardLine("power", processed, centered = false))
@@ -82,16 +94,71 @@ object ScoreboardElementPower : ScoreboardElement() {
 
     override val configLine = "§bТекущая сила"
 
+    /**
+     * Троттлированный поиск МС. Источники по убыванию дешевизны:
+     *  1. сайдбар — если сервер сам печатает «Магическая сила: 556», берём оттуда;
+     *  2. открытый контейнер (меню мешка);
+     *  3. инвентарь игрока — мешок лежит именно там, и контейнер открывать не надо.
+     */
     private fun maybeRescan() {
         val now = System.currentTimeMillis()
         if (now - lastScanMs < SCAN_THROTTLE_MS) return
         lastScanMs = now
+        val startedNs = System.nanoTime()
+        var items = 0
+        var source = "—"
         try {
             val mc = Minecraft.getInstance()
-            val screen = mc.gui.screen() as? AbstractContainerScreen<*> ?: return
-            scanMenu(screen)
+            if (scanSidebar()) source = "сайдбар"
+            val screen = mc.gui.screen() as? AbstractContainerScreen<*>
+            if (screen != null) {
+                items += screen.menu.slots.size
+                if (source == "—" && scanMenu(screen)) source = "мешок в контейнере"
+            }
+            val inventory = mc.player?.inventory?.getNonEquipmentItems()
+            if (inventory != null) {
+                items += inventory.size
+                if (source == "—" && scanInventory(inventory)) source = "мешок в инвентаре"
+            }
         } catch (_: Exception) {
         }
+        lastScannedItems = items
+        lastSource = source
+        lastScanDurationMs = (System.nanoTime() - startedNs) / 1_000_000.0
+    }
+
+    /** Сайдбар: там же сервер иногда печатает реальное число МС. */
+    private fun scanSidebar(): Boolean {
+        val mc = Minecraft.getInstance()
+        val scoreboard = mc.level?.scoreboard ?: return false
+        val objective = scoreboard.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR) ?: return false
+        var found = false
+        for (score in scoreboard.listPlayerScores(objective)) {
+            val owner = score.owner
+            val team = scoreboard.getPlayersTeam(owner)
+            val text = score.display?.string
+                ?: team?.let { net.minecraft.world.scores.PlayerTeam.formatNameForTeam(it, Component.literal(owner))?.string }
+                ?: owner
+            val clean = stripRegex.replace(decode(text), "").trim()
+            if (clean.isEmpty()) continue
+            if (parseLines(listOf(clean), loose = true)) found = true
+        }
+        return found
+    }
+
+    /** Инвентарь игрока: сначала предмет-мешок по имени, потом общий проход по лору. */
+    private fun scanInventory(items: List<net.minecraft.world.item.ItemStack>): Boolean {
+        for (stack in items) {
+            if (stack.isEmpty) continue
+            val name = stripRegex.replace(decode(stack.hoverName.string), "").trim().lowercase()
+            if (!isAccessoryBagName(name)) continue
+            if (parseLines(loreLines(stack), loose = true)) return true
+        }
+        for (stack in items) {
+            if (stack.isEmpty) continue
+            if (parseLines(loreLines(stack), loose = false)) return true
+        }
+        return false
     }
 
     /** Hfont-декодер заголовков (на Heltix имена/лор могут быть PUA-глифами) — для обычного текста no-op. */
@@ -103,7 +170,8 @@ object ScoreboardElementPower : ScoreboardElement() {
         }
     }
 
-    private fun scanMenu(screen: AbstractContainerScreen<*>) {
+    /** @return true если в открытом меню нашли хоть что-то (имя или МС). */
+    private fun scanMenu(screen: AbstractContainerScreen<*>): Boolean {
         // 1. Целенаправленно: предмет с названием «Мешок для аксессуаров» в любом открытом меню.
         // Требование Items.PLAYER_HEAD убрано намеренно: на Heltix мешок не обязательно голова,
         // и раньше предмет просто пропускался. Ориентируемся на имя — оно в лоре/имя всегда.
@@ -114,14 +182,15 @@ object ScoreboardElementPower : ScoreboardElement() {
             val itemName = stripRegex.replace(decode(stack.hoverName.string), "").trim().lowercase()
             if (!isAccessoryBagName(itemName)) continue
             val lore = loreLines(stack)
-            if (parseLines(lore, loose = true)) return
+            if (parseLines(lore, loose = true)) return true
         }
         // 2. Фолбэк: вся лора всех слотов строгими паттернами (без loose — чужой лор вокруг)
         for (slot in screen.menu.slots) {
             val stack = slot.item
             if (stack.isEmpty) continue
-            if (parseLines(loreLines(stack), loose = false)) return
+            if (parseLines(loreLines(stack), loose = false)) return true
         }
+        return false
     }
 
     /**
@@ -165,6 +234,7 @@ object ScoreboardElementPower : ScoreboardElement() {
             msg("§7  Выведи список всех непустых слотов: §f/sh powerdump2")
         }
         msg("§d§l[POWER-DEBUG] §7кэш: имя=§f${cachedName ?: "—"}§7 МС=§f${cachedMp ?: "—"}")
+        msg("§d§l[POWER-DEBUG] §7бенч: скан=§f${"%.2f".format(lastScanDurationMs)} мс§7, предметов=§f$lastScannedItems§7, источник=§f$lastSource")
         msg("§8§m                                        ")
     }
 

@@ -1,7 +1,7 @@
 package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorText
@@ -16,8 +16,7 @@ import set.starlev.utils.ModUpdater
 class AboutModConfig {
 
     @Expose
-    @ConfigOption(name = "Discord RPC", desc = "Rich Presence в Discord (как в SkyHanni)")
-    @Accordion
+    @Category(name = "Discord RPC", desc = "Rich Presence в Discord (как в SkyHanni)")
     var discordRPC = DiscordRPCConfig()
 
     @ConfigOption(name = "§cСекретный код", desc = "§cВведите секретный код для доступа к скрытым функциям")
@@ -76,7 +75,7 @@ class AboutModConfig {
 
     companion object {
         /** Номер карты для пожертвования — копируется кнопкой выше. */
-        const val DONATE_CARD: String = "4100118578875130"
+        const val DONATE_CARD: String = "5599002063211264"
     }
 }
 

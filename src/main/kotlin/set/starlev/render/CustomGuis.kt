@@ -11,6 +11,7 @@ import org.lwjgl.glfw.GLFW
 import set.starlev.StarredHeltix
 import set.starlev.features.chat.MessageFilterManager
 import set.starlev.features.chat.CustomBindManager
+import set.starlev.features.chat.CommandAliases
 import set.starlev.features.skyblock.Waypoints
 import set.starlev.render.drawString
 import set.starlev.render.drawCenteredString
@@ -295,8 +296,162 @@ class BindsGui(private val parent: Screen? = null) : Screen(Component.literal("�
     override fun onClose() { if (parent != null) minecraft.gui.setScreen(parent) else super.onClose() }
 }
 
-class WaypointsGui(private val parent: Screen? = null) : Screen(Component.literal("Waypoints")) {
+/**
+ * Алиасы команд (/dh → /warp dungeon_hub) — по образцу BindsGui: добавить/удалить.
+ * Ввод: сначала алиас, затем команда; Enter — следующий шаг, ESC — назад/отмена.
+ */
+class AliasesGui(private val parent: Screen? = null) : Screen(Component.literal("Алиасы команд")) {
     private var isAdding = false
+    private var newAlias = ""
+    private var newCommand = ""
+    private var inputStage = 0
+    private var scrollOffset = 0
+
+    override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, partialTick: Float) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick)
+        SHHeader.draw(graphics, font, title, null, null, width)
+        val centerX = width / 2
+        val cardW = SHTokens.CONTENT_WIDTH
+        val half = cardW / 2
+        var startY = 40
+        SHRow.draw(graphics, set.starlev.features.visual.swing.Rect(centerX - half, startY, cardW, 25), false, isAdding)
+        if (isAdding) {
+            val prompt = if (inputStage == 0) "§7Алиас: " else "§7Команда: "
+            val input = if (inputStage == 0) newAlias else newCommand
+            val shown = if (input.isEmpty()) "§8Введите..." else "§f$input§b_"
+            graphics.drawString(font, prompt + shown, centerX - half + 10, startY + 8, -1)
+            graphics.drawString(font, "§a[OK]", centerX + half - 30, startY + 8, -1)
+        } else {
+            graphics.drawCenteredString(font, Component.literal("§a+ Добавить алиас"), centerX, startY + 8, -1)
+        }
+        startY += 40
+        graphics.drawCenteredString(
+            font,
+            Component.literal("§7Алиас                      Команда"),
+            centerX, startY - 15, SHTokens.TEXT_MUTED.toInt()
+        )
+        val listTop = startY
+        val listBottom = height - 40
+        val itemHeight = 30
+        val entries = CommandAliases.snapshot().entries.toList()
+        val totalHeight = entries.size * itemHeight
+        scrollOffset = SHListHelper.clampScroll(scrollOffset, totalHeight, listBottom - listTop)
+        graphics.enableScissor(centerX - half, listTop, centerX + half, listBottom)
+        var y = listTop - scrollOffset
+        for (entry in entries) {
+            if (y + itemHeight < listTop) { y += itemHeight; continue }
+            if (y > listBottom) break
+            SHRow.draw(graphics, set.starlev.features.visual.swing.Rect(centerX - half, y, cardW, 25), false)
+            graphics.drawString(font, "§e/${entry.key}", centerX - half + 10, y + 8, -1)
+            val cmd = entry.value
+            val shown = if (cmd.length > 22) "/" + cmd.take(19) + "..." else "/$cmd"
+            graphics.drawString(font, "§f$shown", centerX - 30, y + 8, -1)
+            val delHover = mouseX in (centerX + half - 25)..(centerX + half - 5) && mouseY in y..(y + 25)
+            graphics.drawString(font, if (delHover) "§cX" else "§7x", centerX + half - 15, y + 8, -1)
+            y += itemHeight
+        }
+        graphics.disableScissor()
+        SHListHelper.drawScrollbar(
+            graphics,
+            set.starlev.features.visual.swing.Rect(centerX - half, listTop, cardW, listBottom - listTop),
+            totalHeight, scrollOffset, listBottom - listTop
+        )
+        SHFooter.draw(graphics, font, width, height)
+    }
+
+    override fun mouseClicked(event: MouseButtonEvent, isDoubleClick: Boolean): Boolean {
+        val mouseX = event.x().toInt()
+        val mouseY = event.y().toInt()
+        if (event.button() != 0) return super.mouseClicked(event, isDoubleClick)
+        val centerX = width / 2
+        val cardW = SHTokens.CONTENT_WIDTH
+        val half = cardW / 2
+        var startY = 40
+        if (mouseX in (centerX - half)..(centerX + half) && mouseY in startY..(startY + 25)) {
+            if (isAdding) {
+                if (inputStage == 0 && newAlias.isNotEmpty()) inputStage = 1
+                else if (inputStage == 1 && newCommand.isNotEmpty()) {
+                    CommandAliases.create(newAlias, newCommand)
+                    newAlias = ""; newCommand = ""; isAdding = false; inputStage = 0
+                }
+            } else {
+                isAdding = true; inputStage = 0
+            }
+            return true
+        }
+        startY += 40
+        val listTop = startY
+        val listBottom = height - 40
+        if (mouseY in listTop..listBottom) {
+            val idx = (mouseY - listTop + scrollOffset) / 30
+            val list = CommandAliases.snapshot().keys.toList()
+            if (idx in list.indices) {
+                val y = listTop + idx * 30 - scrollOffset
+                if (mouseX in (centerX + half - 25)..(centerX + half - 5) && mouseY in y..(y + 25)) {
+                    CommandAliases.delete(list[idx])
+                    return true
+                }
+            }
+        }
+        return super.mouseClicked(event, isDoubleClick)
+    }
+
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        val listTop = 80
+        val listBottom = height - 40
+        if (mouseY in listTop.toDouble()..listBottom.toDouble()) {
+            val total = CommandAliases.snapshot().size * 30
+            scrollOffset = SHListHelper.clampScroll(
+                (scrollOffset - verticalAmount * 20).toInt(), total, listBottom - listTop
+            )
+            return true
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)
+    }
+
+    override fun keyPressed(event: KeyEvent): Boolean {
+        val keyCode = event.input()
+        if (isAdding) {
+            if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+                if (inputStage == 0 && newAlias.isNotEmpty()) inputStage = 1
+                else if (inputStage == 1 && newCommand.isNotEmpty()) {
+                    CommandAliases.create(newAlias, newCommand)
+                    newAlias = ""; newCommand = ""; isAdding = false; inputStage = 0
+                }
+                return true
+            }
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                if (inputStage == 1) inputStage = 0 else { isAdding = false; newAlias = ""; newCommand = "" }
+                return true
+            }
+            if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
+                if (inputStage == 0) { if (newAlias.isNotEmpty()) newAlias = newAlias.dropLast(1) }
+                else if (newCommand.isNotEmpty()) newCommand = newCommand.dropLast(1)
+                return true
+            }
+        }
+        return super.keyPressed(event)
+    }
+
+    override fun charTyped(event: CharacterEvent): Boolean {
+        if (isAdding) {
+            val chr = event.codepoint().toChar()
+            if (inputStage == 0) newAlias += chr else newCommand += chr
+            return true
+        }
+        return super.charTyped(event)
+    }
+
+    override fun extractBackground(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        SHBackdrop.render(graphics, width, height)
+    }
+
+    override fun onClose() {
+        if (parent != null) minecraft.gui.setScreen(parent) else super.onClose()
+    }
+}
+
+class WaypointsGui(private val parent: Screen? = null) : Screen(Component.literal("Waypoints")) {    private var isAdding = false
     private var newName = ""
     private var addAsTemporary = false
     private var editingColorId: String? = null

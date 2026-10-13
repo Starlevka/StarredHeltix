@@ -2,6 +2,7 @@ package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
@@ -12,19 +13,36 @@ import set.starlev.StarredHeltix
 class ChatConfig {
 
     @Expose
-    @ConfigOption(name = "Кастомные бинды", desc = "Настройки пользовательских горячих клавиш (/bind)")
-    @Accordion
+    @Category(name = "Кастомные бинды", desc = "Настройки пользовательских горячих клавиш (/bind)")
     var binds = BindsConfig()
 
     @Expose
-    @ConfigOption(name = "Команды пати", desc = "Настройки автоматизации команд для группы (Party)")
-    @Accordion
+    @Category(name = "Команды пати", desc = "Настройки автоматизации команд для группы (Party)")
     var party = PartyCommandsConfig()
 
     @Expose
-    @ConfigOption(name = "Фильтр сообщений", desc = "Скрывает сообщения, содержащие определенные слова")
-    @Accordion
+    @Category(name = "Фильтр сообщений", desc = "Скрывает сообщения, содержащие определенные слова")
     var messageFilter = MessageFilterConfig()
+
+    @Expose
+    @Category(name = "Алиасы команд", desc = "Свои сокращения для серверных команд: /dh → /warp dungeon_hub (/sh aliases)")
+    var aliases = AliasesConfig()
+
+    class AliasesConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Включает переписывание команд по алиасам")
+        @ConfigEditorBoolean
+        var enabled = false
+
+        @ConfigOption(name = "Меню алиасов", desc = "Добавить и удалить алиасы через удобное меню")
+        @ConfigEditorButton(buttonText = "Открыть")
+        val openAliasesMenu = Runnable {
+            set.starlev.StarredHeltix.screenToOpen = set.starlev.render.AliasesGui(null)
+        }
+
+        @Expose
+        var aliasesMap = mutableMapOf<String, String>()
+    }
 
     class BindsConfig {
         @Expose

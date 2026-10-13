@@ -1,7 +1,7 @@
 package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
@@ -16,20 +16,18 @@ class FarmingConfig {
         Minecraft.getInstance().player?.sendSystemMessage(Component.literal("§e[StarredHeltix] §fИспользуйте §6/sh mouselock §fдля фиксации мыши."))
     }
 
-    @ConfigOption(name = "/sh rotation", desc = "Команда для установки точного угла взгляда. Пример: /sh rotation 90 0")
+    @ConfigOption(name = "/starredheltix rotation", desc = "Команда для установки точного угла взгляда. Пример: /starredheltix rotation 90 0")
     @ConfigEditorButton(buttonText = "Инфо")
     val rotationInfo: Runnable = Runnable {
         Minecraft.getInstance().player?.sendSystemMessage(Component.literal("§e[StarredHeltix] §fИспользуйте §6/sh rotation <yaw> <pitch> §fдля точного угла."))
     }
 
     @Expose
-    @ConfigOption(name = "Подсказка Ранчеров", desc = "Настройки ускорения скорости для Ботинок Ранчера")
-    @Accordion
+    @Category(name = "Подсказка Ранчеров", desc = "Настройки ускорения скорости для Ботинок Ранчера")
     var rancherSpeed = RancherSpeedConfig()
 
     @Expose
-    @ConfigOption(name = "Сад", desc = "Функции Сада")
-    @Accordion
+    @Category(name = "Сад", desc = "Функции Сада")
     var garden = GardenConfig()
 
     class RancherSpeedConfig {

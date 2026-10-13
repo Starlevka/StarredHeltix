@@ -7,9 +7,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
-import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.AABB
-import org.joml.Vector3f
 import set.starlev.StarredHeltix
 import set.starlev.utils.detectors.DungeonDetector
 import set.starlev.utils.detectors.MobHeadDisplayDetector
@@ -18,16 +16,19 @@ import org.slf4j.LoggerFactory
 
 /**
  * Солвер «Три незнакомца» по образцу Odin WeirdosSolver / Skyblocker ThreeWeirdos:
- * - реакция на каждое сообщение: совпало с пулом решений — подсветку сразу (ждать все
- *   три реплики не нужно, игра гарантирует ровно одну «решающую» фразу на комнату);
+ * - реакция на каждое сообщение: совпало с пулом решений — сразу показываем имя
+ *   верного незнакомца (ждать все три реплики не нужно, игра гарантирует ровно
+ *   одну «решающую» фразу на комнату);
+ * - имя выводится с маленькой буквы — так же, как его показывает игра в чате;
  * - пул фраз двуязычный (RU-перевод Heltix + английские оригиналы Hypixel), сравнение
  *   нормализованное (§-коды, ё=е, пробелы, регистр, хвостовая пунктуация);
  * - РЕТРАИ: реплика приходит раньше, чем синхронизируются энтити НПС — поиск повторяется
  *   каждые 5 тиков до 15 секунд (tick() из MinecraftMixin), раньше был один выстрел;
  * - НПС: сначала точное совпадение имени, затем подстрока (подстрока сразу давала
- *   матчи на похожие имена соседей);
- * - сундук: предпочтение «за спиной» (против направления взгляда НПС), но с фоллбэком
- *   на ближайший — при «взгляде в стену» раньше отбраковывались все три кандидата.
+ *   матчи на похожие имена соседей).
+ *
+ * Подсветку сундуков убрали: она целиком полагалась на догадку «сундук за спиной
+ * незнакомца» и регулярно подсвечивала неверный. Осталась только подсказка с именем.
  */
 object ThreeWeirdos {
     private val LOGGER = LoggerFactory.getLogger(ThreeWeirdos::class.java)
@@ -73,12 +74,9 @@ object ThreeWeirdos {
             .lowercase()
             .trim('!', '.', ' ')
 
-    // Публичные поля для ThreeWeirdosChest
+    // Публичные поля для внешних потребителей (JS API, другие фичи)
     @Volatile
     var foundNpcPos: BlockPos? = null
-        private set
-    @Volatile
-    var foundChestPos: BlockPos? = null
         private set
 
     // Очередь ретраев: кого ищем и до какого момента
@@ -144,7 +142,10 @@ object ThreeWeirdos {
         puzzleSolved = false
         lastCorrectStranger = name
         LOGGER.info("[ThreeWeirdos] Решение: '$name' («$statement»)")
-        Minecraft.getInstance().player?.sendSystemMessage(Component.literal("§a§l[Три незнакомца] §aНаграда в сундуке: §e$name"))
+        // Имя с маленькой буквы — так его показывает сама игра.
+        Minecraft.getInstance().player?.sendSystemMessage(
+            Component.literal("§a§l[Три незнакомца] §aНаграда в сундуке: §e${name.lowercase()}")
+        )
 
         // Первая попытка сразу + ретраи в tick() (энтити НПС могут ещё не долететь)
         pendingName = name
@@ -152,17 +153,16 @@ object ThreeWeirdos {
         tryLocate()
     }
 
-    /** Вызывается из MinecraftMixin.tick(): повторяет поиск, пока НПС/сундук не найдены. */
+    /** Вызывается из MinecraftMixin.tick(): повторяет поиск НПС, пока он не найден. */
     fun tick() {
         val name = pendingName ?: return
-        if (foundChestPos != null) {
+        if (foundNpcPos != null) {
             pendingName = null
             return
         }
         if (System.currentTimeMillis() > pendingUntil) {
-            LOGGER.warn("[ThreeWeirdos] Истекло время поиска НПС '$name' — сундук так и не найден")
+            LOGGER.warn("[ThreeWeirdos] Истекло время поиска НПС '$name'")
             pendingName = null
-            Minecraft.getInstance().player?.sendSystemMessage(Component.literal("§e§l[Три незнакомца] §eНе удалось найти сундук незнакомца"))
             return
         }
         tickCounter++
@@ -175,14 +175,15 @@ object ThreeWeirdos {
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
         val player = mc.player ?: return
-        findNpcAndChest(level, player, name)
+        findNpc(level, player, name)
     }
 
     /**
-     * Найти НПС по имени (текст над головой / customName) и сундук за ним.
-     * @return true, если сундук найден и подсвечен.
+     * Ищет незнакомца по имени (текст над головой / customName) — только для лога и
+     * диагностики. Сундуки больше не ищем: подсказка с именем полезнее, чем догадка
+     * «сундук за спиной», которая регулярно указывала не туда.
      */
-    private fun findNpcAndChest(level: net.minecraft.world.level.Level, player: net.minecraft.world.entity.player.Player, correctName: String): Boolean {
+    private fun findNpc(level: net.minecraft.world.level.Level, player: net.minecraft.world.entity.player.Player, correctName: String): Boolean {
         // Радиус поиска НПС от игрока
         val searchBox = AABB(
             player.x - 15, player.y - 10, player.z - 15,
@@ -194,7 +195,6 @@ object ThreeWeirdos {
         }
 
         var npcPos: BlockPos? = null
-        var npcLook: Vector3f? = null
         val target = norm(correctName)
 
         // Два прохода: сначала точное совпадение имени, только потом подстрока —
@@ -214,10 +214,6 @@ object ThreeWeirdos {
                     else cleanName.contains(target) || target.contains(cleanName)
                 if (hit) {
                     npcPos = entity.blockPosition()
-                    if (entity is LivingEntity) {
-                        val v = entity.lookAngle
-                        npcLook = Vector3f(v.x.toFloat(), 0f, v.z.toFloat())
-                    }
                     LOGGER.info("[ThreeWeirdos] Найден НПС '$displayName' (${if (exactPass == 0) "точно" else "по подстроке"}) на $npcPos")
                     break
                 }
@@ -231,51 +227,7 @@ object ThreeWeirdos {
         }
 
         foundNpcPos = npcPos
-
-        // Сундуки стоят за спинами NPC (те смотрят на игрока): кандидаты «впереди по взгляду»
-        // оштрафованы, но НЕ отброшены — если все варианты «впереди» (взгляд в стену), берём ближайший.
-        var best: BlockPos? = null
-        var bestScore = Double.MAX_VALUE
-
-        val searchRadius = 5
-        for (x in npcPos.x - searchRadius..npcPos.x + searchRadius) {
-            for (y in npcPos.y - 1..npcPos.y + 2) {
-                for (z in npcPos.z - searchRadius..npcPos.z + searchRadius) {
-                    val pos = BlockPos(x, y, z)
-                    val block = level.getBlockState(pos).block
-                    if (block != Blocks.CHEST && block != Blocks.TRAPPED_CHEST && block != Blocks.BARREL) continue
-                    var score = pos.distSqr(npcPos).toDouble()
-                    npcLook?.let { look ->
-                        if (look.lengthSquared() > 0.01f) {
-                            look.normalize()
-                            val dx = (pos.x - npcPos.x).toDouble()
-                            val dz = (pos.z - npcPos.z).toDouble()
-                            val len = Math.sqrt(dx * dx + dz * dz).coerceAtLeast(1e-3)
-                            val dot = (dx / len) * look.x + (dz / len) * look.z // >0 — впереди НПС
-                            if (dot > 0.3) score += 20.0 // штраф, но не запрет
-                        }
-                    }
-                    if (score < bestScore) {
-                        bestScore = score
-                        best = pos
-                    }
-                }
-            }
-        }
-
-        if (best != null) {
-            val wasNull = foundChestPos == null
-            foundChestPos = best
-            pendingName = null
-            LOGGER.info("[ThreeWeirdos] Найден сундук на позиции $best, дистанция: ${String.format("%.2f", Math.sqrt(bestScore))} блоков")
-            if (wasNull) {
-                player.sendSystemMessage(Component.literal("§c§l[Три незнакомца] §cСундук подсвечен!"))
-            }
-            return true
-        }
-
-        LOGGER.debug("[ThreeWeirdos] Сундук рядом с $npcPos пока не виден, ждём ретрай")
-        return false
+        return true
     }
 
     /**
@@ -283,7 +235,6 @@ object ThreeWeirdos {
      */
     fun resetFound() {
         foundNpcPos = null
-        foundChestPos = null
         pendingName = null
     }
 

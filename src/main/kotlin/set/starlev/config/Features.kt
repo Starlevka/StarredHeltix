@@ -77,8 +77,13 @@ class Features : Config() {
     }
 
     override fun formatCategoryName(category: io.github.notenoughupdates.moulconfig.processor.ProcessedCategory, isSelected: Boolean): io.github.notenoughupdates.moulconfig.common.text.StructuredText {
-        return if (isSelected) {
-            category.displayName.copyShallow().gold().underlined()
+        if (isSelected) {
+            return category.displayName.copyShallow().gold().underlined()
+        }
+        // Подкатегории (разделы внутри категории) приглушаем — иерархия читается по цвету,
+        // как в Skysoft: родительский раздел светлее, вложенный темнее.
+        return if (category.parentCategoryId != null) {
+            category.displayName.copyShallow().darkGrey()
         } else {
             category.displayName.copyShallow().grey()
         }

@@ -2,6 +2,7 @@ package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorText
@@ -10,18 +11,15 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 class MiningConfig {
 
     @Expose
-    @ConfigOption(name = "Поручения", desc = "Настройки отображения поручений в интерфейсе")
-    @Accordion
+    @Category(name = "Поручения", desc = "Настройки отображения поручений в интерфейсе")
     var commissions = CommissionsConfig()
 
     @Expose
-    @ConfigOption(name = "Способности", desc = "Настройки отображения перезарядки способностей инструментов")
-    @Accordion
+    @Category(name = "Способности", desc = "Настройки отображения перезарядки способностей инструментов")
     var abilities = AbilitiesConfig()
 
     @Expose
-    @ConfigOption(name = "Подсветка нод", desc = "Подсветка нод в Энде (пурпурная терракота)")
-    @Accordion
+    @Category(name = "Подсветка нод", desc = "Подсветка нод в Энде (пурпурная терракота)")
     var nodeHighlight = NodeHighlightConfig()
 
     class NodeHighlightConfig {

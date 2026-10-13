@@ -41,11 +41,15 @@
 			"environment": "client"
 		}
 	],
-	"depends": {
+		"depends": {
 		"fabricloader": ">=0.19.3",
 		"minecraft": "~26.2",
 		"java": ">=25",
 		"fabric-api": "*",
 		"fabric-language-kotlin": "*"
+	},
+		"breaks": {
+		"meteor-client": "*",
+		"heltix-network-mod": "*"
 	}
 }

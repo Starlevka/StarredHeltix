@@ -1,7 +1,7 @@
 package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
@@ -10,13 +10,11 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 class SlayerConfig {
 
     @Expose
-    @ConfigOption(name = "HUD Слеера", desc = "Отображение текущего квеста Слеера")
-    @Accordion
+    @Category(name = "HUD Слеера", desc = "Отображение текущего квеста Слеера")
     var slayerHud = SlayerHudConfig()
 
     @Expose
-    @ConfigOption(name = "Слеер боссы", desc = "Подсветка боссов Слеера: Мститель, Тарантул, Свен")
-    @Accordion
+    @Category(name = "Слеер боссы", desc = "Подсветка боссов Слеера: Мститель, Тарантул, Свен")
     var slayerBosses = SlayerBossHighlightConfig()
 
     class SlayerHudConfig {

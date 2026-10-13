@@ -1,7 +1,7 @@
 package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
@@ -11,8 +11,7 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class FishingConfig {
     @Expose
-    @ConfigOption(name = "Светящиеся грибы", desc = "Подсветка светящихся грибов")
-    @Accordion
+    @Category(name = "Светящиеся грибы", desc = "Подсветка светящихся грибов")
     var glowingMushroom = GlowingMushroomConfig()
 
     class GlowingMushroomConfig {
@@ -28,8 +27,7 @@ class FishingConfig {
     }
 
     @Expose
-    @ConfigOption(name = "Уведомления", desc = "Настройки оповещений о различных событиях при рыбалке")
-    @Accordion
+    @Category(name = "Уведомления", desc = "Настройки оповещений о различных событиях при рыбалке")
     var notifications = FishingNotificationsConfig()
 
     class FishingNotificationsConfig {

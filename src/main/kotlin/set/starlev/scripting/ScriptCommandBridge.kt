@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Мост между JS-командами модулей (`command.register("asprint", fn)`) и Brigadier.
  *
  * Регистрирует команду верхнего уровня `/<имя>` — команды модулей не кладутся
- * в /sh и /starredheltix (это команды мода, а не модулей).
+ * в /sh и /sh (это команды мода, а не модулей).
  *
  * Поэтому работают и Tab-подсказки, и ArgumentBuilder-синтаксис.
  * Dispatcher Fabric пересоздаётся при каждом входе на сервер

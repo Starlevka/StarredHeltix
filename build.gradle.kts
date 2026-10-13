@@ -25,6 +25,7 @@ dependencies {
     compileOnly(libs.modMenu)
     implementation(include(libs.caffeine.get())!!)
     implementation(include(libs.rhino.get())!!)
+    implementation(include(libs.jna.get())!!)
 }
 
 tasks.withType<Test> {

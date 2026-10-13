@@ -5,7 +5,9 @@ import io.github.notenoughupdates.moulconfig.observer.PropertyTypeAdapterFactory
 import io.github.notenoughupdates.moulconfig.processor.BuiltinMoulConfigGuis
 import io.github.notenoughupdates.moulconfig.processor.ConfigProcessorDriver
 import io.github.notenoughupdates.moulconfig.processor.MoulConfigProcessor
+import io.github.notenoughupdates.moulconfig.processor.ProcessedOption
 import set.starlev.StarredHeltix
+import set.starlev.config.categories.OptimizationConfig
 import set.starlev.features.skyblock.scoreboard.ScoreboardConfigElement
 import java.io.*
 import java.nio.charset.StandardCharsets
@@ -159,6 +161,12 @@ object ConfigManager {
             saveConfig("migrate-power-scoreboard-line")
         }
 
+        // Тумблеры буста Windows/Linux взаимоисключающие. В конфиге могли остаться оба
+        // (правка руками или старый конфиг) — оставляем платформу текущей системы.
+        if (set.starlev.utils.GameModeBoost.enforceSinglePlatform(System.getProperty("os.name", ""))) {
+            saveConfig("fix-exclusive-boost-toggles")
+        }
+
         // Миграция старой системы анимации удара в редактор (как в Skysoft)
         if (!features.visuals.animations.swingAnimation.migratedToEditor) {
             features.visuals.animations.swingAnimation.applyLegacyMigration()
@@ -171,6 +179,7 @@ object ConfigManager {
         val driver = ConfigProcessorDriver(processor)
         driver.warnForPrivateFields = false
         driver.processConfig(StarredHeltix.feature)
+        linkExclusiveBoostToggles()
 
         autoSaveTimer = fixedRateTimer(name = "starredheltix-config-auto-save", daemon = true, period = 600_000L, initialDelay = 600_000L) {
             try {
@@ -178,6 +187,58 @@ object ConfigManager {
             } catch (e: Throwable) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    /**
+     * Тумблеры «Windows» и «Linux» в секции «Приоритет процесса» взаимоисключающие:
+     * включение одного сразу гасит другой. MoulConfig пишет значение прямо в поле,
+     * поэтому подменяем ProcessedOption на обёртку, которая при set(true) сбрасывает
+     * соседний тумблер. Сами ProcessedCategory.options — mutable ArrayList, заменяем
+     * элемент на месте, чтобы подхватил и уже созданный GUI.
+     */
+    private fun linkExclusiveBoostToggles() {
+        try {
+            val windowsField = OptimizationConfig.PerformanceConfig::class.java.getDeclaredField("windows")
+            val linuxField = OptimizationConfig.PerformanceConfig::class.java.getDeclaredField("linux")
+            val windowsOption = processor.getOptionFromField(windowsField) ?: return
+            val linuxOption = processor.getOptionFromField(linuxField) ?: return
+            replaceOption(windowsOption, ExclusiveToggleOption(windowsOption, linuxOption))
+            replaceOption(linuxOption, ExclusiveToggleOption(linuxOption, windowsOption))
+        } catch (t: Throwable) {
+            StarredHeltix.LOGGER.warn("[Config] Не удалось связать тумблеры Windows/Linux: ${t.message}")
+        }
+    }
+
+    private fun replaceOption(original: ProcessedOption, replacement: ProcessedOption) {
+        for (category in processor.allCategories.values) {
+            // ProcessedCategory.options — ArrayList, но Kotlin видит его как List<out ProcessedOption>
+            @Suppress("UNCHECKED_CAST")
+            val options = category.options as MutableList<ProcessedOption>
+            val index = options.indexOf(original)
+            if (index >= 0) {
+                options[index] = replacement
+                return
+            }
+        }
+        StarredHeltix.LOGGER.warn("[Config] Опция ${original.path} не найдена в категориях — тумблеры не связаны")
+    }
+
+    /** Обёртка тумблера: при включении выключает соседний (взаимоисключение Windows/Linux). */
+    private class ExclusiveToggleOption(
+        private val delegate: ProcessedOption,
+        private val sibling: ProcessedOption
+    ) : ProcessedOption by delegate {
+        override fun set(value: Any?): Boolean {
+            val result = delegate.set(value)
+            if (value == true) {
+                sibling.set(false)
+                try {
+                    sibling.explicitNotifyChange()
+                } catch (_: Throwable) {
+                }
+            }
+            return result
         }
     }
 

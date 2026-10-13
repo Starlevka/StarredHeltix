@@ -1,14 +1,13 @@
 package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
-import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 
 class EnchantingConfig {
     @Expose
-    @ConfigOption(name = "Решатели стола", desc = "Автоматические решения для мини-игр стола экспериментов")
-    @Accordion
+    @Category(name = "Решатели стола", desc = "Автоматические решения для мини-игр стола экспериментов")
     var tableSolvers = TableSolversConfig()
 
     class TableSolversConfig {

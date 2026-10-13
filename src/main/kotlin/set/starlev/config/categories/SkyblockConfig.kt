@@ -2,6 +2,7 @@ package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
@@ -29,13 +30,11 @@ class SkyblockConfig {
     var autoSprint = false
 
     @Expose
-    @ConfigOption(name = "Лог предметов", desc = "Отображает историю изменения предметов в инвентаре")
-    @Accordion
+    @Category(name = "Лог предметов", desc = "Отображает историю изменения предметов в инвентаре")
     var inventoryHistory = VisualsConfig.InventoryHistoryConfig()
 
     @Expose
-    @ConfigOption(name = "Кнопки инвентаря", desc = "Кастомные кнопки в инвентаре (как в NEU/Firmament)")
-    @Accordion
+    @Category(name = "Кнопки инвентаря", desc = "Кастомные кнопки в инвентаре (как в NEU/Firmament)")
     var inventoryButtons = InventoryButtonsConfig()
 
     @Expose
@@ -56,13 +55,11 @@ class SkyblockConfig {
     var general = GeneralConfig()
 
     @Expose
-    @ConfigOption(name = "/вход", desc = "Настройки для быстрого входа в систему через команду /вход")
-    @Accordion
+    @Category(name = "/вход", desc = "Настройки для быстрого входа в систему через команду /вход")
     var autoLogin = LoginConfig()
 
     @Expose
-    @ConfigOption(name = "Метки", desc = "Настройки меток в мире")
-    @Accordion
+    @Category(name = "Метки", desc = "Настройки меток в мире")
     var waypoints = WaypointsConfig()
 
     class GeneralConfig {
@@ -175,49 +172,51 @@ class SkyblockConfig {
     }
 
     @Expose
-    @ConfigOption(name = "Навыки и опыт", desc = "Настройки отображения опыта навыков и HUD")
-    @Accordion
+    @Category(name = "Навыки и опыт", desc = "Настройки отображения опыта навыков и HUD")
     var skills = SkillsXpConfig()
 
     @Expose
-    @ConfigOption(name = "Помощник Музея", desc = "Настройки помощника для музея")
-    @Accordion
+    @Category(name = "Помощник Музея", desc = "Настройки помощника для музея")
     var museum = MuseumConfig()
 
     @Expose
-    @ConfigOption(name = "Оверлей Питомца", desc = "Настройки отображения информации о питомце")
-    @Accordion
+    @Category(name = "Оверлей Питомца", desc = "Настройки отображения информации о питомце")
     var pet = PetConfig()
 
     @Expose
-    @ConfigOption(name = "Диалоги с Персонажами", desc = "Настройки оверлея диалогов с NPC")
-    @Accordion
+    @Category(name = "Диалоги с Персонажами", desc = "Настройки оверлея диалогов с NPC")
     var npcDialogue = NpcDialogueConfig()
 
     @Expose
-    @ConfigOption(name = "Плавный Аспект Энда", desc = "Настройки плавной телепортации (Аспект Энда)")
-    @Accordion
+    @Category(name = "Плавный Аспект Энда", desc = "Настройки плавной телепортации (Аспект Энда)")
     var smoothAote = SmoothAoteConfig()
 
     @Expose
-    @ConfigOption(name = "Табло", desc = "Визуальные настройки табло")
-    @Accordion
+    @Category(name = "Табло", desc = "Визуальные настройки табло")
     var scoreboard = ScoreboardConfig()
 
     @Expose
-    @ConfigOption(name = "Экипировка", desc = "Отображение экипировки рядом с инвентарём")
-    @Accordion
+    @Category(name = "Экипировка", desc = "Отображение экипировки рядом с инвентарём")
     var equipmentOverlay = EquipmentOverlayConfig()
 
     @Expose
-    @ConfigOption(name = "Подсветка слотов", desc = "Подсветка слотов инвентаря по редкости предмета (порт из heltix-mod)")
-    @Accordion
+    @Category(name = "Подсветка слотов", desc = "Подсветка слотов инвентаря по редкости предмета (порт из heltix-mod)")
     var slotOverlay = SlotOverlayConfig()
 
     @Expose
-    @ConfigOption(name = "Предпросмотр хранилища", desc = "Подсказка с содержимым эндер-сундуков и рюкзаков Heltix (порт из heltix-mod)")
-    @Accordion
+    @Category(name = "Предпросмотр хранилища", desc = "Подсказка с содержимым эндер-сундуков и рюкзаков Heltix (порт из heltix-mod)")
     var storagePreview = StoragePreviewConfig()
+
+    @Expose
+    @Category(name = "Ввод чисел (k/m/b)", desc = "Считает выражения прямо в полях ввода: 1k, 2.5m, 3b, 10к/10м/10б, 64s, 160e, 1k+2m*3 (порт из Skysoft)")
+    var inputMath = InputMathConfig()
+
+    class InputMathConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Заменяет содержимое поля ввода посчитанным числом. Только для полей Hypixel (с подсказкой ^^^)")
+        @ConfigEditorBoolean
+        var enabled = false
+    }
 
     class StoragePreviewConfig {
         @Expose

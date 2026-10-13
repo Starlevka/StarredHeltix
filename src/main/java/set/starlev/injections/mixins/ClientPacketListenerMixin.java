@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import set.starlev.features.chat.ChatEventsManager;
 import set.starlev.features.chat.mod.MacroCheck;
@@ -41,6 +42,21 @@ public class ClientPacketListenerMixin {
         if (set.starlev.scripting.ScriptChatHandler.INSTANCE.onOutgoing(message)) {
             ci.cancel();
         }
+    }
+
+    /**
+     * Пользовательские алиасы команд (/dh → /warp dungeon_hub) — переписываем строку
+     * прямо перед отправкой пакета. Аргументы сохраняются.
+     */
+    @ModifyVariable(method = "sendCommand", at = @At("HEAD"), argsOnly = true)
+    private String starlevRewriteCommandAlias(String command) {
+        return set.starlev.features.chat.CommandAliases.INSTANCE.rewrite(command);
+    }
+
+    /** sendUnattendedCommand — путь макросов/авто-ответов, там тоже нужен rewrite. */
+    @ModifyVariable(method = "sendUnattendedCommand", at = @At("HEAD"), argsOnly = true)
+    private String starlevRewriteUnattendedAlias(String command) {
+        return set.starlev.features.chat.CommandAliases.INSTANCE.rewrite(command);
     }
 
 

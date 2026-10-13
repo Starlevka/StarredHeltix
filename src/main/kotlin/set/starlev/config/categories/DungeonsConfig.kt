@@ -2,6 +2,7 @@ package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
@@ -21,38 +22,31 @@ enum class MapBackgroundStyle(val label: String) {
 
 class DungeonsConfig {
     @Expose
-    @ConfigOption(name = "Решатели пазлов", desc = "Автоматические решения для различных пазлов в подземельях")
-    @Accordion
+    @Category(name = "Решатели пазлов", desc = "Автоматические решения для различных пазлов в подземельях")
     var solvers = SolversConfig()
 
     @Expose
-    @ConfigOption(name = "Кровавая комната", desc = "Настройки для автоматизации кровавой комнаты")
-    @Accordion
+    @Category(name = "Кровавая комната", desc = "Настройки для автоматизации кровавой комнаты")
     var bloodRoom = BloodRoomConfig()
 
     @Expose
-    @ConfigOption(name = "Авто-готовность", desc = "Автоматически пишет в пати чат о готовности, находясь за Мортом")
-    @Accordion
+    @Category(name = "Авто-готовность", desc = "Автоматически пишет в пати чат о готовности, находясь за Мортом")
     var autoReady = AutoReadyConfig()
 
     @Expose
-    @ConfigOption(name = "Детект смерти §c☠", desc = "Отправляет сообщение в пати чат при нахождении иконки смерти")
-    @Accordion
+    @Category(name = "Детект смерти §c☠", desc = "Отправляет сообщение в пати чат при нахождении иконки смерти")
     var deathCounter = DeathCounterConfig()
 
     @Expose
-    @ConfigOption(name = "Визуал", desc = "Визуальные улучшения для подземелий")
-    @Accordion
+    @Category(name = "Визуал", desc = "Визуальные улучшения для подземелий")
     var visuals = DungeonsVisualsConfig()
 
     @Expose
-    @ConfigOption(name = "Ф4", desc = "Функции для четвёртого этажа подземелий")
-    @Accordion
+    @Category(name = "Ф4", desc = "Функции для четвёртого этажа подземелий")
     var floor4 = Floor4Config()
 
     @Expose
-    @ConfigOption(name = "Оверлей прыжка духа", desc = "Крупные кнопки тиммейтов в меню Прыжок духа + хоткеи 1-4 для телепорта")
-    @Accordion
+    @Category(name = "Оверлей прыжка духа", desc = "Крупные кнопки тиммейтов в меню Прыжок духа + хоткеи 1-4 для телепорта")
     var leap = LeapOverlayConfig()
 
     class Floor4Config {
@@ -137,7 +131,7 @@ class DungeonsConfig {
         var greenBats = true
 
         @Expose
-        @ConfigOption(name = "Зеленые стены", desc = "Сплошная зелёная заливка потресканного каменного кирпича. Работает только в данжах")
+        @ConfigOption(name = "Зеленые стены", desc = "Сплошная зелёная заливка потресканного каменного кирпича в данжах. Вкл/вылк подгружает и выгружает подсветку на лету")
         @ConfigEditorBoolean
         var greenWalls = true
 

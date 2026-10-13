@@ -2,12 +2,15 @@ package set.starlev.config.categories
 
 import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Accordion
+import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
+import org.lwjgl.glfw.GLFW
 import set.starlev.features.visual.swing.ChangeResult
 import set.starlev.features.visual.swing.SwingCustomizationSnapshot
 import set.starlev.features.visual.swing.SwingTransformConfig
@@ -22,8 +25,7 @@ class VisualsConfig {
     val openHudEditor: Runnable = Runnable { set.starlev.utils.ConfigUtils.openHudEditor() }
 
     @Expose
-    @ConfigOption(name = "Анимации", desc = "Кастомные анимации для игрока и предметов")
-    @Accordion
+    @Category(name = "Анимации", desc = "Кастомные анимации для игрока и предметов")
     var animations = AnimationsConfig()
 
     @Expose
@@ -42,19 +44,58 @@ class VisualsConfig {
     var headGlint = true
 
     @Expose
-    @ConfigOption(name = "Оверлей блока", desc = "Настройки выделения блоков")
-    @Accordion
+    @Category(name = "Оверлей блока", desc = "Настройки выделения блоков")
     var blockOverlay = BlockOverlayConfig()
 
     @Expose
-    @ConfigOption(name = "Статы (HUD)", desc = "Отдельные HUD для CPS/FPS/Ping/BPS — альтернатива строкам кастомного скорборда. Позиция и масштаб настраиваются в редакторе HUD")
-    @Accordion
+    @Category(name = "Статы (HUD)", desc = "Отдельные HUD для CPS/FPS/Ping/BPS — альтернатива строкам кастомного скорборда. Позиция и масштаб настраиваются в редакторе HUD")
     var statsHud = StatsHudConfig()
 
     @Expose
-    @ConfigOption(name = "Призрачные рамки", desc = "Настройки отображения призрачных рамок с картинками")
-    @Accordion
+    @Category(name = "Призрачные рамки", desc = "Настройки отображения призрачных рамок с картинками")
     var ghostFrames = GhostFrameConfig()
+
+    @Expose
+    @Category(name = "Цвет неба", desc = "Свои цвета неба, горизонта и пустоты (порт из Skysoft)")
+    var skyColor = SkyColorConfig()
+
+    @Expose
+    @Category(name = "Прозрачное окно", desc = "See Through Farming: делает окно игры полупрозрачным (порт из SkyHanni). В полноэкранном режиме не работает")
+    var seeThroughWindow = SeeThroughWindowConfig()
+
+    class SeeThroughWindowConfig {
+        @Expose
+        @ConfigOption(name = "Непрозрачность, %", desc = "Процент непрозрачности окна, пока включено. 5 — почти видно только игру, 100 — обычное окно")
+        @ConfigEditorSlider(minValue = 5f, maxValue = 100f, minStep = 5f)
+        var opacity = 80
+
+        @Expose
+        @ConfigOption(name = "Клавиша", desc = "Переключает прозрачность окна")
+        @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
+        var keybind: Int = GLFW.GLFW_KEY_UNKNOWN
+    }
+
+    class SkyColorConfig {
+        @Expose
+        @ConfigOption(name = "Включить?", desc = "Перекрашивает небо, горизонт и пустоту в цвета ниже")
+        @ConfigEditorBoolean
+        var enabled = false
+
+        @Expose
+        @ConfigOption(name = "Цвет неба", desc = "Цвет купола неба. Формат A:R:G:B")
+        @ConfigEditorColour
+        var color = "0:135:206:255"
+
+        @Expose
+        @ConfigOption(name = "Цвет горизонта", desc = "Цвет горизонта и тумана вдали. Формат A:R:G:B")
+        @ConfigEditorColour
+        var horizonColor = "0:180:220:255"
+
+        @Expose
+        @ConfigOption(name = "Цвет пустоты", desc = "Цвет диска под миром (видно в пустоте). Формат A:R:G:B")
+        @ConfigEditorColour
+        var voidColor = "0:0:0:0"
+    }
 
     class GhostFrameConfig {
         @Expose
