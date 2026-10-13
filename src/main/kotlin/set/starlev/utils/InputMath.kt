@@ -9,17 +9,20 @@ import java.text.DecimalFormatSymbols
 import java.util.Locale
 
 /**
- * Ввод чисел с суффиксами и арифметикой — порт из Skysoft (`utils/SkyBlockMath.kt` +
- * `features/misc/InputMath.kt`).
+ * Ввод чисел с суффиксами и арифметикой.
  *
- * Игрок пишет в поле ввода Hypixel (виртуальный «знак» с `^^^^` в строке 1) выражение:
+ * Игрок пишет в поле ввода виртуального «знака» (строка 1 — маркер из `^`) выражение:
  *   `1k` = 1000, `2.5m` = 2 500 000, `1b` = 1 000 000 000,
  *   `10к`, `10м`, `10б` — то же самое кириллицей (для русской раскладки),
  *   `1s` = 64 (стак), `1e` = 160 (зачарованный стак),
  *   `1k+2m*3`, `(1.5k+500)*2` — обычные выражения со скобками.
  * Перед отправкой Enter значение заменяется на посчитанное число.
  *
- * Почему без последующего форматирования в k/m/b: Hypixel сам не понимает суффиксы,
+ * Маркер распознаётся как ЛЮБАЯ строка из крышек (а не только «15 крышек» или «6 крышек»),
+ * строки знака чистятся от §/& кодов и Hfont-глифов, подсказки понимаются и по-русски —
+ * иначе на Heltix (копия Hypixel со своими строками) фича молча не срабатывала.
+ *
+ * Почему без последующего форматирования в k/m/b: сервер сам не понимает суффиксы,
  * а наша задача — подставить ровно то число, которое он ожидает. Разделитель тысяч
  * вставляем только там, где сервер его терпит (обычные числовые поля), в цену — нет.
  */
@@ -29,12 +32,6 @@ object InputMath {
     private const val THOUSAND_MULTIPLIER = 1_000L
     private const val MILLION_MULTIPLIER = 1_000_000L
     private const val BILLION_MULTIPLIER = 1_000_000_000L
-
-    /** Hypixel-подсказка в строке 1: 15 или 6 «крышек», либо маркер флиппинга. */
-    private const val FULL_INPUT_MARKER = "^^^^^^^^^^^^^^^"
-    private const val SHORT_INPUT_MARKER = "^^^^^^"
-    private const val FLIPPING_INPUT_MARKER = "^^Flipping^^"
-    private const val SET_NAME_PROMPT = "Enter name"
 
     /** Число строк в виртуальном знаке — меньше значит это не поле ввода. */
     private const val SIGN_LINE_COUNT = 4
@@ -46,6 +43,29 @@ object InputMath {
 
     /** Запятая + ровно 3 цифры на границе строки — разделитель тысяч. */
     private val thousandSeparatorPattern = Regex("""(?<=\d),(?=\d{3}(?!\d))""")
+
+    /**
+     * Маркер поля ввода — строка 1 виртуального знака. Раньше сравнение шло с тремя
+     * хардкод-строками (15 крышек / 6 крышек / `^^Flipping^^`), и на Heltix — это копия
+     * Hypixel — число крышек/регистр/цветовые коды отличались, поэтому фича молча
+     * выключалась. Теперь берём ЛЮБУЮ строку из одних крышек.
+     */
+    private val caretMarkerPattern = Regex("""^\^(\^+)$""")
+    private val flippingMarkerPattern = Regex("""^\^+(?i:flipping)\^+$""")
+
+    private val formattingRegex = Regex("""(?i)[§&][0-9a-fk-orlnmxz]""")
+
+    /** Подсказки, где вводят ТЕКСТ, а не число — их трогать нельзя. */
+    private val textPromptSuffixes = listOf(
+        "your", "query", "inventory", "name", "search",
+        "введите", "введи", "ввод", "назван", "имя", "поиск", "запрос", "инвентар", "свои"
+    )
+
+    /** Подсказки с ценой — там нужны копейки, поэтому scale = 2. */
+    private val pricePromptWords = listOf("price", "cost", "цена", "стоимость", "руб")
+
+    /** Знаки конца предложения — «Search your inventory:» заканчивается двоеточием. */
+    private const val PROMPT_TRAILING = " \t.:!?;,"
 
     private val enabled: Boolean
         get() = try {
@@ -59,26 +79,71 @@ object InputMath {
      * @return новая строка для `messages[0]` или null, если считать нечего.
      */
     fun compile(messages: Array<String>): String? {
-        if (!enabled || !isNumberInput(messages)) return null
-        val result = calculate(messages[0]) ?: return null
-        // Цена принимается с копейками, обычные количества — целые.
-        val scale = if (messages[2].contains("price", ignoreCase = true)) 2 else 0
-        return result.setScale(scale, RoundingMode.HALF_UP)
-            .stripTrailingZeros()
-            .toPlainString()
-            .takeIf { it.length <= MAX_INPUT_LENGTH }
+        if (!enabled) return null
+        return evaluate(messages).first
     }
 
-    /** Проверяет структуру поля ввода: только поля с «крышками» Hypixel. */
-    private fun isNumberInput(messages: Array<String>): Boolean {
-        if (messages.size < SIGN_LINE_COUNT) return false
-        val prompt = messages[2]
-        return when (messages[1]) {
-            FULL_INPUT_MARKER -> !prompt.endsWith("your") && !prompt.endsWith("query")
-            SHORT_INPUT_MARKER -> !prompt.endsWith("your") && prompt != SET_NAME_PROMPT
-            FLIPPING_INPUT_MARKER -> true
-            else -> false
+    /** Разбор поля ввода: значение для подстановки + причина решения. */
+    private fun evaluate(messages: Array<String>): Pair<String?, String> {
+        if (messages.size < SIGN_LINE_COUNT) return null to "знак из ${messages.size} строк"
+
+        // Маркер ищем по ВСЕМ строкам, а не только по messages[1]
+        val markerIndex = messages.indices.firstOrNull { isMarker(messages[it]) }
+        if (markerIndex == null) {
+            return null to "нет строки-маркера из крышек"
         }
+
+        // Значение и подсказка НЕ обязаны стоять вплотную к маркеру: на Heltix раскладка
+        // `[поле | (пусто) | ^^^^^^^^ | подсказка]` — между полем и маркером пустая строка,
+        // поэтому берём ближайшую НЕПУСТУЮ строку с каждой стороны, а не «на индекс ±1».
+        val valueIndex = (markerIndex - 1 downTo 0).firstOrNull { messages[it].isNotBlank() }
+        if (valueIndex == null) return null to "перед маркером нет непустой строки"
+
+        val promptIndex = (markerIndex + 1 until messages.size).firstOrNull { messages[it].isNotBlank() }
+            ?: (valueIndex - 1 downTo 0).firstOrNull { messages[it].isNotBlank() }
+        if (promptIndex == null) return null to "рядом с маркером нет подсказки"
+
+        val prompt = normalizePrompt(messages[promptIndex])
+        val textPrompt = textPromptSuffixes.firstOrNull { prompt.endsWith(it) }
+        if (textPrompt != null) return null to "текстовое поле («$prompt»)"
+
+        val raw = messages[valueIndex].trim()
+        val number = calculate(raw) ?: return null to "в строке $valueIndex не число/выражение («$raw»)"
+        val scale = if (isPricePrompt(messages[promptIndex])) 2 else 0
+        val result = number.setScale(scale, RoundingMode.HALF_UP)
+            .stripTrailingZeros()
+            .toPlainString()
+        if (result.length > MAX_INPUT_LENGTH) return null to "результат длиннее $MAX_INPUT_LENGTH символов"
+        return result to "строка $valueIndex («$raw»), подсказка «$prompt»"
+    }
+
+    /** Снимает §/& коды и Hfont-глифы — на Heltix строки знака могут быть закодированы. */
+    private fun clean(text: String): String {
+        val decoded = try {
+            set.starlev.utils.detectors.ContainerDetector.decodeTitle(text)
+        } catch (_: Throwable) {
+            text
+        }
+        return formattingRegex.replace(decoded, "").trim()
+    }
+
+    /**
+     * Маркер поля ввода — строка, где после снятия кодов и ПРОБЕЛОВ остались одни крышки.
+     * Пробелы убираем потому, что сервер иногда разделяет крышки (`^ ^ ^ ^ ^`).
+     */
+    private fun isMarker(line: String): Boolean {
+        val bare = clean(line).filterNot { it.isWhitespace() }
+        if (bare.isEmpty()) return false
+        return caretMarkerPattern.matches(bare) || flippingMarkerPattern.matches(bare)
+    }
+
+    /** Подсказка в нижнем регистре без хвостовой пунктуации — «Введите имя:» → «введите имя». */
+    private fun normalizePrompt(prompt: String): String =
+        clean(prompt).lowercase().trimEnd(*PROMPT_TRAILING.toCharArray())
+
+    private fun isPricePrompt(prompt: String): Boolean {
+        val lower = normalizePrompt(prompt)
+        return pricePromptWords.any { lower.contains(it) }
     }
 
     /**

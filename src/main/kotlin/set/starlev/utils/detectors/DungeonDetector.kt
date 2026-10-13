@@ -29,6 +29,32 @@ object DungeonDetector {
         cachedResult = false
     }
 
+    /**
+     * Лобби подземелия (хаб) — это НЕ инстанс данжа.
+     *
+     * Нужно фичам, которые ищут боссов/меню данжа: `isInDungeon()` считает хаб
+     * подземельем (см. detectDungeon — любое измерение с «dungeon» в имени), из-за
+     * чего они срабатывают прямо в лобби.
+     *
+     * Разделители в имени измерения НЕ фиксированы: хаб на Heltix — `minecraft:dungeonhub`
+     * (без подчёркивания, см. `Waypoints.kt`), где-то встречается `…_hub` / `…_lobby`.
+     * Поэтому сравниваем «хвост» пути без `_`/`-`, а не по точному имени.
+     */
+    fun isDungeonLobby(): Boolean {
+        val level = mc.level ?: return false
+        val dimId = level.dimension().identifier().toString()
+        if (dimId == DUNGEON_HUB_DIMENSION) return true
+        val tail = dimId.substringAfter(':').replace("_", "").replace("-", "")
+        return tail.endsWith("hub", ignoreCase = true) ||
+            tail.endsWith("lobby", ignoreCase = true) ||
+            tail.endsWith("lobbys", ignoreCase = true)
+    }
+
+    /** Настоящий заход в подземелье: не лобби/хаб. */
+    fun isInDungeonInstance(): Boolean = !isDungeonLobby() && isInDungeon()
+
+    private const val DUNGEON_HUB_DIMENSION = "minecraft:dungeonhub"
+
     private fun detectDungeon(): Boolean {
         val level = mc.level ?: return false
         val dimId = level.dimension().identifier().toString()

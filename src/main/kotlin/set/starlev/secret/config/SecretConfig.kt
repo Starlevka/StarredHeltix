@@ -52,28 +52,7 @@ class SecretConfig : Config() {
             val mc = Minecraft.getInstance()
             mc.player?.sendSystemMessage(Component.literal("§d§l[Secret] §fВаш статус: $statusInfo"))
         }
-
-        @ConfigOption(name = "Команды модерации", desc = "Список доступных вам команд — зависит от ранга.")
-        @ConfigEditorButton(buttonText = "Показать")
-        val showCommands: Runnable = Runnable {
-            val mc = Minecraft.getInstance()
-            val player = mc.player?.name?.string ?: "Unknown"
-            if (!set.starlev.features.chat.mod.ModerationManager.isModerator(player)) {
-                mc.player?.sendSystemMessage(Component.literal("§d§l[Secret] §cНедостаточно прав!"))
-                return@Runnable
-            }
-            val mod = set.starlev.features.chat.mod.ModerationManager
-            mc.player?.sendSystemMessage(
-                Component.literal("§d§l[Secret] §fВаш ранг: ${mod.rankName(player)}")
-            )
-            mc.player?.sendSystemMessage(Component.literal("§d§l[Secret] §fДоступные команды:"))
-            mod.commandsFor(player).forEach { cmd ->
-                mc.player?.sendSystemMessage(Component.literal(cmd))
-            }
-        }
     }
-
-    // Ранее здесь был класс ChatBotCategory и enum LmMode для ИИ-чат-бота.
 
     class ModerationCategory {
         @ConfigOption(name = "Команды модерации", desc = "Просмотреть список доступных party-команд для управления игроками.")

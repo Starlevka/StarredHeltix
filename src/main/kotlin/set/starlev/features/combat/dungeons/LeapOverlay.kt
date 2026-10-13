@@ -16,18 +16,20 @@ import set.starlev.events.GuiEvents
 import set.starlev.render.drawSmoothRoundedPanel
 import set.starlev.utils.ColorUtils
 import set.starlev.utils.detectors.ContainerDetector
+import set.starlev.utils.detectors.DungeonDetector
 import set.starlev.utils.detectors.ItemLoreDetector
 
 /**
- * Leap-оверлей меню «Spirit Leap» в данжах (порт идеи NoFrills LeapOverlay /
- * Odin LeapMenu / Skyblocker LeapOverlay): мелкие головы тиммейтов в контейнере
+ * Leap-оверлей меню «Spirit Leap» в данжах: мелкие головы тиммейтов в контейнере
  * дублируются крупными кнопками 2x2 по центру экрана — имя, иконка-хед и слот
  * хоткея. Клик по кнопке или хоткей (бинды «Leap 1..4», дефолт 1-4) кликает
  * настоящий слот головы (PICKUP) — сервер телепортирует к игроку.
  *
- * Распознавание меню: заголовок контейнера содержит одну из подстрок из конфига
- * (RU/EN варианты). Кандидаты: PLAYER_HEAD со «телепортной» лорой; если лоры нет —
- * любые PLAYER_HEAD с непустым именем (фолбэк на случай своего формата у Heltix).
+ * Распознавание меню: игрок внутри захода в данж (DungeonDetector.isInDungeonInstance —
+ * хаб `minecraft:dungeonhub` подземельем НЕ считается) И заголовок контейнера содержит
+ * одну из подстрок из конфига (RU/EN варианты). Кандидаты: PLAYER_HEAD со «телепортной»
+ * лорой; если лоры нет — любые PLAYER_HEAD с непустым именем (фолбэк на случай своего
+ * формата у Heltix).
  */
 object LeapOverlay {
     private val mc = Minecraft.getInstance()
@@ -61,8 +63,10 @@ object LeapOverlay {
     fun isLeapScreen(screen: AbstractContainerScreen<*>): Boolean {
         val cfg = StarredHeltix.feature.dungeons.leap
         if (!cfg.enabled) return false
-        // Гейт по данжам не нужен: меню липа существует только в подземельях,
-        // заголовка достаточно (DungeonDetector здесь давал бы ложные срабатывания).
+        // Меню липа бывает только внутри захода в данж. Раньше гейта не было, и в хабе
+        // (minecraft:dungeonhub) любое меню с «прыжок» в заголовке превращалось в оверлей:
+        // DungeonDetector.isInDungeon() считает хаб подземельем. Отсюда — DungeonLobby-гейт.
+        if (!DungeonDetector.isInDungeonInstance()) return false
         val title = try {
             ContainerDetector.getCurrentContainerInfo()?.normalizedTitle
                 ?: screen.title.string.lowercase().trim()
@@ -75,7 +79,7 @@ object LeapOverlay {
             .any { title.contains(it) }
     }
 
-    // ——— раскладка 1в1 как Odin LeapMenu ———
+    // ——— раскладка 1в1: кнопки 2x2 по центру экрана ———
     // Экран делится на 4 квадранта (крест по центру), в каждом — бокс 200×75
     // с отступом 24px от центра. Ховер/клик — по всему квадранту, а не по боксу.
 
@@ -86,7 +90,7 @@ object LeapOverlay {
     private const val GROW = 5f
     private const val HOVER_MS = 200L
 
-    /** Анимация наведения на квадрант (0..GROW), как Fade в Odin. */
+    /** Анимация наведения на квадрант (0..GROW), 200мс fade. */
     private val growAnims = FloatArray(4)
     private var lastFrameMs = 0L
 
@@ -154,7 +158,7 @@ object LeapOverlay {
             val row = i / 2
             val hovered = (if (col == 0) mouseX < halfW else mouseX >= halfW) &&
                 (if (row == 0) mouseY < halfH else mouseY >= halfH)
-            // Grow-анимация наведения (Odin: Fade 200мс)
+            // Grow-анимация наведения (fade 200мс)
             val target = if (hovered) GROW else 0f
             growAnims[i] = (growAnims[i] + (target - growAnims[i]).coerceIn(-step, step)).coerceIn(0f, GROW)
             val grow = growAnims[i]
@@ -169,10 +173,10 @@ object LeapOverlay {
             pose.translate(nearX.toFloat(), nearY.toFloat())
             pose.scale(scale * (BOX_W + grow * 2f) / BOX_W, scale * (BOX_H + grow * 2f) / BOX_H)
             try {
-                // Бокс со скруглением 9 (Odin: roundedRect ..., 9f)
+                // Бокс со скруглением 9
                 graphics.drawSmoothRoundedPanel(localX, localY, BOX_W, BOX_H, boxColor, BOX_RADIUS)
 
-                // Лицо скина 57×57 (Odin: PlayerFaceExtractor), фолбэк — предмет-голова
+                // Лицо скина 57×57, фолбэк — предмет-голова
                 val faceX = localX + 9
                 val faceY = localY + 9
                 val profile = try {
@@ -192,7 +196,7 @@ object LeapOverlay {
                     graphics.item(button.head, faceX + (face - 16) / 2, faceY + (face - 16) / 2)
                 }
 
-                // Ник + вторая строка (класс у Odin; у нас — хоткей)
+                // Ник + вторая строка (хоткей)
                 val textX = localX + 15 + face
                 graphics.text(mc.font, "§f" + button.playerName, textX, localY + (BOX_H / 2.5f).toInt(), 0xFFFFFFFF.toInt(), true)
                 val sub = if (leapKeys.size > i) {
@@ -213,7 +217,7 @@ object LeapOverlay {
         if (clickButton != 0) return false
         if (!isLeapScreen(screen)) return false
         if (buttons.isEmpty()) return false
-        // Клик по квадранту (Odin: весь четверть-экрана, а не только бокс)
+        // Клик по квадранту — весь четверть-экрана, а не только бокс
         val w = screen.width
         val h = screen.height
         if (w <= 0 || h <= 0) return false
