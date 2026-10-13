@@ -25,11 +25,9 @@ object FeatureManager {
     /** Вызвать `init()` у всех зарегистрированных (если когда-то перейдём на регистрацию через этот менеджер). */
     fun initAll() {
         if (features.isEmpty()) return
-        LOGGER.info("Инициализация ${features.size} фич (FeatureManager)...")
         for (f in features) {
             try {
                 f.init()
-                LOGGER.debug("Фича '${f.name}' [${f.category.name}] init ok")
             } catch (e: Exception) {
                 LOGGER.error("Ошибка init '${f.name}': ${e.message}", e)
             }

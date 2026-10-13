@@ -91,7 +91,7 @@ object SHModuleTextures {
 
     /**
      * Загрузить изображение из файла в папке модуля (песочница) в GPU.
-     * Аналог Image.fromFile из ctjs. Формат PNG/JPEG, до 8 МБ.
+     * Формат PNG/JPEG, до 8 МБ.
      *
      * ```js
      * render.loadImageFromFile("icons/coin.png", "coin");

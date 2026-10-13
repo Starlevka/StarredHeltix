@@ -20,7 +20,7 @@ object ScriptParticleHandler {
             val event = JSCancellableEvent()
             SHScriptEngine.withContext { cx ->
                 try {
-                    // CTJS: (particle, event) where particle has x/y/z etc.
+                    // Аргументы: (particle, event), где particle — {name, x, y, z, dx, dy, dz}
                     val obj = mapOf("name" to type, "x" to x, "y" to y, "z" to z, "dx" to dx, "dy" to dy, "dz" to dz)
                     e.callable.call(cx, SHScriptEngine.globalScope, SHScriptEngine.globalScope, arrayOf(obj, event))
                 } catch (t: Throwable) {

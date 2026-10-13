@@ -32,7 +32,6 @@ object ContainerEventWire {
     private val forwarders = mutableMapOf<AbstractContainerMenu, SlotUpdateForwarder>()
 
     fun init() {
-        LOGGER.info("[ContainerEventWire] Готов к подключению контейнеров")
     }
 
     /**
@@ -44,10 +43,6 @@ object ContainerEventWire {
         val forwarder = SlotUpdateForwarder()
         menu.addSlotListener(forwarder)
         forwarders[menu] = forwarder
-        LOGGER.info(
-            "[ContainerEventWire] attach: containerId=${menu.containerId}, " +
-                "class=${menu.javaClass.simpleName}"
-        )
     }
 
     /**

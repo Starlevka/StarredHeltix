@@ -65,7 +65,6 @@ object DiscordRPC {
             ipc = newIpc
             isInitialized = true
             startTimestamp = System.currentTimeMillis() / 1000
-            StarredHeltix.LOGGER.info("[DiscordRPC] Connected")
             updatePresence()
         } catch (e: Exception) {
             StarredHeltix.LOGGER.warn("[DiscordRPC] Init failed (Discord не запущен?): ${e.message}")
@@ -130,7 +129,6 @@ object DiscordRPC {
         ipc = null
         isInitialized = false
         lastLocation = null
-        StarredHeltix.LOGGER.info("[DiscordRPC] Shutdown")
     }
 
     fun forceUpdate() {

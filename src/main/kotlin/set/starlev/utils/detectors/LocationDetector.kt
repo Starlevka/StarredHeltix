@@ -207,28 +207,21 @@ object LocationDetector {
     private fun detectLocation(): String? {
         val lines = ScoreboardDetector.getScoreboardText()
 
-        // Ищем строку, содержащую символ ⏣ или ф
+        // Строка локации — та, где глиф локации стоит В НАЧАЛЕ строки: ⏣ или буква,
+        // в которую этот глиф декодируется на некоторых серверах.
         for (line in lines) {
-            val cleanLine = cleanLocationName(line)
-            if (cleanLine.contains('⏣') || cleanLine.contains('ф')) {
-                val result = cleanLine
-                    .replace("⏣", "")
-                    .replace("ф", "")
-                    .trim()
-                // Убран спам в логах: ранее было LOGGER.info каждый раз при смене кэша
-                // set.starlev.StarredHeltix.LOGGER.debug("[LocationDetector] Найдена локация: '$result' из строки: '$cleanLine'")
-                return result
-            }
+            val stripped = line.replace(COLOR_CODE_REGEX, "").replace("~", "").trim()
+            if (!LOCATION_GLYPH_REGEX.containsMatchIn(stripped)) continue
+            // Убран спам в логах: ранее было LOGGER.info каждый раз при смене кэша
+            return normalizeLocation(stripped)
         }
 
         // Фоллбэк: заголовок scoreboard
         val title = ScoreboardDetector.getScoreboardTitle()
         if (title.isNotBlank() && !title.equals("www.hypixel.net", ignoreCase = true)) {
-            // LOGGER.info("[LocationDetector] Фоллбэк по заголовку: '$title'")
             return cleanLocationName(title)
         }
 
-        // LOGGER.info("[LocationDetector] Локация не найдена. Lines: [${lines.joinToString(" | ")}]")
         return null
     }
 
@@ -240,12 +233,18 @@ object LocationDetector {
     private val LOCATION_GLYPH_REGEX = Regex("^[⏣ф]+\\s*")
 
     /**
-        * Очистить строку от цветовых кодов, но сохранить текст локации.
+        * Очистить строку локации ДЛЯ ОТОБРАЖЕНИЯ (скорборд, Discord RPC).
+        *
+        * Снимаем цветовые коды и глиф локации `⏣`. Букву «ф» здесь НЕ трогаем: на части
+        * серверов глиф локации декодируется именно в неё, и глобальный `replace("ф", "")`
+        * съедал буквы в обычных словах — «Февраль 8» превращалось в «евраль 8» в Discord.
+        * Снятие глифа «ф» осталось только в normalizeLocation (сопоставление с реестром).
         */
     private fun cleanLocationName(raw: String): String {
         return raw
             .replace(COLOR_CODE_REGEX, "")
             .replace("~", "")
+            .replace("⏣", "")
             .trim()
     }
 

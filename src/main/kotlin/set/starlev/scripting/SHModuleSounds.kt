@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Кастомные ogg-звуки для JS-модулей (sound.playFile).
  *
- * Механизм (как в ctjs Sound.bootstrap): SoundEvent + Sound(Type.FILE) регистрируются
+ * Механизм: SoundEvent + Sound(Type.FILE) регистрируются
  * напрямую в приватных реестрах SoundManager через миксин-аксессоры, а байты файла
  * отдаются через Resource с IoSupplier. Категория управляет громкостью слайдера,
  * зацикливание — флагом loop инстанса.
@@ -310,7 +310,7 @@ object SHModuleSounds {
 
     /**
      * Формальный source для Resource. Байты отдаются напрямую через IoSupplier,
-     * поэтому pack'у ничего не нужно уметь (как CTResourcePack в ctjs).
+     * поэтому pack'у ничего не нужно уметь.
      */
     private object SHSoundPack : PackResources {
         override fun packId(): String = "starredheltix-module-sounds"

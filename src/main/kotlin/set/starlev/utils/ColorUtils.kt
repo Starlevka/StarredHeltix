@@ -31,6 +31,7 @@ object ColorUtils {
 
             when (parts.size) {
                 4 -> {
+                    // Legacy-формат A:R:G:B (пишется руками, не из пикера)
                     chroma = 0
                     r = parts[0].toInt().coerceIn(0, 255)
                     g = parts[1].toInt().coerceIn(0, 255)
@@ -38,16 +39,18 @@ object ColorUtils {
                     a = parts[3].toInt().coerceIn(0, 255)
                 }
                 5 -> {
-                    val chromaPart = parts[0]
+                    // Формат пикера @ConfigEditorColour в MoulConfig: B:G:R:A:Chroma
+                    // (ChromaColour.forLegacyString: d[0]=b, d[1]=g, d[2]=r, d[3]=a, d[4]=chroma)
+                    val chromaPart = parts[4]
                     chroma = when {
                         chromaPart.equals("chroma", ignoreCase = true) -> 255
                         chromaPart.equals("rainbow", ignoreCase = true) -> 255
                         else -> chromaPart.toIntOrNull() ?: 0
                     }
-                    a = parts[1].toInt().coerceIn(0, 255)
+                    b = parts[0].toInt().coerceIn(0, 255)
+                    g = parts[1].toInt().coerceIn(0, 255)
                     r = parts[2].toInt().coerceIn(0, 255)
-                    g = parts[3].toInt().coerceIn(0, 255)
-                    b = parts[4].toInt().coerceIn(0, 255)
+                    a = parts[3].toInt().coerceIn(0, 255)
                 }
                 else -> return default
             }
@@ -82,6 +85,30 @@ object ColorUtils {
         } catch (e: Exception) {
             default
         }
+    }
+
+    /**
+     * Переводит строку цвета в порядок, который понимает пикер MoulConfig (`B:G:R:A:Chroma`).
+     *
+     * Нужна для миграции: старые дефолты/конфиги были в порядке `Chroma:A:R:G:B`,
+     * а `ChromaColour.forLegacyString` читает поле chroma как `d[4]` — с 4-частной строкой
+     * он падает с ArrayIndexOutOfBounds, а с 5-частной в старом порядке показывает
+     * переставленные R и B. Возвращает null, если переводить нечего.
+     */
+    fun toMoulConfigOrder(colorStr: String): String? {
+        val raw = colorStr.trim()
+        if (raw.isEmpty() || raw.startsWith("#") || raw.startsWith("0x", ignoreCase = true)) return null
+        val parts = raw.split(":")
+        val nums = parts.map { it.trim().toIntOrNull() ?: return null }
+        if (nums.size !in 4..5) return null
+        val normalized = if (nums.size == 5) {
+            val (chroma, a, r, g, b) = nums
+            listOf(b, g, r, a, chroma)
+        } else {
+            val (a, r, g, b) = nums
+            listOf(b, g, r, a, 0)
+        }
+        return normalized.joinToString(":")
     }
 
     /**

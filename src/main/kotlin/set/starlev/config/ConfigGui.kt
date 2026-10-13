@@ -13,7 +13,11 @@ object ConfigGuiManager {
 
     fun getConfigEditorInstance(): MoulConfigEditor<Features> {
         if (configEditor == null) {
-            configEditor = MoulConfigEditor(StarredHeltix.configManager.processor)
+            val editor = MoulConfigEditor(StarredHeltix.configManager.processor)
+            // Обычный размер окна: широкий режим (wide = true) растягивал меню
+            // почти на весь экран — выглядит непривычно.
+            editor.wide = false
+            configEditor = editor
         }
         return configEditor!!
     }

@@ -4,9 +4,12 @@ import com.google.gson.annotations.Expose
 import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
+import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
+import org.lwjgl.glfw.GLFW
 import set.starlev.config.categories.GardenConfig
 
 class FarmingConfig {
@@ -23,12 +26,28 @@ class FarmingConfig {
     }
 
     @Expose
-    @Category(name = "Подсказка Ранчеров", desc = "Настройки ускорения скорости для Ботинок Ранчера")
+    @Category(name = "Подсказка Ранчера", desc = "Настройки ускорения скорости для Ботинок Ранчера")
     var rancherSpeed = RancherSpeedConfig()
 
     @Expose
     @Category(name = "Сад", desc = "Функции Сада")
     var garden = GardenConfig()
+
+    @Expose
+    @Category(name = "Прозрачное окно", desc = "See Through Farming: делает окно игры полупрозрачным. В полноэкранном режиме не работает")
+    var seeThroughWindow = SeeThroughWindowConfig()
+
+    class SeeThroughWindowConfig {
+        @Expose
+        @ConfigOption(name = "Непрозрачность, %", desc = "Процент непрозрачности окна, пока включено. 5 — почти видно только игру, 100 — обычное окно")
+        @ConfigEditorSlider(minValue = 5f, maxValue = 100f, minStep = 5f)
+        var opacity = 80
+
+        @Expose
+        @ConfigOption(name = "Клавиша", desc = "Переключает прозрачность окна")
+        @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
+        var keybind: Int = GLFW.GLFW_KEY_UNKNOWN
+    }
 
     class RancherSpeedConfig {
         @Expose

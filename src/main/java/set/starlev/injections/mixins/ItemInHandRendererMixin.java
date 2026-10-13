@@ -23,7 +23,6 @@ import set.starlev.features.visual.swing.SwingVisuals;
 
 /**
  * Кастомные анимации удара и трансформации предмета в руке.
- * Портировано 1-в-1 из Skysoft (HeldItemEditorScreen + HeldItemSwingVisuals).
  * + Скрытие второй руки от первого лица (порт HeldItemRendererMixin из heltix-mod).
  */
 @Mixin(ItemInHandRenderer.class)

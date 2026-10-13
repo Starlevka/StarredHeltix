@@ -15,7 +15,7 @@ import java.util.regex.Pattern
 import org.slf4j.LoggerFactory
 
 /**
- * Солвер «Три незнакомца» по образцу Odin WeirdosSolver / Skyblocker ThreeWeirdos:
+ * Солвер «Три незнакомца»:
  * - реакция на каждое сообщение: совпало с пулом решений — сразу показываем имя
  *   верного незнакомца (ждать все три реплики не нужно, игра гарантирует ровно
  *   одну «решающую» фразу на комнату);
@@ -34,7 +34,7 @@ object ThreeWeirdos {
     private val LOGGER = LoggerFactory.getLogger(ThreeWeirdos::class.java)
     private val STRANGER_PATTERN = Pattern.compile("^\\[(?:npc|персонаж)\\]\\s*(.+?):\\s*(.+)$")
 
-    // Утверждения, произнёсший которые — владелец награды (6 фраз Hypixel, RU + EN)
+    // Утверждения, произнёсший которые — владелец награды (6 фраз, RU + EN)
     private val SOLUTIONS = listOf(
         // RU
         "в моем сундуке находится награда",                    // My chest has the reward and I'm telling the truth!
@@ -113,13 +113,11 @@ object ThreeWeirdos {
         if (text.contains("головоломка решена") || text.contains("выбрал правильный сундук")) {
             puzzleSolved = true
             resetFound()
-            LOGGER.info("[ThreeWeirdos] Головоломка решена, сброс подсветки")
             return
         }
         if (text.contains("головоломка провалена") || text.contains("обхитрил")) {
             puzzleSolved = true
             resetFound()
-            LOGGER.info("[ThreeWeirdos] Головоломка провалена, сброс подсветки")
             return
         }
 
@@ -141,7 +139,6 @@ object ThreeWeirdos {
 
         puzzleSolved = false
         lastCorrectStranger = name
-        LOGGER.info("[ThreeWeirdos] Решение: '$name' («$statement»)")
         // Имя с маленькой буквы — так его показывает сама игра.
         Minecraft.getInstance().player?.sendSystemMessage(
             Component.literal("§a§l[Три незнакомца] §aНаграда в сундуке: §e${name.lowercase()}")
@@ -214,7 +211,6 @@ object ThreeWeirdos {
                     else cleanName.contains(target) || target.contains(cleanName)
                 if (hit) {
                     npcPos = entity.blockPosition()
-                    LOGGER.info("[ThreeWeirdos] Найден НПС '$displayName' (${if (exactPass == 0) "точно" else "по подстроке"}) на $npcPos")
                     break
                 }
             }
@@ -222,7 +218,6 @@ object ThreeWeirdos {
         }
 
         if (npcPos == null) {
-            LOGGER.debug("[ThreeWeirdos] НПС '$correctName' ещё не найден (энтити не синхронизированы?), ждём ретрай")
             return false
         }
 

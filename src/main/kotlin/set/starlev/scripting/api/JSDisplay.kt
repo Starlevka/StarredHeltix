@@ -8,7 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import set.starlev.scripting.ScriptConsole
 
 /**
- * CTJS-паритет: Display / Text / Image — легковесные 2D примитивы для JS.
+ * JS API: Display / Text / Image — легковесные 2D примитивы.
  * Только Display/Text/Image, без полного Renderer.begin (Фаза 2).
  * Рендер через персистентный overlay (events.onOverlay) — 1 draw вызов на Display, без JS в hot-path лишнего.
  */
@@ -223,7 +223,7 @@ object DisplayManager {
 class JSImage private constructor(private var textureId: Identifier?, private var w: Int, private var h: Int){
     companion object {
         private val nextId = java.util.concurrent.atomic.AtomicInteger(0)
-        private fun nextIdentifier(): Identifier = Identifier.fromNamespaceAndPath("starredheltix", "ctjs_img_${nextId.incrementAndGet()}_${System.nanoTime()}")
+        private fun nextIdentifier(): Identifier = Identifier.fromNamespaceAndPath("starredheltix", "sh_img_${nextId.incrementAndGet()}_${System.nanoTime()}")
 
         /** id текстур, созданных каждым модулем (для релиза GPU-памяти при выгрузке). */
         private val ownedTextures = java.util.concurrent.ConcurrentHashMap<String, MutableSet<Identifier>>()
@@ -238,19 +238,19 @@ class JSImage private constructor(private var textureId: Identifier?, private va
             return fromBufferedImage(bi)
         }
         fun fromAsset(name: String): JSImage {
-            // CTJS assetsDir is config/ChatTriggers/assets — mimic with modulesDir/assets
-            val f = java.io.File("config/ChatTriggers/assets", name)
+            // Общая папка ассетов игрока; модульные ассеты — modulesDir/assets
+            val f = java.io.File("config/starredheltix/assets", name)
             if (f.exists()) return fromFile(f)
             throw IllegalArgumentException("Asset not found: $name")
         }
         fun fromUrl(url: String, cachedName: String? = null): JSImage {
             if (cachedName != null) {
-                val f = java.io.File("config/ChatTriggers/assets", cachedName)
+                val f = java.io.File("config/starredheltix/assets", cachedName)
                 if (f.exists()) return fromFile(f)
             }
             val conn = java.net.URI(url).toURL().openConnection() as java.net.HttpURLConnection
             conn.requestMethod = "GET"; conn.connectTimeout = 7000; conn.readTimeout = 15000
-            conn.setRequestProperty("User-Agent", "StarredHeltix-CTJS")
+            conn.setRequestProperty("User-Agent", "StarredHeltix")
             val bi = try {
                 if (conn.responseCode !in 200..299) throw IllegalStateException("HTTP ${conn.responseCode} for $url")
                 javax.imageio.ImageIO.read(conn.inputStream) ?: throw IllegalArgumentException("Invalid image URL: $url")
@@ -258,7 +258,7 @@ class JSImage private constructor(private var textureId: Identifier?, private va
                 try { conn.disconnect() } catch (_: Exception) {}
             }
             if (cachedName != null) {
-                val out = java.io.File("config/ChatTriggers/assets", cachedName)
+                val out = java.io.File("config/starredheltix/assets", cachedName)
                 out.parentFile?.mkdirs()
                 javax.imageio.ImageIO.write(bi, "png", out)
             }
@@ -273,12 +273,12 @@ class JSImage private constructor(private var textureId: Identifier?, private va
                 throw IllegalStateException("Failed to decode image: ${e.message}", e)
             }
             try {
-                val dyn = net.minecraft.client.renderer.texture.DynamicTexture({ "ctjs_img" }, native)
+                val dyn = net.minecraft.client.renderer.texture.DynamicTexture({ "sh_img" }, native)
                 Minecraft.getInstance().textureManager.register(id, dyn)
             } catch (e: Exception) {
                 // native передан в DynamicTexture только при успехе; при падении закрываем сами.
                 try { native.close() } catch (_: Exception) {}
-                throw IllegalStateException("Failed to register CTJS image: ${e.message}", e)
+                throw IllegalStateException("Failed to register image: ${e.message}", e)
             }
             val img = JSImage(id, bi.width, bi.height)
             currentOwnerLower()?.let { owner ->

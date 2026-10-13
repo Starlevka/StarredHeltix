@@ -10,11 +10,11 @@ import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 class CombatConfig {
 
     @Expose
-    @Category(name = "Подсветка по клику", desc = "Клик колёсиком мыши по мобу — мод определяет ник сущности и обводит её. Повторный клик по той же — снять, клик по другой — переключиться")
+    @Category(name = "Подсветка клика", desc = "Клик колёсиком по мобу — обводит его. Повторный клик снимает")
     var clickHighlight = ClickHighlightConfig()
 
     @Expose
-    @Category(name = "Костеранг", desc = "Показывает дотянется ли костеранг до моба: счётчик целей в прицеле и их подсветка (как BonemerangOverlay в Firmament)")
+    @Category(name = "Костеранг", desc = "Показывает дотянется ли костеранг до моба: счётчик целей в прицеле и их подсветка")
     var bonemerang = BonemerangConfig()
 
     class BonemerangConfig {
@@ -61,7 +61,7 @@ class CombatConfig {
 
     class ClickHighlightConfig {
         @Expose
-        @ConfigOption(name = "Включить?", desc = "Подсветка выбранной сущности. Клавиша выделения — в «Настройках управления» (категория «Прочее»), по умолчанию клик колёсиком; её можно переназначить, если колесо не доходит до игры")
+        @ConfigOption(name = "Включить?", desc = "Подсветка выбранной сущности. Клавиша — в «Управлении»")
         @ConfigEditorBoolean
         var enabled = true
 
@@ -88,7 +88,7 @@ class CombatConfig {
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет подсветки")
         @ConfigEditorColour
-        var colorV2 = "0:255:0:255:255"
+        var colorV2 = "255:255:0:255:0"
 
         @Expose
         @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки")

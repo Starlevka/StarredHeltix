@@ -6,11 +6,9 @@ import io.github.notenoughupdates.moulconfig.annotations.Category
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorBoolean
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorButton
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorDropdown
-import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorKeybind
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorSlider
 import io.github.notenoughupdates.moulconfig.annotations.ConfigOption
 import io.github.notenoughupdates.moulconfig.annotations.ConfigEditorColour
-import org.lwjgl.glfw.GLFW
 import set.starlev.features.visual.swing.ChangeResult
 import set.starlev.features.visual.swing.SwingCustomizationSnapshot
 import set.starlev.features.visual.swing.SwingTransformConfig
@@ -48,7 +46,7 @@ class VisualsConfig {
     var blockOverlay = BlockOverlayConfig()
 
     @Expose
-    @Category(name = "Статы (HUD)", desc = "Отдельные HUD для CPS/FPS/Ping/BPS — альтернатива строкам кастомного скорборда. Позиция и масштаб настраиваются в редакторе HUD")
+    @Category(name = "Статы (HUD)", desc = "Отдельные HUD для CPS/FPS/Ping/BPS. Позиция — в редакторе HUD")
     var statsHud = StatsHudConfig()
 
     @Expose
@@ -56,45 +54,32 @@ class VisualsConfig {
     var ghostFrames = GhostFrameConfig()
 
     @Expose
-    @Category(name = "Цвет неба", desc = "Свои цвета неба, горизонта и пустоты (порт из Skysoft)")
+    @Category(name = "Цвет неба", desc = "Свои цвета неба, горизонта и пустоты")
     var skyColor = SkyColorConfig()
 
-    @Expose
-    @Category(name = "Прозрачное окно", desc = "See Through Farming: делает окно игры полупрозрачным (порт из SkyHanni). В полноэкранном режиме не работает")
-    var seeThroughWindow = SeeThroughWindowConfig()
-
-    class SeeThroughWindowConfig {
-        @Expose
-        @ConfigOption(name = "Непрозрачность, %", desc = "Процент непрозрачности окна, пока включено. 5 — почти видно только игру, 100 — обычное окно")
-        @ConfigEditorSlider(minValue = 5f, maxValue = 100f, minStep = 5f)
-        var opacity = 80
-
-        @Expose
-        @ConfigOption(name = "Клавиша", desc = "Переключает прозрачность окна")
-        @ConfigEditorKeybind(defaultKey = GLFW.GLFW_KEY_UNKNOWN)
-        var keybind: Int = GLFW.GLFW_KEY_UNKNOWN
-    }
-
+    // Прозрачность 0% = «не перекрашивать», остаётся ванильный цвет. Раньше дефолты были
+    // записаны в legacy-порядке A:R:G:B с лишним нулём («255:206:135:0:0»), пикер читал их
+    // как B:G:R:A — альфа 0, и горизонт становился полностью прозрачным.
     class SkyColorConfig {
         @Expose
-        @ConfigOption(name = "Включить?", desc = "Перекрашивает небо, горизонт и пустоту в цвета ниже")
+        @ConfigOption(name = "Включить?", desc = "Перекрашивает небо, горизонт и пустоту")
         @ConfigEditorBoolean
         var enabled = false
 
         @Expose
-        @ConfigOption(name = "Цвет неба", desc = "Цвет купола неба. Формат A:R:G:B")
+        @ConfigOption(name = "Цвет неба", desc = "Купол неба. 0% прозрачности = ванильный")
         @ConfigEditorColour
-        var color = "0:135:206:255"
+        var color = "0:0:0:0:0"
 
         @Expose
-        @ConfigOption(name = "Цвет горизонта", desc = "Цвет горизонта и тумана вдали. Формат A:R:G:B")
+        @ConfigOption(name = "Цвет горизонта", desc = "Горизонт и туман. 0% прозрачности = ванильный")
         @ConfigEditorColour
-        var horizonColor = "0:180:220:255"
+        var horizonColor = "0:0:0:0:0"
 
         @Expose
-        @ConfigOption(name = "Цвет пустоты", desc = "Цвет диска под миром (видно в пустоте). Формат A:R:G:B")
+        @ConfigOption(name = "Цвет пустоты", desc = "Диск под миром. 0% прозрачности = ванильный")
         @ConfigEditorColour
-        var voidColor = "0:0:0:0"
+        var voidColor = "0:0:0:0:0"
     }
 
     class GhostFrameConfig {
@@ -162,7 +147,7 @@ class VisualsConfig {
         @ConfigEditorBoolean
         var ignoresMiningEffects = false
 
-        @ConfigOption(name = "Редактор анимации", desc = "Открывает отдельное окно: положение, повороты, масштаб, скорость и стиль удара. Работает как в Skysoft")
+        @ConfigOption(name = "Редактор анимации", desc = "Открывает отдельное окно: положение, повороты, масштаб, скорость и стиль удара")
         @ConfigEditorButton(buttonText = "Открыть")
         val openEditor = Runnable {
             set.starlev.features.visual.swing.SwingEditorScreen.open()
@@ -307,12 +292,12 @@ class VisualsConfig {
         @Expose
         @ConfigOption(name = "Цвет заливки", desc = "Цвет заливки выбранного блока в формате A:R:G:B")
         @ConfigEditorColour
-        var fillColor = "0:80:0:255:0"
+        var fillColor = "0:255:0:80:0"
 
         @Expose
         @ConfigOption(name = "Цвет обводки", desc = "Цвет обводки выбранного блока в формате A:R:G:B (0 уровень — без обводки)")
         @ConfigEditorColour
-        var outlineColor = "0:180:255:255:255"
+        var outlineColor = "255:255:255:180:0"
     }
 
     class StatsHudConfig {
@@ -346,7 +331,7 @@ class VisualsConfig {
         @Expose
         @ConfigOption(name = "Цвет значения", desc = "Цвет числового значения")
         @ConfigEditorColour
-        var valueColorV2 = "0:255:85:255:85"
+        var valueColorV2 = "85:255:85:255:0"
 
         @Expose
         @ConfigOption(name = "Фон HUD", desc = "Отображать фон позади текста")

@@ -34,7 +34,7 @@ class SkyblockConfig {
     var inventoryHistory = VisualsConfig.InventoryHistoryConfig()
 
     @Expose
-    @Category(name = "Кнопки инвентаря", desc = "Кастомные кнопки в инвентаре (как в NEU/Firmament)")
+    @Category(name = "Кнопки инвентаря", desc = "Кастомные кнопки в инвентаре")
     var inventoryButtons = InventoryButtonsConfig()
 
     @Expose
@@ -109,7 +109,7 @@ class SkyblockConfig {
         @Expose
         @ConfigOption(name = "Цвет", desc = "Цвет меток")
         @ConfigEditorColour
-        var colorV2 = "0:0:255:255:255"
+        var colorV2 = "255:255:255:0:0"
 
         @Expose
         @ConfigOption(name = "Бокс", desc = "Рисовать обводку/заливку вокруг блока")
@@ -147,22 +147,22 @@ class SkyblockConfig {
         @Expose
         @ConfigOption(name = "Фон кнопки", desc = "Цвет фона кнопок /sh buttons")
         @ConfigEditorColour
-        var tabBackgroundColorV2 = "0:128:0:0:0"
+        var tabBackgroundColorV2 = "0:0:0:128:0"
 
         @Expose
         @ConfigOption(name = "Фон кнопки (наведение)", desc = "Цвет фона при наведении на кнопку")
         @ConfigEditorColour
-        var tabHoverBackgroundColorV2 = "0:192:58:175:217"
+        var tabHoverBackgroundColorV2 = "217:175:58:192:0"
 
         @Expose
         @ConfigOption(name = "Рамка кнопки", desc = "Цвет рамки кнопки")
         @ConfigEditorColour
-        var tabBorderColorV2 = "0:255:170:170:170"
+        var tabBorderColorV2 = "170:170:170:255:0"
 
         @Expose
         @ConfigOption(name = "Рамка кнопки (наведение)", desc = "Цвет рамки при наведении")
         @ConfigEditorColour
-        var tabHoverBorderColorV2 = "0:255:255:255:255"
+        var tabHoverBorderColorV2 = "255:255:255:255:0"
 
         @ConfigOption(name = "Настроить кнопки", desc = "Открывает меню настройки кнопок инвентаря")
         @ConfigEditorButton(buttonText = "Открыть")
@@ -184,11 +184,11 @@ class SkyblockConfig {
     var pet = PetConfig()
 
     @Expose
-    @Category(name = "Диалоги с Персонажами", desc = "Настройки оверлея диалогов с NPC")
+    @Category(name = "Диалоги NPC", desc = "Настройки оверлея диалогов с NPC")
     var npcDialogue = NpcDialogueConfig()
 
     @Expose
-    @Category(name = "Плавный Аспект Энда", desc = "Настройки плавной телепортации (Аспект Энда)")
+    @Category(name = "Плавный АОТЭ", desc = "Настройки плавной телепортации (Аспект Энда)")
     var smoothAote = SmoothAoteConfig()
 
     @Expose
@@ -204,11 +204,11 @@ class SkyblockConfig {
     var slotOverlay = SlotOverlayConfig()
 
     @Expose
-    @Category(name = "Предпросмотр хранилища", desc = "Подсказка с содержимым эндер-сундуков и рюкзаков Heltix (порт из heltix-mod)")
+    @Category(name = "Хранилище", desc = "Подсказка с содержимым эндер-сундуков и рюкзаков Heltix (порт из heltix-mod)")
     var storagePreview = StoragePreviewConfig()
 
     @Expose
-    @Category(name = "Ввод чисел (k/m/b)", desc = "Считает выражения прямо в полях ввода: 1k, 2.5m, 3b, 10к/10м/10б, 64s, 160e, 1k+2m*3 (порт из Skysoft)")
+    @Category(name = "Ввод чисел", desc = "Считает выражения прямо в полях ввода: 1k, 2.5m, 3b, 10к/10м/10б, 64s, 160e, 1k+2m*3")
     var inputMath = InputMathConfig()
 
     class InputMathConfig {
@@ -358,7 +358,7 @@ class SkyblockConfig {
     }
 
     open class InfoElementConfig(
-        defaultColor: String = "0:255:85:255:85",
+        defaultColor: String = "85:255:85:255:0",
         enabled: Boolean = true
     ) {
         @Expose
@@ -457,7 +457,7 @@ class SkyblockConfig {
         var showBackground = false
 
         @Expose
-        @ConfigOption(name = "Скрывать ванильный action bar", desc = "Скрывает оригинальную строку +XP в ванильном action bar, только когда СООБЩЕНИЕ ЦЕЛИКОМ является XP-строкой. Комбинированные бары (XP+ХП+мана кастомного сервера) и строки ХП/маны не скрываются.")
+        @ConfigOption(name = "Скрывать ванильный action bar", desc = "Скрывает +XP, если строка целиком про XP. ХП/мана остаются")
         @ConfigEditorBoolean
         var hideActionBar = true
 
@@ -514,27 +514,27 @@ class SkyblockConfig {
         @Expose
         @ConfigOption(name = "Цвет названия навыка", desc = "Цвет заголовка")
         @ConfigEditorColour
-        var colorSkillNameV2 = "0:255:85:255:85"
+        var colorSkillNameV2 = "85:255:85:255:0"
 
         @Expose
         @ConfigOption(name = "Цвет прогресса XP", desc = "Цвет строки опыта и процентов")
         @ConfigEditorColour
-        var colorXpV2 = "0:255:255:255:85"
+        var colorXpV2 = "85:255:255:255:0"
 
         @Expose
         @ConfigOption(name = "Цвет 'Осталось'", desc = "Цвет строки Осталось / ETA")
         @ConfigEditorColour
-        var colorRemainingV2 = "0:255:255:85:85"
+        var colorRemainingV2 = "85:85:255:255:0"
 
         @Expose
         @ConfigOption(name = "Цвет 'XP/час'", desc = "Цвет строки XP/час")
         @ConfigEditorColour
-        var colorPerHourV2 = "0:255:85:255:85"
+        var colorPerHourV2 = "85:255:85:255:0"
 
         @Expose
         @ConfigOption(name = "Цвет прогресс-бара", desc = "Цвет заливки прогресс-бара")
         @ConfigEditorColour
-        var colorProgressBarV2 = "0:255:85:255:85"
+        var colorProgressBarV2 = "85:255:85:255:0"
     }
 
     class EquipmentOverlayConfig {
@@ -546,22 +546,22 @@ class SkyblockConfig {
         @Expose
         @ConfigOption(name = "Фон", desc = "Цвет фона меню экипировки")
         @ConfigEditorColour
-        var backgroundColorV2 = "0:224:29:29:43"
+        var backgroundColorV2 = "43:29:29:224:0"
 
         @Expose
         @ConfigOption(name = "Акцент", desc = "Цвет верхней полоски и рамки меню экипировки")
         @ConfigEditorColour
-        var accentColorV2 = "0:255:58:175:217"
+        var accentColorV2 = "217:175:58:255:0"
 
         @Expose
         @ConfigOption(name = "Фон слота", desc = "Цвет фона слотов экипировки")
         @ConfigEditorColour
-        var slotColorV2 = "0:96:255:255:255"
+        var slotColorV2 = "255:255:255:96:0"
 
         @Expose
         @ConfigOption(name = "Подсветка слота", desc = "Цвет при наведении на слот экипировки")
         @ConfigEditorColour
-        var slotHoverColorV2 = "0:170:58:175:217"
+        var slotHoverColorV2 = "217:175:58:170:0"
 
         @Expose
         var cachedEquipment: List<String> = emptyList()

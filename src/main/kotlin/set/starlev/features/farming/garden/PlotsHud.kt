@@ -23,7 +23,7 @@ object GardenPlotsOverlay : Feature(
 
     private const val GRID_COLS = 5
     private const val GRID_ROWS = 5
-    // Геометрия 1-в-1 как GardenPlotsWidget в Skyblocker (26.2):
+    // Геометрия панели сада (26.2):
     // панель 104x114 (без нижних кнопок desk/warp), сетка с шагом 18, origin (7,17),
     // отступ от инвентаря 4px.
     private const val SLOT_SIZE = 16
@@ -151,7 +151,7 @@ object GardenPlotsOverlay : Feature(
             // Принимаем слот как плот, если имя подходит и есть лора (или даже без лоры, если имя явно "участок N")
             if (!hasPlotLore && !rawName.contains("участ", ignoreCase = true) && !rawName.contains("plot", ignoreCase = true)) continue
 
-            // Раскладка как в реальных садах (Skyblocker/SkyHanni): не линейный порядок,
+            // Раскладка как в реальных садах: не линейный порядок,
             // а «ромб» вокруг сарая — иначе номера плотов плетутся не на своих местах.
             val number = extractPlotNumber(rawName)
             if (rawName.contains("сарай", ignoreCase = true) || rawName.contains("barn", ignoreCase = true) || number == 0) {
@@ -193,7 +193,6 @@ object GardenPlotsOverlay : Feature(
             StarredHeltix.configManager.saveConfig("plots-update")
         } else {
             // Фоллбэк: если ничего не нашли, но меню точно плоты — логируем для дебага без спама
-            // StarredHeltix.LOGGER.debug("[PlotsHud] Меню участков открыто, но плоты не распознаны. Title='${info.decodedTitle}' slots=${menu.slots.size}")
         }
         if (cachedPlots[12] == null) {
             cachedPlots[12] = PlotSlot(12, ItemStack.EMPTY, "Сарай")
@@ -267,7 +266,7 @@ object GardenPlotsOverlay : Feature(
         val time = System.currentTimeMillis()
         val blink = (time and 512L) != 0L
 
-        // Панель (Skyblocker blit'ит текстуру 104x132; у нас плоский фон тех же габаритов минус ряд кнопок)
+        // Панель: плоский фон 104x132 минус ряд кнопок
         if (showBg) {
             graphics.fill(startX, startY, startX + PANEL_WIDTH, startY + PANEL_HEIGHT, bgColor)
             graphics.fill(startX, startY, startX + PANEL_WIDTH, startY + 2, accentColor)
@@ -284,7 +283,7 @@ object GardenPlotsOverlay : Feature(
             val row = cell / GRID_COLS
             val slotX = startX + GRID_ORIGIN_X + col * SLOT_PITCH
             val slotY = startY + GRID_ORIGIN_Y + row * SLOT_PITCH
-            // Клик/ховер по всей ячейке 18x18, как в Skyblocker
+            // Клик/ховер по всей ячейке 18x18
             val hovered = mouseX in slotX until slotX + SLOT_PITCH &&
                           mouseY in slotY until slotY + SLOT_PITCH
             val isPest = showPest && infectedCells.contains(cell) && blink
@@ -296,7 +295,7 @@ object GardenPlotsOverlay : Feature(
             val plot = cachedPlots[cell]
             val stack = when {
                 plot != null && !plot.item.isEmpty -> plot.item
-                cell == 12 -> barnIcon // сарай в центре всегда виден (The Barn у Skyblocker)
+                cell == 12 -> barnIcon // сарай в центре всегда виден (The Barn)
                 else -> null
             }
             if (stack != null) {
@@ -308,7 +307,7 @@ object GardenPlotsOverlay : Feature(
                 hoveredCell = cell
             }
 
-            // Рамка вредителей 16x16 вокруг предмета (GuiHelper.border у Skyblocker)
+            // Рамка вредителей 16x16 вокруг предмета
             if (isPest) {
                 graphics.fill(slotX, slotY, slotX + SLOT_SIZE + 2, slotY + 1, pestColor)
                 graphics.fill(slotX, slotY + SLOT_SIZE + 1, slotX + SLOT_SIZE + 2, slotY + SLOT_SIZE + 2, pestColor)
@@ -369,7 +368,7 @@ object GardenPlotsOverlay : Feature(
     }
 
     private fun getHoveredGridIndex(mouseX: Int, mouseY: Int, startX: Int, startY: Int): Int {
-        // Ячейки 18x18 с origin (7,17) — как ховер-тест в Skyblocker
+        // Ячейки 18x18 с origin (7,17)
         val gx = mouseX - (startX + GRID_ORIGIN_X)
         val gy = mouseY - (startY + GRID_ORIGIN_Y)
         if (gx < 0 || gy < 0) return -1

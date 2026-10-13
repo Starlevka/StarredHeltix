@@ -6,14 +6,14 @@ import org.joml.Quaternionf
 import set.starlev.render.RenderContext
 
 /**
- * CTJS-паритет: глобальный `Renderer` — immediate-mode 2D/3D (как в CTJS).
+ * JS API: глобальный `Renderer` — immediate-mode 2D/3D-отрисовка.
  * Используется в `registerRenderOverlay` / `registerRenderWorld`:
  *   Renderer.drawRect(0xff000000, 10,10,100,20)
  *   Renderer.drawString("hi", 10,10)
  * В SH реализован как тонкая обёртка над текущим GuiGraphicsExtractor / RenderContext,
  * которые прокидываются через ThreadLocal во время fireTrigger("overlay"/"worldRender").
  */
-object JSRendererCTJS {
+object JSRenderer {
     private val guiCtx = ThreadLocal<GuiGraphicsExtractor>()
     private val worldCtx = ThreadLocal<RenderContext>()
 
@@ -24,7 +24,7 @@ object JSRendererCTJS {
         if (ctx == null) worldCtx.remove() else worldCtx.set(ctx)
     }
 
-    // Цвета (как в CTJS Renderer.java)
+    // Цвета
     @JvmStatic val BLACK = 0xFF000000L
     @JvmStatic val DARK_BLUE = 0xFF0000AAL
     @JvmStatic val GREEN = 0xFF00AA00L
@@ -62,7 +62,7 @@ object JSRendererCTJS {
     }
     @JvmStatic fun drawLine(color: Long, x1: Int, y1: Int, x2: Int, y2: Int, thickness: Float = 1f) {
         val g = guiCtx.get() ?: return
-        // simple line via fill (CTJS uses GL lines with thickness, we approximate)
+        // простая линия через fill (толщину GL-линий имитируем стеком заливок)
         if (x1 == x2) g.fill(x1, minOf(y1, y2), x1 + thickness.toInt().coerceAtLeast(1), maxOf(y1, y2), color.toInt())
         else g.fill(minOf(x1, x2), y1, maxOf(x1, x2), y1 + thickness.toInt().coerceAtLeast(1), color.toInt())
     }

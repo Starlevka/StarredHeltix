@@ -14,7 +14,7 @@ import net.minecraft.client.renderer.rendertype.RenderType
 import net.minecraft.resources.Identifier
 
 /**
- * Свой world RenderType для заливок через submitCustomGeometry (паттерн Skysoft):
+ * Свой world RenderType для заливок через submitCustomGeometry:
  * ванильный RenderTypes.debugQuads() без VIEW_OFFSET_Z_LAYERING — заливка
  * на поверхности блока z-fighting'ится и пропадает под углами.
  * (Линии хитбоксов рисуем проверенным submitShapeOutline — кастомная геометрия
@@ -22,7 +22,7 @@ import net.minecraft.resources.Identifier
  */
 object SHRenderTypes {
 
-    /** Заливка боксов/граней (аналог DEBUG_QUADS + z-смещение, как FILLED_SHAPE у Skysoft). */
+    /** Заливка боксов/граней (аналог DEBUG_QUADS + z-смещение). */
     val FILLED: RenderType by lazy {
         val pipeline = RenderPipeline.builder()
             .withBindGroupLayout(BindGroupLayouts.GLOBALS)

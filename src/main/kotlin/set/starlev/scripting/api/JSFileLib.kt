@@ -10,7 +10,7 @@ import java.net.URI
 import java.util.Base64
 
 /**
- * JS API: Файловый IO в папке модуля + HTTP-запросы. Аналог FileLib из ctjs.
+ * JS API: Файловый IO в папке модуля + HTTP-запросы.
  *
  * Все операции ограничены папкой модуля `config/starredheltix/modules/<модуль>/`
  * (sandbox): путь не может выйти за её пределы через `..`.

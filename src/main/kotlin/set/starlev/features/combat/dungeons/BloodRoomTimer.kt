@@ -92,7 +92,6 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
         for (p in DUNGEON_END_CHAT_PATTERNS) {
             if (p.matcher(text).find()) {
                 if (!dungeonFinished) {
-                    StarredHeltix.LOGGER.info("BloodRoomTimer: подземелье завершено по чату: $text")
                     dungeonFinished = true
                     // Не сбрасываем таймер мгновенно, но запрещаем новый старт; активный таймер пусть дотикает
                 }
@@ -119,11 +118,8 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
             active = true
             isBloodReady = false // Сбрасываем готовность при начале нового таймера
             
-            StarredHeltix.LOGGER.info("BloodRoomTimer: [DEBUG] Chat trigger: $text")
             if (floor == -1) {
-                StarredHeltix.LOGGER.info("BloodRoomTimer: Этаж не найден, используем стандартную задержку 30с")
             } else {
-                StarredHeltix.LOGGER.info("BloodRoomTimer: Определен этаж $floor, задержка ${delay/1000}с")
             }
         }
     }
@@ -137,23 +133,19 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
                 val floorStr = titleMatcher.group(1)
                 val floor = romanToInt(floorStr)
                 if (floor != null) {
-                    StarredHeltix.LOGGER.info("BloodRoomTimer: Этаж $floor найден в заголовке скорборда: $title")
                     return floor
                 }
             }
 
             // 2. Проверяем линии скорборда
             val scoreboardLines = ScoreboardDetector.getScoreboardText()
-            StarredHeltix.LOGGER.info("BloodRoomTimer Debug Scoreboard Lines: ${scoreboardLines.size}")
             
             for (line in scoreboardLines) {
-                StarredHeltix.LOGGER.info("BloodRoomTimer Line: '$line'")
                 for (pattern in FLOOR_PATTERNS) {
                     val m = pattern.matcher(line)
                     if (m.find()) {
                         val floor = romanToInt(m.group(1))
                         if (floor != null) {
-                            StarredHeltix.LOGGER.info("BloodRoomTimer: Этаж $floor найден в строке скорборда: $line (паттерн: ${pattern.pattern()})")
                             return floor
                         }
                     }
@@ -179,7 +171,6 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
         val isInDungeon = set.starlev.utils.detectors.DungeonDetector.isInDungeon()
         // Трекер нового захода — сброс флага завершения, чтобы первый [БОСС] снова считался
         if (!wasInDungeon && isInDungeon) {
-            if (dungeonFinished) StarredHeltix.LOGGER.info("BloodRoomTimer: новый заход — сброс dungeonFinished")
             dungeonFinished = false
         }
         wasInDungeon = isInDungeon
@@ -194,7 +185,6 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
                 for (line in sbLines) {
                     for (p in DUNGEON_END_SCOREBOARD_PATTERNS) {
                         if (p.matcher(line).find()) {
-                            StarredHeltix.LOGGER.info("BloodRoomTimer: подземелье завершено по скорборду: $line")
                             dungeonFinished = true
                             break
                         }
@@ -205,7 +195,6 @@ object BloodRoomTimer : HudElement("BloodRoomTimer") {
                     val title = ScoreboardDetector.getScoreboardTitle()
                     for (p in DUNGEON_END_SCOREBOARD_PATTERNS) {
                         if (p.matcher(title).find()) {
-                            StarredHeltix.LOGGER.info("BloodRoomTimer: подземелье завершено по Title: $title")
                             dungeonFinished = true
                             break
                         }

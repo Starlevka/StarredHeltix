@@ -73,7 +73,6 @@ object Waterboard {
     private var orderedTypes: List<LeverType> = listOf(LeverType.EMERALD, LeverType.DIAMOND, LeverType.GOLD, LeverType.QUARTZ)
 
     fun init() {
-        LOGGER.info("[Waterboard] Инициализация солвера Водяной (Heltix 1 тип)")
         UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
             handleUseBlock(player, world, hand, hitResult)
         }
@@ -116,7 +115,6 @@ object Waterboard {
                     }
                 }
             } catch (e: Exception) {
-                LOGGER.debug("[Waterboard] render error: ${e.message}")
             }
         }
         var lastTick = 0L
@@ -225,7 +223,7 @@ object Waterboard {
     /**
      * Сканируем только в радиусе комнаты (~20 блоков). Пазл идентифицируется
      * КЛАСТЕРОМ цветных рычагов: >=3 цветных, все близко друг к другу и по одной
-     * высоте (как в Odin — рычаги Water Board стоят двумя группами на стенах).
+     * высоте (рычаги Water Board стоят двумя группами на стенах).
      * Рычаги из соседних комнат в кластер не попадают и игнорируются.
      */
     private fun refreshLevers() {
@@ -374,7 +372,6 @@ object Waterboard {
         refreshLevers()
         lastScanMillis = System.currentTimeMillis()
         val type = classifyLever(pos, bs, world)
-        LOGGER.info("[Waterboard] Клик по рычагу ${type?.displayName ?: "обычный"} на $pos, текущее $puzzleState")
         when (puzzleState) {
             PuzzleState.IDLE -> {
                 // Старт пазла — только клик по ВОДНОМУ рычагу из найденного кластера.
@@ -383,7 +380,6 @@ object Waterboard {
                     waterStartMillis = System.currentTimeMillis()
                     puzzleState = PuzzleState.WAIT_FLOW
                     player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§b[Водяной] §7Вода включена, ждём ${cfg.waterFlowDelaySec}с..."))
-                    LOGGER.info("[Waterboard] IDLE -> WAIT_FLOW, waterStart=$waterStartMillis")
                 }
             }
             PuzzleState.SEQUENCE -> {
@@ -392,7 +388,6 @@ object Waterboard {
                 if (isCorrect) {
                     sequenceIndex++
                     player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§a[Водяной] §7${expected.displayName} OK (${sequenceIndex}/${orderedTypes.size})"))
-                    LOGGER.info("[Waterboard] SEQUENCE шаг $expected выполнен, idx $sequenceIndex")
                     if (sequenceIndex >= orderedTypes.size) {
                         puzzleState = PuzzleState.FINAL_WAIT
                         finalWindowStartMillis = System.currentTimeMillis()
@@ -410,7 +405,6 @@ object Waterboard {
                     puzzleState = PuzzleState.DONE
                     doneStartMillis = System.currentTimeMillis()
                     player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§a[Водяной] §lФИНАЛЬНЫЙ ТАЙМИНГ OK! Проход открыт."))
-                    LOGGER.info("[Waterboard] FINAL_WINDOW -> DONE")
                 }
             }
             else -> {}
@@ -447,7 +441,6 @@ object Waterboard {
                     puzzleState = PuzzleState.SEQUENCE
                     sequenceIndex = 0
                     mc.player?.sendSystemMessage(net.minecraft.network.chat.Component.literal("§a[Водяной] §7Вода стекла! Жми ${orderedTypes.firstOrNull()?.displayName ?: "рычаги"}"))
-                    LOGGER.info("[Waterboard] WAIT_FLOW -> SEQUENCE (elapsed $elapsed)")
                 }
             }
             PuzzleState.FINAL_WAIT -> {
@@ -456,7 +449,6 @@ object Waterboard {
                     puzzleState = PuzzleState.FINAL_WINDOW
                     finalWindowStartMillis = now
                     mc.player?.sendSystemMessage(net.minecraft.network.chat.Component.literal("§a[Водяной] §lОКНО ОТКРЫТО — ЖМИ ИЗУМРУД!"))
-                    LOGGER.info("[Waterboard] FINAL_WAIT -> FINAL_WINDOW")
                 }
             }
             PuzzleState.FINAL_WINDOW -> {
@@ -485,7 +477,6 @@ object Waterboard {
         finalWindowStartMillis = 0L
         doneStartMillis = 0L
         this.noLeversSince = 0L
-        LOGGER.info("[Waterboard] Сброс в IDLE")
     }
 
     fun debugStatus(): String {

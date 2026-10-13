@@ -20,9 +20,9 @@ import set.starlev.render.drawString
 import set.starlev.render.drawCenteredString
 
 /**
- * Меню настройки кнопок инвентаря — улучшенный UI в стиле NEU / Inventory Buttons (Fabric Port) и Firmament.
- * Фичи как в других модах:
- * - Поиск иконки с превью и подсказками (как NEU item picker)
+ * Меню настройки кнопок инвентаря.
+ * Возможности:
+ * - Поиск иконки с превью и подсказками
  * - Единая форма для icon/command/tooltip (не стадийный ввод)
  * - Пресеты быстрых команд
  * - Перемещение кнопок ↑/↓
@@ -40,7 +40,7 @@ class InventoryButtonsGui(private val parent: Screen? = null) : Screen(Component
 
     private val buttons get() = InventoryButtonsManager.getButtons()
 
-    // Пресеты как в NEU / Firmament
+    // Пресеты быстрых команд
     private val quickPresets = listOf(
         Triple("oak_door", "/hub", "Хаб"),
         Triple("grass_block", "/warp hub", "Хаб варп"),
@@ -160,7 +160,7 @@ class InventoryButtonsGui(private val parent: Screen? = null) : Screen(Component
         } else {
             // Кнопка добавления
             SHRow.draw(graphics, set.starlev.features.visual.swing.Rect(left, formY, cardW, 26), false, false)
-            graphics.drawCenteredString(font, Component.literal("§a+ Добавить кнопку  §7(как в NEU / Firmament)"), centerX, formY + 9, -1)
+            graphics.drawCenteredString(font, Component.literal("§a+ Добавить кнопку"), centerX, formY + 9, -1)
         }
 
         // Заголовки списка

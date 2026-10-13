@@ -2,9 +2,7 @@ package set.starlev.features.skyblock.scoreboard.elements
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
-import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
-import net.minecraft.world.item.Items
 import set.starlev.StarredHeltix
 import set.starlev.features.skyblock.HudScoreboard.ScoreboardLine
 import set.starlev.features.skyblock.scoreboard.ScoreboardElement
@@ -13,30 +11,34 @@ import set.starlev.utils.ColorUtils
 import set.starlev.utils.detectors.ItemLoreDetector
 
 /**
- * Строка «Текущая сила» для кастомного табло.
+ * Строка «Сила» для кастомного табло — выбранная сила и магическая сила из «Мешка для аксессуаров».
  *
- * Целевой предмет — голова «Мешок для аксессуаров» (player_head): мод ищет её
- * в ЛЮБОМ открытом контейнере (не только в меню Мешков) и читает лору:
- * - «Магическая сила: N» (число)
- * - «Выбранная сила: <название>»
- * По ним строится строка вида «Текущая сила: Зрячая (544 МС)».
- * Значения кэшируются в конфиг — строка живёт после закрытия меню и рестарта.
+ * Три источника по убыванию дешевизны: сайдбар, открытый контейнер, инвентарь игрока.
+ * Каждый в своём try/catch — раньше одно исключение глушило весь скан целиком.
+ * Значение кэшируется в конфиг, строка живёт после закрытия меню и рестарта.
+ *
+ * Скан идёт по `ContainerDetector.registerOpen` и по тику, а не из рендера табло:
+ * иначе значение зависело бы от того, включена ли строка и рисуется ли HUD.
  */
 object ScoreboardElementPower : ScoreboardElement() {
 
-    private val stripRegex = Regex("(?i)§[0-9a-fk-orlnmxz]")
-    // Разделитель — обычное или полноширинное двоеточие, либо его отсутствие («Магическая сила 544»)
-    //
-    // ВАЖНО: инлайн-флаг (?iu), а НЕ RegexOption.IGNORE_CASE. Kotlin-овский IGNORE_CASE —
-    // это Pattern.CASE_INSENSITIVE без UNICODE_CASE, а тот по умолчанию case-insensitive
-    // только для ASCII. С «Магическая сила: 556» такие регексы не совпадут никогда.
-    private val mpRegex = Regex("(?iu)магическ[а-я]*\\s*сил[а-я]*\\s*[:：]?\\s*([\\d\\s,.]+)")
-    private val mpRegexEn = Regex("(?iu)magical\\s*power\\s*[:：]?\\s*([\\d\\s,.]+)")
-    private val powerRegex =
-        Regex("(?iu)(?:выбранная|выбраная|активная|текущая|selected|active|current)\\s*сил[а-я]*\\s*[:：]?\\s*(.+)")
+    /** §/& коды + неразрывные пробелы: без нормализации `\s` не берёт U+00A0. */
+    private val stripRegex = Regex("(?i)[§&][0-9a-fk-orlnmxz]")
+    private val spacesRegex = Regex("[\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000\\t]")
 
+    // «Магическая сила: 556». Между словами любой разделитель, а между двоеточием и числом —
+    // любой не-цифровой мусор до 16 символов: «: 556», «(556)», «§6 556».
+    private val mpRegexRu = Regex("(?iu)магическ[а-яё]*[\\s\\-–—]*сил[а-яё]*[^\\d]{0,16}?(\\d[\\d\\s,.'’]*)")
+    private val mpRegexEn = Regex("(?iu)(?:magical|accessory)[\\s\\-–—]*power[^\\d]{0,24}?(\\d[\\d\\s,.'’]*)")
+    private val powerRegex =
+        Regex("(?iu)(?:выбранн?[а-яё]*|выбрана|избранн?[а-яё]*|активн?[а-яё]*|текущ[а-яё]*|selected|active|current)\\s*сил[а-яё]*\\s*[:：]?\\s*(.+)")
+
+    /** Пока контейнер открыт — раз в секунду; иначе раз в 5, если значение уже есть. */
     private const val SCAN_THROTTLE_MS = 1000L
+    private const val SCAN_THROTTLE_IDLE_MS = 5000L
+
     private var lastScanMs = 0L
+    private var initialised = false
 
     @Volatile
     private var cachedName: String? = null
@@ -44,24 +46,44 @@ object ScoreboardElementPower : ScoreboardElement() {
     @Volatile
     private var cachedMp: Int? = null
 
-    /** Бенч: сколько предметов просмотрено, откуда взяли значение, сколько занял скан. */
-    @Volatile
-    private var lastScannedItems = 0
-
+    /** Где нашли в последний раз — только для состояния элемента. */
     @Volatile
     private var lastSource = "—"
 
-    @Volatile
-    private var lastScanDurationMs = 0.0
+    /**
+     * Мешок для аксессуаров — по СОЧЕТАНИЮ слов в названии, а не по точной строке: на Heltix
+     * (и тем более на RP-серверах) его зовут и «Сумка украшений», и «Кошель фанатика».
+     * Это только быстрый путь — если имя не подошло, регекс «Магическая сила» всё равно
+     * проверяется по лоре ВСЕХ предметов.
+     */
+    private val BAG_WORDS = listOf("мешок", "мешоч", "сумк", "кошел", "рюкзак", "клатч", "bag", "pouch", "satchel")
+    private val ACCESSORY_WORDS = listOf(
+        "аксессуар", "аксес", "украшен", "украшени", "самоцвет", "accessor", "ornament", "trinket"
+    )
 
     init {
-        // Подхватываем персистентный кэш из конфига (SkyHanni/Skyblocker-стиль)
+        loadCacheFromConfig()
+    }
+
+    /** Вызывается из [set.starlev.StarredHeltix] после `ContainerDetector.init()`. */
+    fun init() {
+        if (initialised) return
+        initialised = true
+        // Скан сразу при открытии контейнера — не ждём, пока сервер досинхронизирует слоты.
+        set.starlev.utils.detectors.ContainerDetector.registerOpen {
+            lastScanMs = 0L
+            maybeRescan()
+        }
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register {
+            maybeRescan()
+        }
+    }
+
+    private fun loadCacheFromConfig() {
         try {
             val cfg = StarredHeltix.feature.skyblock.scoreboard.infoElements.power
-            val name = cfg.cachedPowerName
-            if (name.isNotBlank()) cachedName = name
-            val mp = cfg.cachedPowerMp
-            if (mp >= 0) cachedMp = mp
+            if (cfg.cachedPowerName.isNotBlank()) cachedName = cfg.cachedPowerName
+            if (cfg.cachedPowerMp >= 0) cachedMp = cfg.cachedPowerMp
         } catch (_: Exception) {
         }
     }
@@ -74,8 +96,7 @@ object ScoreboardElementPower : ScoreboardElement() {
             StarredHeltix.feature.skyblock.scoreboard.infoElements.power.valueColorV2,
             0xFF55FFFF.toInt()
         )
-        // Показываем строку всегда, даже когда данных нет: пользователь ждёт значения,
-        // а не пустоты. Без данных — заготовка «—», чтобы место в табло не «прыгало».
+        // Строка показывается всегда: без данных — заготовка «—», чтобы место не «прыгало».
         val value = when {
             !name.isNullOrBlank() && mp != null -> Component.literal("$name ($mp МС)").withColor(color)
             !name.isNullOrBlank() -> Component.literal(name).withColor(color)
@@ -83,7 +104,7 @@ object ScoreboardElementPower : ScoreboardElement() {
             else -> Component.literal("—")
         }
         val processed = SecretFunFeatures.processComponent(
-            Component.literal("§7Текущая сила: ").append(value),
+            Component.literal("§fСила: ").append(value),
             true
         )
         return listOf(ScoreboardLine("power", processed, centered = false))
@@ -92,39 +113,66 @@ object ScoreboardElementPower : ScoreboardElement() {
     override fun showWhen(): Boolean =
         StarredHeltix.feature.skyblock.scoreboard.infoElements.power.enabled
 
-    override val configLine = "§bТекущая сила"
+    override val configLine = "§fСила"
 
-    /**
-     * Троттлированный поиск МС. Источники по убыванию дешевизны:
-     *  1. сайдбар — если сервер сам печатает «Магическая сила: 556», берём оттуда;
-     *  2. открытый контейнер (меню мешка);
-     *  3. инвентарь игрока — мешок лежит именно там, и контейнер открывать не надо.
-     */
     private fun maybeRescan() {
         val now = System.currentTimeMillis()
-        if (now - lastScanMs < SCAN_THROTTLE_MS) return
+        val screen = currentScreen()
+        val throttle = if (cachedMp == null || screen != null) SCAN_THROTTLE_MS else SCAN_THROTTLE_IDLE_MS
+        if (now - lastScanMs < throttle) return
         lastScanMs = now
-        val startedNs = System.nanoTime()
         var items = 0
-        var source = "—"
-        try {
-            val mc = Minecraft.getInstance()
-            if (scanSidebar()) source = "сайдбар"
-            val screen = mc.gui.screen() as? AbstractContainerScreen<*>
-            if (screen != null) {
-                items += screen.menu.slots.size
-                if (source == "—" && scanMenu(screen)) source = "мешок в контейнере"
-            }
-            val inventory = mc.player?.inventory?.getNonEquipmentItems()
-            if (inventory != null) {
-                items += inventory.size
-                if (source == "—" && scanInventory(inventory)) source = "мешок в инвентаре"
-            }
-        } catch (_: Exception) {
+        lastSource = "—"
+
+        if (runStage { scanSidebar() }) {
+            lastSource = "сайдбар"
+        } else {
+            items += sidebarLineCount()
         }
-        lastScannedItems = items
-        lastSource = source
-        lastScanDurationMs = (System.nanoTime() - startedNs) / 1_000_000.0
+        if (lastSource == "—" && screen != null) {
+            val menuItems = screen.menu.slots.count { !it.item.isEmpty }
+            if (runStage { scanMenu(screen) }) lastSource = "контейнер" else items += menuItems
+        }
+        val inventory = try {
+            Minecraft.getInstance().player?.inventory?.getNonEquipmentItems()
+        } catch (_: Throwable) {
+            null
+        }
+        if (lastSource == "—" && inventory != null) {
+            val invItems = inventory.count { !it.isEmpty }
+            if (runStage { scanInventory(inventory) }) lastSource = "инвентарь" else items += invItems
+        }
+
+        // Ничего не нашли — раньше здесь раз в 30 с писался дамп «имя + лор» всех предметов
+        // в лог. Он забивал latest.log на сотни строк, поэтому убран: состояние видно по
+        // самому элементу скорборда (прочерк «—», если источник не найден).
+    }
+
+    private fun currentScreen(): AbstractContainerScreen<*>? = try {
+        Minecraft.getInstance().gui.screen() as? AbstractContainerScreen<*>
+    } catch (_: Throwable) {
+        null
+    }
+
+    /** Источник не бросает наружу: ошибка уходит в лог и не съедает остальные стадии. */
+    private inline fun runStage(block: () -> Boolean): Boolean {
+        return try {
+            block()
+        } catch (t: Throwable) {
+            StarredHeltix.LOGGER.warn("[POWER] Скан упал: ${t.javaClass.simpleName}: ${t.message}")
+            false
+        }
+    }
+
+    private fun sidebarLineCount(): Int {
+        return try {
+            val mc = Minecraft.getInstance()
+            val scoreboard = mc.level?.scoreboard ?: return 0
+            val objective = scoreboard.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR)
+            if (objective == null) 0 else scoreboard.listPlayerScores(objective).size
+        } catch (_: Throwable) {
+            0
+        }
     }
 
     /** Сайдбар: там же сервер иногда печатает реальное число МС. */
@@ -137,21 +185,41 @@ object ScoreboardElementPower : ScoreboardElement() {
             val owner = score.owner
             val team = scoreboard.getPlayersTeam(owner)
             val text = score.display?.string
-                ?: team?.let { net.minecraft.world.scores.PlayerTeam.formatNameForTeam(it, Component.literal(owner))?.string }
+                ?: team?.let { net.minecraft.world.scores.PlayerTeam.formatNameForTeam(it, Component.literal(owner)).string }
                 ?: owner
-            val clean = stripRegex.replace(decode(text), "").trim()
+            val clean = cleanText(text)
             if (clean.isEmpty()) continue
             if (parseLines(listOf(clean), loose = true)) found = true
         }
         return found
     }
 
+    /** @return true если в открытом меню нашли хоть что-то (имя или МС). */
+    private fun scanMenu(screen: AbstractContainerScreen<*>): Boolean {
+        val slots = screen.menu.slots
+        // 1. Целенаправленно: предмет-мешок по сочетанию слов в названии.
+        // Свободный поиск (loose=true): внутри своего предмета ложных срабатываний нет.
+        for (slot in slots) {
+            val stack = slot.item
+            if (stack.isEmpty) continue
+            if (!isAccessoryBagName(cleanText(stack.hoverName.string).lowercase())) continue
+            if (parseLines(loreLines(stack), loose = true)) return true
+        }
+        // 2. Фолбэк: вся лора всех слотов. Регекс «Магическая сила» не зависит от названия
+        // предмета, поэтому сработает даже если сервер назвал мешок как-то непривычно.
+        for (slot in slots) {
+            val stack = slot.item
+            if (stack.isEmpty) continue
+            if (parseLines(loreLines(stack), loose = false)) return true
+        }
+        return false
+    }
+
     /** Инвентарь игрока: сначала предмет-мешок по имени, потом общий проход по лору. */
     private fun scanInventory(items: List<net.minecraft.world.item.ItemStack>): Boolean {
         for (stack in items) {
             if (stack.isEmpty) continue
-            val name = stripRegex.replace(decode(stack.hoverName.string), "").trim().lowercase()
-            if (!isAccessoryBagName(name)) continue
+            if (!isAccessoryBagName(cleanText(stack.hoverName.string).lowercase())) continue
             if (parseLines(loreLines(stack), loose = true)) return true
         }
         for (stack in items) {
@@ -170,142 +238,38 @@ object ScoreboardElementPower : ScoreboardElement() {
         }
     }
 
-    /** @return true если в открытом меню нашли хоть что-то (имя или МС). */
-    private fun scanMenu(screen: AbstractContainerScreen<*>): Boolean {
-        // 1. Целенаправленно: предмет с названием «Мешок для аксессуаров» в любом открытом меню.
-        // Требование Items.PLAYER_HEAD убрано намеренно: на Heltix мешок не обязательно голова,
-        // и раньше предмет просто пропускался. Ориентируемся на имя — оно в лоре/имя всегда.
-        // Свободный поиск (loose=true): внутри своего предмета ложных срабатываний нет.
-        for (slot in screen.menu.slots) {
-            val stack = slot.item
-            if (stack.isEmpty) continue
-            val itemName = stripRegex.replace(decode(stack.hoverName.string), "").trim().lowercase()
-            if (!isAccessoryBagName(itemName)) continue
-            val lore = loreLines(stack)
-            if (parseLines(lore, loose = true)) return true
-        }
-        // 2. Фолбэк: вся лора всех слотов строгими паттернами (без loose — чужой лор вокруг)
-        for (slot in screen.menu.slots) {
-            val stack = slot.item
-            if (stack.isEmpty) continue
-            if (parseLines(loreLines(stack), loose = false)) return true
-        }
-        return false
-    }
-
-    /**
-     * Диагностика: печатает в чат всё, что мод реально видит в открытом контейнере —
-     * предмет, имя, количество строк лоры и что нашли регексы. Нужна, когда сила
-     * «не находится»: сразу видно, на каком шаге цепочка рвётся (предмет / имя / лора / регекс).
-     */
-    fun debugDump() {
-        val mc = Minecraft.getInstance()
-        val screen = mc.gui.screen()
-        val msg = { s: String -> mc.player?.sendSystemMessage(Component.literal(s)) }
-        msg("§8§m                                        ")
-        msg("§d§l[POWER-DEBUG] §fэкран: §7${screen?.javaClass?.simpleName ?: "нет"}")
-        if (screen !is AbstractContainerScreen<*>) {
-            msg("§c  Это не контейнер — открыть меню с мешком и повторить.")
-            return
-        }
-        val slots = screen.menu.slots
-        msg("§7  слотов в menu: §f${slots.size}")
-        var foundHead = false
-        for ((i, slot) in slots.withIndex()) {
-            val stack = slot.item
-            if (stack.isEmpty) continue
-            val isHead = stack.item == Items.PLAYER_HEAD
-            val name = stripRegex.replace(decode(stack.hoverName.string), "").trim()
-            val lines = loreLines(stack)
-            val bag = isAccessoryBagName(name.lowercase())
-            if (isHead || bag) {
-                foundHead = true
-                msg("§7  слот §f$i §7предмет §f${BuiltInRegistries.ITEM.getKey(stack.item)}")
-                msg("§7    имя: §f$name §8(мешок? $bag, голова? $isHead)")
-                msg("§7    строк лоры: §f${lines.size}")
-                lines.forEach { l -> msg("§8      · ${l.replace('§', '&')}") }
-                val mpHit = lines.map { stripRegex.replace(it, "").trim() }
-                    .firstOrNull { mpRegex.containsMatchIn(it) || mpRegexEn.containsMatchIn(it) }
-                msg("§7    регекп МС: §f${mpHit ?: "НЕ НАЙДЕН"}")
-            }
-        }
-        if (!foundHead) {
-            msg("§c  Ни головы, ни «мешка» в слотах не найдено.")
-            msg("§7  Выведи список всех непустых слотов: §f/sh powerdump2")
-        }
-        msg("§d§l[POWER-DEBUG] §7кэш: имя=§f${cachedName ?: "—"}§7 МС=§f${cachedMp ?: "—"}")
-        msg("§d§l[POWER-DEBUG] §7бенч: скан=§f${"%.2f".format(lastScanDurationMs)} мс§7, предметов=§f$lastScannedItems§7, источник=§f$lastSource")
-        msg("§8§m                                        ")
-    }
-
-    /** Полный дамп слотов — когда целевой предмет не опознан вообще. */
-    fun debugDumpAll() {
-        val mc = Minecraft.getInstance()
-        val screen = mc.gui.screen() as? AbstractContainerScreen<*> ?: run {
-            mc.player?.sendSystemMessage(Component.literal("§cОткрой контейнер."))
-            return
-        }
-        val msg = { s: String -> mc.player?.sendSystemMessage(Component.literal(s)) }
-        msg("§8§m                                        ")
-        msg("§d§l[POWER-DEBUG] §fвсе непустые слоты:")
-        for ((i, slot) in screen.menu.slots.withIndex()) {
-            val stack = slot.item
-            if (stack.isEmpty) continue
-            val id = BuiltInRegistries.ITEM.getKey(stack.item).toString()
-            val name = stripRegex.replace(decode(stack.hoverName.string), "").trim()
-            val lore = loreLines(stack)
-            msg("§7  #$i §f$id §8— §7$name §8(лор: ${lore.size})")
-        }
-        msg("§8§m                                        ")
-    }
-
-    /** Сброс кэша силы (в т.ч. в конфиге) — для диагностики и ручной переинициализации. */
-    fun resetCache() {
-        cachedName = null
-        cachedMp = null
-        lastScanMs = 0L
-        try {
-            val cfg = StarredHeltix.feature.skyblock.scoreboard.infoElements.power
-            if (cfg.cachedPowerName.isNotEmpty() || cfg.cachedPowerMp >= 0) {
-                cfg.cachedPowerName = ""
-                cfg.cachedPowerMp = -1
-                StarredHeltix.configManager.saveConfig("power-reset")
-            }
-        } catch (_: Exception) {
-        }
-        Minecraft.getInstance().player?.sendSystemMessage(
-            Component.literal("§7[POWER] §fкэш силы сброшен.")
-        )
+    /** Снимает §/& коды, Hfont-глифы и неразрывные пробелы. */
+    private fun cleanText(raw: String): String {
+        val decoded = try { decode(raw) } catch (_: Throwable) { raw }
+        return stripRegex.replace(spacesRegex.replace(decoded, " "), "").trim()
     }
 
     private fun isAccessoryBagName(cleanLowerName: String): Boolean {
         if (cleanLowerName.isEmpty()) return false
-        if (cleanLowerName.contains("accessory bag")) return true
-        if (cleanLowerName.contains("accessory") && cleanLowerName.contains("bag")) return true
-        if (cleanLowerName.contains("мешок") && cleanLowerName.contains("аксессуар")) return true
-        // Hfont/сокращения: «мешочек», «аксес»
-        if (cleanLowerName.contains("мешоч") && cleanLowerName.contains("аксес")) return true
-        return false
+        return BAG_WORDS.any { cleanLowerName.contains(it) } &&
+            ACCESSORY_WORDS.any { cleanLowerName.contains(it) }
     }
 
+    /**
+     * Лор предмета. Сначала сырой `LORE`-компонент — он не зависит от контекста тултипа
+     * (не нужен игрок/мир) и не кэшируется по хешу стека; `getTooltipLines` оставлен как
+     * дополнение, если компонента нет.
+     */
     private fun loreLines(stack: net.minecraft.world.item.ItemStack): List<String> {
-        val texts = ArrayList<String>(8)
+        val texts = ArrayList<String>(10)
         try {
-            texts.add(decode(stack.hoverName.string))
+            texts.add(cleanText(stack.hoverName.string))
         } catch (_: Exception) {
         }
-        try {
-            for (line in ItemLoreDetector.getLore(stack)) texts.add(decode(line))
-        } catch (_: Exception) {
-        }
-        // ItemLoreDetector иногда отдаёт пусто для голов без игрока рядом — добираем NBT-лор напрямую
-        if (texts.size <= 1) {
+        val raw = rawNbtLore(stack)
+        for (line in raw) texts.add(cleanText(line))
+        if (raw.isEmpty()) {
             try {
-                for (line in rawNbtLore(stack)) texts.add(decode(line))
+                for (line in ItemLoreDetector.getLore(stack)) texts.add(cleanText(line))
             } catch (_: Exception) {
             }
         }
-        return texts
+        return texts.filter { it.isNotEmpty() }
     }
 
     /** Прямое чтение lore из NBT (без тултипа): переживает отсутствие игрока/мира. */
@@ -344,10 +308,12 @@ object ScoreboardElementPower : ScoreboardElement() {
      */
     private fun parseLines(texts: List<String>, loose: Boolean = false): Boolean {
         var found = false
-        val cleaned = texts.map { stripRegex.replace(it, "").trim() }.filter { it.isNotEmpty() }
+        val cleaned = texts.map { cleanText(it) }.filter { it.isNotEmpty() }
         for ((idx, clean) in cleaned.withIndex()) {
-            val isMpLine = clean.contains("магическ", ignoreCase = true) || clean.contains("magical", ignoreCase = true)
-            val mpMatch = mpRegex.find(clean) ?: mpRegexEn.find(clean)
+            val isMpLine = clean.contains("магическ", ignoreCase = true) ||
+                clean.contains("magical", ignoreCase = true) ||
+                clean.contains("accessory", ignoreCase = true)
+            val mpMatch = mpRegexRu.find(clean) ?: mpRegexEn.find(clean)
             if (mpMatch != null) {
                 (extractNumber(mpMatch.groupValues[1]) ?: extractNumber(cleaned.getOrNull(idx + 1)))?.let {
                     if (cachedMp != it) {
@@ -433,15 +399,6 @@ object ScoreboardElementPower : ScoreboardElement() {
             cfg.cachedPowerMp = mp
             StarredHeltix.configManager.saveConfig("power-cache")
         } catch (_: Exception) {
-        }
-    }
-
-    @Suppress("unused")
-    private fun pathOf(stack: net.minecraft.world.item.ItemStack): String {
-        return try {
-            BuiltInRegistries.ITEM.getKey(stack.item)?.path?.lowercase() ?: ""
-        } catch (_: Exception) {
-            ""
         }
     }
 }

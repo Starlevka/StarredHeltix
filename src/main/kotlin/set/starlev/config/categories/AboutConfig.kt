@@ -16,7 +16,7 @@ import set.starlev.utils.ModUpdater
 class AboutModConfig {
 
     @Expose
-    @Category(name = "Discord RPC", desc = "Rich Presence в Discord (как в SkyHanni)")
+    @Category(name = "Discord RPC", desc = "Rich Presence в Discord")
     var discordRPC = DiscordRPCConfig()
 
     @ConfigOption(name = "§cСекретный код", desc = "§cВведите секретный код для доступа к скрытым функциям")
@@ -26,7 +26,7 @@ class AboutModConfig {
 
     @ConfigOption(
         name = "§cСекретное меню",
-        desc = "§cПерсоналу (модератор и выше) открывается сразу. Остальным — по секретному коду"
+        desc = "§cПо секретному коду..."
     )
     @ConfigEditorButton(buttonText = "Открыть")
     val activateSecret: Runnable = Runnable {
@@ -57,11 +57,34 @@ class AboutModConfig {
         mc.player?.sendSystemMessage(Component.literal("§6Версия мода: §f$version"))
         mc.player?.sendSystemMessage(Component.literal("§6Лицензия мода: §fLGPL-3.0"))
         mc.player?.sendSystemMessage(Component.literal("§6Последня дата обновления версии мода: §f22 сентября 2026"))
-        mc.player?.sendSystemMessage(Component.literal("§6✶ Использованный код из модов: §f<3 SkyHanni, Skyblocker, OdinFabric, Skysoft, NoFrills, Firmament, SkyCubed и heltix-mod <3"))
+    }
+
+    @ConfigOption(
+        name = "Источники",
+        desc = "Список SkyBlock-модов, чей код и идеи использовались в StarredHeltix"
+    )
+    @ConfigEditorButton(buttonText = "Показать")
+    val showSources: Runnable = Runnable {
+        val mc = Minecraft.getInstance()
+        fun line(text: String) = mc.player?.sendSystemMessage(Component.literal(text))
+        line("§6✶ Источники (порты кода и идей):")
+        line("§fSkysoft §8— меню настроек, swing/HUD, небо, ввод чисел")
+        line("§fSkyHanni §8— солверы, оповещения, кэши и детекторы")
+        line("§fOdin §8— подсветки, оверлеи, экраны данжей")
+        line("§fFirmament §8— логика фич для QOL-модов")
+        line("§fNoFrills §8— меню «Прыжок духа»")
+        line("§fSkyblocker §8— подсветки и HUD")
+        line("§fSkyCubed §8— оверлеи и HUD")
+        line("§fzen §8— идеи подсветок")
+        line("§fCustomScoreboard §8— рендер кастомного табло")
+        line("§fctjs §8— совместимый слой JS-API")
+        line("§fheltix-mod §8— кнопки инвентаря, хранилище, оверлей слота")
+        line("§fBorderless Fullscreen §8— окно без рамки")
+        line("§8Библиотеки: MoulConfig, Rhino, Caffeine, JNA")
     }
 
     @ConfigOption(name = "Поддержать", desc = "Копирует номер карты в буфер обмена")
-    @ConfigEditorButton(buttonText = "Скопировать номер")
+    @ConfigEditorButton(buttonText = "Узнать")
     val copyDonateCard: Runnable = Runnable {
         Minecraft.getInstance().keyboardHandler.setClipboard(DONATE_CARD)
         Minecraft.getInstance().player?.sendSystemMessage(
@@ -70,11 +93,10 @@ class AboutModConfig {
     }
 
     @ConfigOption(name = "Обновление", desc = "Проверка наличия новых версий мода на GitHub")
-    @ConfigEditorButton(buttonText = "Чекнуть")
+    @ConfigEditorButton(buttonText = "Чек")
     val checkUpdates: Runnable = Runnable { ModUpdater.checkUpdate() }
 
     companion object {
-        /** Номер карты для пожертвования — копируется кнопкой выше. */
         const val DONATE_CARD: String = "5599002063211264"
     }
 }

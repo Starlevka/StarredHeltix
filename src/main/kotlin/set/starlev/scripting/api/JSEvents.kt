@@ -121,7 +121,7 @@ class JSEvents(private val moduleName: String) {
     }
 
     /**
-     * Звук с критерием + отменой (CTJS-паритет). Слушатель живёт в ScriptSoundHandler,
+     * Звук с критерием + отменой. Слушатель живёт в ScriptSoundHandler,
      * вызывается из SoundEngineMixin с фильтрацией по [criteria] (подстрока или /regex/)
      * и может отменить проигрывание через `event.cancel()`.
      * Возвращаемый хэндл: `trigger.unregister()` снимает именно эту подписку.

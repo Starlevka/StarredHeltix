@@ -80,14 +80,19 @@ class Features : Config() {
         if (isSelected) {
             return category.displayName.copyShallow().gold().underlined()
         }
-        // Подкатегории (разделы внутри категории) приглушаем — иерархия читается по цвету,
-        // как в Skysoft: родительский раздел светлее, вложенный темнее.
+        // Подкатегории (разделы внутри категории) приглушаем — иерархия читается по цвету:
+        // родительский раздел светлее, вложенный темнее.
         return if (category.parentCategoryId != null) {
             category.displayName.copyShallow().darkGrey()
         } else {
             category.displayName.copyShallow().grey()
         }
     }
+
+    // «О моде» — первым: порядок полей = порядок категорий в меню.
+    @Expose
+    @Category(name = "О моде", desc = "· Информация о моде и его обновления.")
+    var about = AboutModConfig()
 
     @Expose
     @Category(name = "Визуал", desc = "· Визуальные эффекты и анимации.")
@@ -98,7 +103,7 @@ class Features : Config() {
     var chat = ChatConfig()
 
     @Expose
-    @Category(name = "Оптимизация", desc = "· Настройки геймплея.")
+    @Category(name = "Оптимизация", desc = "· Производительность и приоритет потоков.")
     var optimization = OptimizationConfig()
 
     @Expose
@@ -141,11 +146,12 @@ class Features : Config() {
     @Category(name = "𝄞 Аудио", desc = "· Визуальная музыка и эффекты по локациям.")
     var music = SoundConfig()
 
-    @Expose
-    @Category(name = "🌠 Модули", desc = "· Управление JavaScript модулями и скриптами")
+@Expose
+    @Category(name = "🌠 Модули", desc = "· Настройки JavaScript и автоматизаций")
     var scripting = JSConfig()
-    
+
+    // Одноразовая миграция: строки цветов приведены к порядку пикера MoulConfig
+    // (B:G:R:A:Chroma). Без @ConfigOption, поэтому в GUI не появляется.
     @Expose
-    @Category(name = "О моде", desc = "· Информация о моде и его обновления.")
-    var about = AboutModConfig()
+    var migratedColourOrder = false
 }

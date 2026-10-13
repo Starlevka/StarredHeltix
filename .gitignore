@@ -18,3 +18,4 @@ logs/
 
 # ── Other project files not part of the mod source ──
 /scripts/
+.*

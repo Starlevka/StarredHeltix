@@ -42,7 +42,7 @@ class GardenConfig {
         @Expose
         @ConfigOption(name = "Цвет вредителей", desc = "Цвет рамки заражённых плотов")
         @ConfigEditorColour
-        var pestColorV2 = "0:255:255:0:0"
+        var pestColorV2 = "0:0:255:255:0"
     }
 
     // Распаковано: вредители — прямой тумблер в разделе Сад, без вложенного аккордеона

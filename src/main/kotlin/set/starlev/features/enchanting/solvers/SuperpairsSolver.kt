@@ -34,7 +34,6 @@ class SuperpairsSolver : ExperimentSolver(Regex("Суперпары|Superpairs")
     override fun start(screen: ContainerScreen) {
         super.start(screen)
         setState(State.SHOW)
-        StarredHeltix.LOGGER.info("[Superpairs] Started, title=${screen.title.string}")
     }
 
     override fun tick(screen: ContainerScreen) {

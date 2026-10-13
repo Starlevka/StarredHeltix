@@ -70,7 +70,6 @@ object ExperimentSolverManager : Feature(
         // Регистрируем обработчик закрытия контейнера
         GuiEvents.registerClose { screen ->
             if (currentSolver != null) {
-                LOGGER.info("[ExperimentSolverManager] Closing solver: ${currentSolver?.javaClass?.simpleName}")
                 clearScreen()
             }
         }
@@ -88,7 +87,6 @@ object ExperimentSolverManager : Feature(
                     if (!solver.matches(containerScreen)) {
                         val best = bestSolverFor(containerScreen)
                         if (best != null && best != solver) {
-                            LOGGER.info("[ExperimentSolverManager] Switching solver: ${solver.javaClass.simpleName} -> ${best.javaClass.simpleName} for screen: ${containerScreen.title.string}")
                             clearScreen()
                             currentSolver = best
                             best.start(containerScreen)
@@ -140,7 +138,6 @@ object ExperimentSolverManager : Feature(
         if (newSolver != null) {
             clearScreen()
             currentSolver = newSolver
-            LOGGER.info("[ExperimentSolverManager] Started solver: ${newSolver.javaClass.simpleName} for screen: $title")
             newSolver.start(screen)
             // Подключаем форвардер для публикации SlotUpdateEvent в EventBus.
             // После этого обновления слотов приходят в солвер через onSlotUpdate().

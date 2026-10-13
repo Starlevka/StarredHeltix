@@ -202,7 +202,6 @@ object GhostNPCHandler {
         
         if (distSq < 2500) { // 50 blocks
             if (fakePlayer == null) {
-                StarredHeltix.LOGGER.info("Spawning Ghost NPC at $NPC_POS")
                 val profile = GameProfile(NPC_UUID, NPC_NAME)
                 val newPlayer = GhostPlayer(level, profile)
                 newPlayer.setPos(NPC_POS.x.toDouble() + 0.5, NPC_POS.y.toDouble(), NPC_POS.z.toDouble() + 0.5)
@@ -214,7 +213,6 @@ object GhostNPCHandler {
                 // может потребоваться явно добавить его в список сущностей уровня
                 level.addEntity(newPlayer)
                 fakePlayer = newPlayer
-                StarredHeltix.LOGGER.info("Ghost NPC spawned successfully with ID: ${newPlayer.id}")
             }
             
             fakePlayer?.let { fake ->

@@ -14,7 +14,7 @@ public class EntityMixin {
         if (cir.getReturnValue()) return;
         Entity entity = (Entity) (Object) this;
         int id = entity.getId();
-        // Модульный glow — без проверки lineOfSight (сквозь стены, как CTJS)
+        // Модульный glow — без проверки lineOfSight (сквозь стены)
         if (set.starlev.scripting.ModuleGlowRegistry.getGlowColor(id) != -1) {
             cir.setReturnValue(true);
             return;

@@ -148,11 +148,11 @@ object EquipmentOverlay {
         val config = StarredHeltix.feature.skyblock.equipmentOverlay
         if (!config.enabled) return
         if (screen !is InventoryScreen) return
-        // Панель видна всегда (даже пустой — с плейсхолдерами, как Firmament/NEU):
+        // Панель видна всегда (даже пустой — с плейсхолдерами):
         // кэш подтянется при открытии меню экипировки, а layout не прыгает
 
         val accessor = screen as ContainerScreenAccessor
-        // Позиция слева от инвентаря (стиль Firmament)
+        // Позиция слева от инвентаря
         val startX = accessor.leftPos - SLOT_SIZE - SLOT_GAP * 2 - PADDING * 2 - 4
         val startY = accessor.topPos
 
@@ -163,9 +163,9 @@ object EquipmentOverlay {
         val slotColor = ColorUtils.parseColor(config.slotColorV2, 0x60FFFFFF)
         val slotHoverColor = ColorUtils.parseColor(config.slotHoverColorV2, 0xAA3AAFD9.toInt())
 
-        // Фон в стиле Firmament — тёмный полупрозрачный
+        // Фон — тёмный полупрозрачный
         graphics.fill(startX, startY, startX + totalWidth, startY + totalHeight, backgroundColor)
-        // Акцентная полоска сверху (голубая как в Firmament)
+        // Акцентная полоска сверху
         graphics.fill(startX, startY, startX + totalWidth, startY + 2, accentColor)
         // Тонкая рамка
         val borderColor = accentColor
@@ -176,7 +176,7 @@ object EquipmentOverlay {
         // Заголовок
         graphics.drawString(mc.font, "§b✦", startX + totalWidth / 2 - 4, startY + 4, 0xFFFFFFFF.toInt(), false)
 
-        // Слоты — как Firmament: с placeholder иконками для пустых (как в NEU/Inventory Buttons)
+        // Слоты с placeholder-иконками для пустых
         for (i in 0 until 4) {
             val item = rememberedItems[i]
             val slotX = startX + PADDING
@@ -192,7 +192,7 @@ object EquipmentOverlay {
                 graphics.item(item, slotX, slotY)
                 graphics.itemDecorations(mc.font, item, slotX, slotY)
             } else {
-                // Placeholder как в Firmament/NEU — полупрозрачная заглушка + буква слота
+                // Placeholder — полупрозрачная заглушка + буква слота
                 val placeholder = ItemStack(net.minecraft.world.item.Items.BARRIER)
                 placeholder.count = 1
                 // Полупрозрачный placeholder (барьер с фейковым рендером)

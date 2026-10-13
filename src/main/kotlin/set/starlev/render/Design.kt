@@ -139,6 +139,15 @@ object SHListHelper {
 data class SHChip(val id: String, val label: String, val color: Int = SHTokens.ACCENT.toInt())
 
 object SHChipRenderer {
+    /**
+     * Больше 7 символов пиксельный чип не переваривает — подпись «Сброс позиций»
+     * или «Строки scoreboard» превращалась в кашу из слипшихся пикселей.
+     */
+    private const val MAX_LABEL_LENGTH = 7
+
+    fun fit(label: String): String =
+        if (label.length <= MAX_LABEL_LENGTH) label else label.take(MAX_LABEL_LENGTH)
+
     fun draw(
         g: GuiGraphicsExtractor,
         font: Font,
@@ -149,12 +158,12 @@ object SHChipRenderer {
     ) {
         // Используем PixelButtonRenderer для единообразия — маленький чип как кнопка
         PixelButtonRenderer.draw(
-            g, font, bounds, label, selected, hovered, true,
+            g, font, bounds, fit(label), selected, hovered, true,
             if (selected) PixelButtonTone.CONFIRM else PixelButtonTone.NORMAL
         )
     }
 
     fun measureWidth(font: Font, label: String): Int {
-        return font.width(label) + 16 // padding 8+8
+        return font.width(fit(label)) + 16 // padding 8+8
     }
 }

@@ -1,4 +1,4 @@
-package set.starlev.features.visual
+package set.starlev.features.farming
 
 import com.mojang.blaze3d.platform.InputConstants
 import net.minecraft.client.KeyMapping
@@ -10,13 +10,13 @@ import set.starlev.StarredHeltix
 import set.starlev.events.ModKeybinds
 
 /**
- * See Through Farming — прозрачное окно (порт из SkyHanni `SeeThroughWindow`).
+ * See Through Farming — прозрачное окно.
  *
  * GLFW 3.4 умеет менять прозрачность окна (`glfwSetWindowOpacity`), поэтому сквозь игру
  * видно YouTube/гайд. Процент непрозрачности и клавиша — в конфиге, ключ синхронизируется
  * в `KeyMapping` мода, чтобы он менялся прямо в настройках.
  *
- * Ограничения (как у SkyHanni):
+ * Ограничения:
  *  - в полноэкранном режиме не работает — GLFW игнорирует прозрачность;
  *  - не все оконные системы это умеют (Wayland/X11 — да, Windows — обычно нет).
  *    Если система отказала, сообщаем один раз и больше не пытаемся.
@@ -46,7 +46,7 @@ object SeeThroughWindow {
     private var unsupported = false
 
     private val config
-        get() = StarredHeltix.feature.visuals.seeThroughWindow
+        get() = StarredHeltix.feature.farming.seeThroughWindow
 
     /** Последний ключ, которым мы синхронизировали KeyMapping. */
     private var boundKey: Int = GLFW.GLFW_KEY_UNKNOWN

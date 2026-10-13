@@ -29,7 +29,6 @@ object TicTacToe {
     }
 
     fun init() {
-        LOGGER.info("[StarredHeltix] Инициализация солвера Крестики-нолики")
 
         RenderEvents.register { context ->
             if (!StarredHeltix.feature.dungeons.solvers.ticTacToe) return@register
@@ -201,13 +200,11 @@ object TicTacToe {
             }
 
             // Логируем состояние доски
-            LOGGER.debug("[TicTacToe] Доска ({}x{}):", uniqueRows.size, uniqueCols.size)
             for (r in 0 until minOf(uniqueRows.size, 3)) {
                 val line = (0 until minOf(uniqueCols.size, 3)).joinToString(" ") { c ->
                     val ch = board[r][c]
                     if (ch == '\u0000') "." else ch.toString()
                 }
-                LOGGER.debug("  $line")
             }
 
             // Проверяем пустые клетки
@@ -225,22 +222,15 @@ object TicTacToe {
                 return
             }
 
-            // Минимакс считает ход для O, а игрок = X, поэтому меняем местами
-            val swappedBoard = Array(3) { r ->
-                CharArray(3) { c ->
-                    when (board[r][c]) {
-                        'X' -> 'O'
-                        'O' -> 'X'
-                        else -> '\u0000'
-                    }
-                }
-            }
-            val bestMove = TicTacToeUtils.getBestMove(swappedBoard)
+            // Минимакс считает ход за O, а O на доске — это игрок (X ставит сервер):
+            // раньше перед перебором X/O менялись местами, и подсветка фактически
+            // советовала ход за сервер — отсюда «непонятные» клетки после его
+            // ответа противоположным углом.
+            val bestMove = TicTacToeUtils.getBestMove(board)
             val targetPos = positionMap[Pair(bestMove.row, bestMove.column)]
 
             if (targetPos != null && board[bestMove.row][bestMove.column] == '\u0000') {
                 nextBestMove = targetPos
-                LOGGER.info("[TicTacToe] Лучший ход: row={}, col={}", bestMove.row, bestMove.column)
             } else {
                 LOGGER.warn("[TicTacToe] Минимакс вернул невалидный ход, фоллбэк на пустые клетки")
                 // Пробуем все пустые клетки по порядку
@@ -248,7 +238,6 @@ object TicTacToe {
                     val pos = positionMap[cell]
                     if (pos != null) {
                         nextBestMove = pos
-                        LOGGER.info("[TicTacToe] Фоллбэк ход: row={}, col={}", cell.first, cell.second)
                         break
                     }
                 }

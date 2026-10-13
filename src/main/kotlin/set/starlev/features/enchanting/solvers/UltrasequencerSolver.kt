@@ -63,7 +63,6 @@ class UltrasequencerSolver private constructor() : ExperimentSolver(
         super.start(screen)
         hardReset()
         setState(State.SHOW)
-        StarredHeltix.LOGGER.info("[Sequencer] Started, title=${screen.title.string}")
     }
 
     private fun hardReset() {
@@ -80,7 +79,6 @@ class UltrasequencerSolver private constructor() : ExperimentSolver(
             // МЯГКИЙ ресинк: память НЕ трогаем. Настоящая смена игры всегда идёт через
             // close/open контейнера → start() → hardReset(). А заголовок может дёргаться
             // (таймер/прогресс) внутри одной игры — сносить память по нему нельзя.
-            StarredHeltix.LOGGER.info("[Sequencer] Смена заголовка без переоткрытия, память сохр.: '${ExperimentUtil.clean(screen.title.string)}'")
         }
         val slots = screen.menu.slots
         val containerSlots = slots.size - 36
@@ -93,7 +91,6 @@ class UltrasequencerSolver private constructor() : ExperimentSolver(
             if (stack.isEmpty || !ExperimentUtil.isRoundFlag(stack)) continue
             val hover = ExperimentUtil.hover(stack)
             if (hover != lastRoundText) {
-                StarredHeltix.LOGGER.info("[Sequencer] Смена раунда: '$lastRoundText' -> '$hover', сброс памяти (было ячеек: ${colorMemory.size})")
                 lastRoundText = hover
                 colorMemory.clear()
                 sequenceSlots.clear()
@@ -116,7 +113,6 @@ class UltrasequencerSolver private constructor() : ExperimentSolver(
             if (ci != -1 && colorMemory[i] != ci) {
                 colorMemory[i] = ci
                 lastMemoryChangeMs = nowMs
-                StarredHeltix.LOGGER.info("[Sequencer] Запомнено: слот $i = ${ExperimentUtil.spectrumName(ci)} (всего: ${colorMemory.size})")
             }
         }
 
@@ -134,7 +130,6 @@ class UltrasequencerSolver private constructor() : ExperimentSolver(
             if (gamePhase) {
                 val order = sequenceSlots.entries.sortedBy { it.value }
                     .joinToString { "${it.key}=${ExperimentUtil.spectrumName(colorMemory[it.key] ?: -1)}" }
-                StarredHeltix.LOGGER.info("[Sequencer] Фаза игры! Порядок: $order")
             }
         }
 
@@ -152,7 +147,6 @@ class UltrasequencerSolver private constructor() : ExperimentSolver(
                 nowMs - lastAdvanceMs > 150
             ) {
                 lastAdvanceMs = nowMs
-                StarredHeltix.LOGGER.info("[Sequencer] Авто-прогресс: цель $targetSlot открылась, шаг $currentStep -> ${currentStep + 1}")
                 advanceStep()
             }
         }
@@ -160,7 +154,6 @@ class UltrasequencerSolver private constructor() : ExperimentSolver(
         // 6. Периодическая сводка (раз в 5с) — для диагностики «почему пусто»
         if (nowMs - lastSummaryMs > 5000) {
             lastSummaryMs = nowMs
-            StarredHeltix.LOGGER.info("[Sequencer] state: шаг=$currentStep/${sequenceSlots.size} память=${colorMemory.size} фазаИгры=$gamePhase st=${getState()}")
         }
     }
 
@@ -176,7 +169,6 @@ class UltrasequencerSolver private constructor() : ExperimentSolver(
         currentStep++
         if (currentStep > sequenceSlots.size) {
             setState(State.END)
-            StarredHeltix.LOGGER.info("[Sequencer] Все шаги пройдены → END")
         }
     }
 
@@ -205,7 +197,6 @@ class UltrasequencerSolver private constructor() : ExperimentSolver(
             // (как handleClick в эталоне). Дабл-прогресса нет: авто-продвижение в tick
             // смотрит на СЛЕДУЮЩУЮ цель, а она пока закрыта.
             lastAdvanceMs = System.currentTimeMillis()
-            StarredHeltix.LOGGER.info("[Sequencer] Клик по цели $slot, шаг $currentStep -> ${currentStep + 1}")
             advanceStep()
             false
         } else {

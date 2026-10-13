@@ -799,4 +799,4 @@ render.textToTexture("Статичный текст", "label", "myfont", 24, 0xF
 
 ---
 
-*Конец справочника. Актуально для StarredHeltix 0.1.1 (Java 25 / MC 26.2 / Rhino 1.9.1).*
+*Конец справочника. Актуально для StarredHeltix 1.0.0 (Java 25 / MC 26.2 / Rhino 1.9.1).*

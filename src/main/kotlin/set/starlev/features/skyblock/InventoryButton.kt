@@ -7,7 +7,7 @@ import set.starlev.StarredHeltix
 import set.starlev.utils.ColorUtils
 
 /**
- * Кнопка-таб в инвентаре (как в Skyblocker).
+ * Кнопка-таб в инвентаре.
  * Индекс 0-6 = верхний ряд, 7-13 = нижний ряд.
  */
 data class InventoryButton(

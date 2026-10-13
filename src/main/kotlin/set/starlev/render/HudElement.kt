@@ -69,7 +69,7 @@ abstract class HudElement(
     abstract fun getHeight(): Int
 
     /**
-     * Отрисовать стандартный фон в стиле SkyHanni
+     * Отрисовать стандартный фон панели
      * @param width Ширина контента
      * @param height Высота контента
      * @param padding Внутренние отступы

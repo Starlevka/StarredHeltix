@@ -76,19 +76,19 @@ object SHScriptEngine {
             globalScope.put("math", globalScope, Context.javaToJS(JSMathLib(), globalScope))
             globalScope.put("cps", globalScope, Context.javaToJS(JSCps(), globalScope))
             globalScope.put("textComponent", globalScope, Context.javaToJS(JSTextComponentFactory, globalScope))
-            // CTJS-паритет: Display / Text / Image / Scoreboard / Team / Renderer как глобальные классы
+            // Display / Text / Image / Scoreboard / Team / Renderer как глобальные классы
             globalScope.put("Display", globalScope, Context.javaToJS(set.starlev.scripting.api.JSDisplay::class.java, globalScope))
             globalScope.put("Text", globalScope, Context.javaToJS(set.starlev.scripting.api.JSText::class.java, globalScope))
             globalScope.put("Image", globalScope, Context.javaToJS(set.starlev.scripting.api.JSImage::class.java, globalScope))
             globalScope.put("Scoreboard", globalScope, Context.javaToJS(set.starlev.scripting.api.JSScoreboard, globalScope))
             globalScope.put("Team", globalScope, Context.javaToJS(set.starlev.scripting.api.JSTeam::class.java, globalScope))
-            globalScope.put("Renderer", globalScope, Context.javaToJS(set.starlev.scripting.api.JSRendererCTJS, globalScope))
+            globalScope.put("Renderer", globalScope, Context.javaToJS(set.starlev.scripting.api.JSRenderer, globalScope))
             globalScope.put("Maps", globalScope, Context.javaToJS(set.starlev.scripting.api.JSMaps, globalScope))
             globalScope.put("DungeonMap", globalScope, Context.javaToJS(set.starlev.scripting.api.JSDungeonMap, globalScope))
             // alias maps/dungeonMap lower-case для удобства
             globalScope.put("maps", globalScope, Context.javaToJS(set.starlev.scripting.api.JSMaps, globalScope))
             globalScope.put("dungeonMap", globalScope, Context.javaToJS(set.starlev.scripting.api.JSDungeonMap, globalScope))
-            // Блок-хелперы ctjs (JSBlock/JSBlockFace/JSBlockType/JSBlockPos) задокументированы
+            // Блок-хелперы (JSBlock/JSBlockFace/JSBlockType/JSBlockPos) задокументированы
             // как доступные напрямую, но раньше НЕ были в globalScope — код из доков падал
             // с ReferenceError. Регистрируем через ::class.java, чтобы работал companion
             // (JSBlockFace.UP/NORTH, JSBlock.of(...), JSBlockType.fromID(...), ...).
@@ -148,20 +148,20 @@ object SHScriptEngine {
             // затем запускаем JS-триггеры worldRender
             SHWorldRenderBatches.renderAll(ctx)
             val jsCtx = JSRenderContext(ctx)
-            set.starlev.scripting.api.JSRendererCTJS.setWorldContext(ctx)
-            try { fireTrigger("worldRender", jsCtx) } finally { set.starlev.scripting.api.JSRendererCTJS.setWorldContext(null) }
+            set.starlev.scripting.api.JSRenderer.setWorldContext(ctx)
+            try { fireTrigger("worldRender", jsCtx) } finally { set.starlev.scripting.api.JSRenderer.setWorldContext(null) }
         }
 
         StarredEvents.guiRender.subscribe { event ->
             // FPS — каждый кадр (HUD, в т.ч. в контейнерах). Дебаунс внутри fireFps() — не дублируем worldRender
             fireFps()
-            // CTJS Display/Text — рендерим все активные Display поверх HUD (как в CTJS)
+            // Display/Text — рендерим все активные Display поверх HUD
             try { set.starlev.scripting.api.DisplayManager.renderAll(event.graphics) } catch (_: Exception) {}
             try { set.starlev.scripting.api.ImageDrawQueue.renderAll(event.graphics) } catch (_: Exception) {}
-            set.starlev.scripting.api.JSRendererCTJS.setGuiContext(event.graphics)
+            set.starlev.scripting.api.JSRenderer.setGuiContext(event.graphics)
             try {
                 fireTrigger("overlay", JSOverlayContext(event.graphics))
-            } finally { set.starlev.scripting.api.JSRendererCTJS.setGuiContext(null) }
+            } finally { set.starlev.scripting.api.JSRenderer.setGuiContext(null) }
         }
 
         StarredEvents.guiOpen.subscribe { event ->
@@ -247,7 +247,7 @@ object SHScriptEngine {
         SHModuleFonts.removeForModule(moduleName)
         SHModuleSounds.removeForModule(moduleName)
         JSNet.stopForModule(moduleName)
-        // CTJS-паритет ресурсы + cancellable sound/particle — тоже чисто per-module:
+        // Ресурсы + cancellable sound/particle — тоже чисто per-module:
         DisplayManager.removeForModule(moduleName)
         JSImage.releaseForModule(moduleName)
         JSBossBars.clearOwnedFor(moduleName)
@@ -382,7 +382,7 @@ object SHScriptEngine {
             scope.put("storage", scope, Context.javaToJS(jsStorage, scope))
             scope.put("command", scope, Context.javaToJS(jsCommand, scope))
             scope.put("utils", scope, Context.javaToJS(jsUtils, scope))
-            // World / Inventory API (ctjs-паритет)
+            // World / Inventory API
             scope.put("inventory", scope, Context.javaToJS(jsInventory, scope))
             scope.put("world", scope, Context.javaToJS(jsWorld, scope))
             scope.put("bossbars", scope, Context.javaToJS(jsBossBars, scope))

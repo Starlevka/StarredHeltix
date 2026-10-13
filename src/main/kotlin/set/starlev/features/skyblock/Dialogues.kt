@@ -17,8 +17,8 @@ import set.starlev.utils.detectors.DungeonDetector
 import java.util.regex.Pattern
 
 /**
- * Оверлей диалогов с NPC — визуальный порт 1:1 DialogueOverlay из SkyCubed (MIT):
- * девятисекционный фон-панель (dialogue_background.png = их background.png),
+ * Оверлей диалогов с NPC:
+ * девятисекционный фон-панель (dialogue_background.png),
  * плашка имени NPC внахлёст с верхним краем слева (отступ 5), текст с отступом 15
  * по левому краю, панель опций всплывает над панелью справа после окончания
  * сообщения, тайминги на основе WPM (180 слов/мин, минимум 0.75с, опции — 10с).
@@ -39,7 +39,7 @@ object NpcDialogueOverlay : HudElement("NpcDialogueOverlay") {
     private val optionRegex = Pattern.compile("\\[(?<option>.*?)]")
     private val wordRegex = Regex("\\s+")
 
-    // Спрайт панели скопирован из SkyCubed (textures/gui/sprites/background.png, MIT)
+    // Спрайт панели (starredheltix:dialogue_background)
     private val BOX_SPRITE = Identifier.fromNamespaceAndPath("starredheltix", "dialogue_background")
     private val SPRITE_WHITE = 0xFFFFFFFF.toInt()
 
@@ -51,7 +51,7 @@ object NpcDialogueOverlay : HudElement("NpcDialogueOverlay") {
     private var lastInputTime = 0L
     private var calculatedHeight = 0
 
-    // Тайминги как в NpcOverlayConfig SkyCubed: 180 WPM, 0.75с минимум, 10с на действия
+    // Тайминги: 180 WPM, 0.75с минимум, 10с на действия
     private const val WORDS_PER_MINUTE = 180
     private const val MIN_DURATION_MS = 750L
     private const val ACTION_DURATION_MS = 10000L
@@ -158,7 +158,7 @@ object NpcDialogueOverlay : HudElement("NpcDialogueOverlay") {
 
             val (nameComp, msgComp) = splitComponent(message, name, msg)
 
-            // Очередь как в SkyCubed: сообщения только в очередь, снимает цикл рендера по WPM
+            // Сообщения только в очередь, снимает цикл рендера по WPM
             queue.add(Dialogue(nameComp, msgComp))
 
             // Чат пошёл дальше — опции прошлого диалога больше НЕ АКТУАЛЬНЫ:
@@ -240,7 +240,7 @@ object NpcDialogueOverlay : HudElement("NpcDialogueOverlay") {
         return false
     }
 
-    /** State machine как onTick в SkyCubed: сним из очереди по WPM, опции — после конца сообщения. */
+    /** State machine: сним из очереди по WPM, опции — после конца сообщения. */
     private fun advance(now: Long, config: set.starlev.config.categories.SkyblockConfig.NpcDialogueConfig) {
         if (now < nextCheck) return
         if (queue.isEmpty()) {
@@ -292,7 +292,7 @@ object NpcDialogueOverlay : HudElement("NpcDialogueOverlay") {
 
         val screen = mc.gui.screen()
         if (screen is AbstractContainerScreen<*>) {
-            // Как в SkyCubed: в контейнере — слева, ширина = левый край контейнера - 30, по центру по вертикали
+            // В контейнере — слева, ширина = левый край контейнера - 30, по центру по вертикали
             val accessor = screen as ContainerScreenAccessor
             val maxWidth = (accessor.leftPos - 30).coerceAtLeast(90)
             val boxH = measureBoxHeight(font, dialogue, maxWidth, config)
@@ -334,7 +334,7 @@ object NpcDialogueOverlay : HudElement("NpcDialogueOverlay") {
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BOX_SPRITE, drawX, drawY, boxWidth, boxHeight, SPRITE_WHITE)
         }
 
-        // Плашка имени — внахлёст с верхним краем слева (как SkyCubed: x+5, y - h/2)
+        // Плашка имени — внахлёст с верхним краем слева (x+5, y - h/2)
         val nameW = nameLines.maxOf { font.width(it) }
         val nameBoxW = nameW + namePad * 2
         val nameBoxH = nameLines.size * lh + namePad * 2
@@ -352,7 +352,7 @@ object NpcDialogueOverlay : HudElement("NpcDialogueOverlay") {
             graphics.drawString(font, line, drawX + pad, drawY + pad + i * lh, 0xFFFFFFFF.toInt())
         }
 
-        // Панель опций — над основной панелью, выровнена по правому краю (как createOptionsDisplay в SkyCubed)
+        // Панель опций — над основной панелью, выровнена по правому краю
         if (showOptions && dialogue.options.isNotEmpty() && config.showOptions) {
             val rows = dialogue.options.mapIndexed { i, opt ->
                 Component.empty()

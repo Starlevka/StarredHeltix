@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Style
 import java.net.URI
 
 /**
- * JS API: Текстовый компонент (ctjs TextComponent) — цвет, стили, клик- и ховер-действия.
+ * JS API: Текстовый компонент — цвет, стили, клик- и ховер-действия.
  *
  * ```js
  * var t = textComponent("Привет!").color(0x55FF55).bold();
@@ -111,7 +111,7 @@ class JSTextComponent internal constructor(private val root: MutableComponent) {
         return this
     }
 
-    /** Итоговый текст без стилей (как formattedText у ctjs). */
+    /** Итоговый текст без стилей. */
     fun getString(): String = root.string
 
     override fun toString(): String = root.string

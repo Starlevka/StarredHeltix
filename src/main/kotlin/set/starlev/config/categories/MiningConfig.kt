@@ -53,7 +53,7 @@ class MiningConfig {
         @Expose
         @ConfigOption(name = "Цвет акцента", desc = "Цвет полоски прогресса и важных элементов")
         @ConfigEditorColour
-        var accentColorV2 = "0:255:255:170:0"
+        var accentColorV2 = "0:170:255:255:0"
 
         @Expose
         @ConfigOption(name = "Фон HUD", desc = "Отображает фон у HUD поручений")

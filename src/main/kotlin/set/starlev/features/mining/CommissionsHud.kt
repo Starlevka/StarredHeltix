@@ -52,7 +52,7 @@ object CommissionsHud : HudElement("CommissionsHud") {
             commissions
         }
 
-        // Рендеринг в стиле SkyHanni
+        // Рендеринг панели с отступами
         val padding = 4
         val title = Component.literal("§6§lПоручения")
         val titleWidth = mc.font.width(title)

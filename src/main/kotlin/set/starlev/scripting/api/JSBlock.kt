@@ -8,7 +8,6 @@ import net.minecraft.world.phys.Vec3
 
 /**
  * JS API: Сторона/грань блока: "down" | "up" | "north" | "south" | "west" | "east".
- * Аналог BlockFace из ctjs.
  */
 class JSBlockFace private constructor(private val name: String) {
     fun getName(): String = name
@@ -57,7 +56,7 @@ class JSBlockFace private constructor(private val name: String) {
 }
 
 /**
- * JS API: Тип блока (реестровый блок, не позиция в мире). Аналог BlockType из ctjs.
+ * JS API: Тип блока (реестровый блок, не позиция в мире).
  */
 class JSBlockType private constructor(val mcValue: net.minecraft.world.level.block.Block) {
 
@@ -115,7 +114,7 @@ class JSBlockType private constructor(val mcValue: net.minecraft.world.level.blo
 }
 
 /**
- * JS API: Конкретный блок в мире — тип + позиция + грань. Аналог Block из ctjs.
+ * JS API: Конкретный блок в мире — тип + позиция + грань.
  */
 class JSBlock private constructor(val type: JSBlockType, val pos: JSBlockPos, val face: JSBlockFace?) {
     val x: Int get() = pos.x
@@ -227,7 +226,7 @@ class JSBlock private constructor(val type: JSBlockType, val pos: JSBlockPos, va
 }
 
 /**
- * JS API: Позиция блока в мире с операторами (+, -, up/down/north/...). Аналог BlockPos из ctjs.
+ * JS API: Позиция блока в мире с операторами (+, -, up/down/north/...).
  */
 class JSBlockPos(val x: Int, val y: Int, val z: Int) {
 

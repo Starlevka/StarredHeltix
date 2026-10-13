@@ -5,7 +5,7 @@ import set.starlev.scripting.api.JSCancellableEvent
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Cancellable sound handler — CTJS parity: registerSoundPlay with criteria + event.cancel()
+ * Cancellable sound handler: registerSoundPlay with criteria + event.cancel()
  * criteria = substring or regex string, null = match all
  */
 object ScriptSoundHandler {
@@ -47,7 +47,7 @@ object ScriptSoundHandler {
             SHScriptEngine.withContext { cx ->
                 set.starlev.scripting.SHContextFactory.beginTracking()
                 try {
-                    // CTJS: (name, volume, pitch, event)
+                    // Аргументы: (name, volume, pitch, event)
                     e.callable.call(cx, SHScriptEngine.globalScope, SHScriptEngine.globalScope, arrayOf(soundId, volume, pitch, event))
                 } catch (t: Throwable) {
                     // Не выносим весь модуль из-за одного падения слушателя звука.

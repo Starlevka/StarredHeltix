@@ -35,7 +35,7 @@ fun GuiGraphicsExtractor.drawCenteredString(font: Font, text: FormattedCharSeque
 }
 
 /**
- * Скруглённый прямоугольник («лестницей», как RoundedCornerRectRenderer в SkyHanni):
+ * Скруглённый прямоугольник («лестницей»):
  * первые/последние `radius` рядов отступают по дуге окружности, середина — один fill.
  * ~2*radius+1 вызовов fill на панель. Цвет ARGB.
  */
@@ -59,8 +59,7 @@ fun GuiGraphicsExtractor.drawRoundedPanel(x: Int, y: Int, width: Int, height: In
 /**
  * Гладкая скруглённая панель с software-сглаживанием углов:
  * ядро — крупные fill, дуга — попиксельный альфа-бленд (2x2 субпикселы),
- * маска покрытия кэшируется на радиус. Выглядит как шейдерный rounded rect
- * (Skysoft/CustomScoreboard), но только на ванильных fill — без пайплайнов.
+ * маска покрытия кэшируется на радиус. Выглядит как шейдерный rounded rect, но только на ванильных fill — без пайплайнов.
  * Цвет ARGB.
  */
 fun GuiGraphicsExtractor.drawSmoothRoundedPanel(x: Int, y: Int, width: Int, height: Int, color: Int, radius: Int = 4) {

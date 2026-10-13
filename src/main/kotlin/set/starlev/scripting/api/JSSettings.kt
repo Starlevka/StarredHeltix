@@ -6,7 +6,7 @@ import net.minecraft.world.entity.player.PlayerModelPart
 
 /**
  * JS API: Объект `settings` — чтение и изменение клиентских настроек игры
- * (графика, звук, чат, скин). Аналог Settings API из ctjs.
+ * (графика, звук, чат, скин).
  *
  * Видеонастройки для оптимизаторских модулей (renderDistance, clouds, particles,
  * entityShadows) продублированы в `utils.*` — используйте их из оптимизаторов.

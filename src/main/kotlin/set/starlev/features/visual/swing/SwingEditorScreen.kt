@@ -19,7 +19,7 @@ import set.starlev.config.categories.VisualsConfig
 
 private typealias SwingConfigData = VisualsConfig.SwingAnimationConfig
 
-/** Отдельное окно-редактор анимации удара (порт HeldItemEditorScreen из Skysoft). */
+/** Отдельное окно-редактор анимации удара. */
 object SwingEditorScreen {
     private var preferredEditTarget = EditTarget.GLOBAL
     private val historyStore = SwingHistoryStore()

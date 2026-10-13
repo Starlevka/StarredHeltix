@@ -113,7 +113,8 @@ class HudEditorScreen : Screen(Component.literal("HUD Editor")) {
     }
 
     private fun drawActionChips(g: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        val actions = listOf("Сброс позиций" to "reset", "Строки scoreboard" to "scoreboard")
+        // Подписи до 7 символов — иначе пиксельный чип слипается (SHChipRenderer.fit)
+        val actions = listOf("Сброс" to "reset", "Строки" to "scoreboard")
         var totalW = -4
         val widths = actions.map { SHChipRenderer.measureWidth(font, it.first) }
         for (w in widths) totalW += w + 4

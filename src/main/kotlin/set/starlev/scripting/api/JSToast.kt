@@ -10,7 +10,6 @@ import net.minecraft.util.FormattedCharSequence
 
 /**
  * JS API: Всплывающее уведомление (toast) в правом верхнем углу.
- * Аналог Toast из ctjs.
  */
 class JSToast {
     /**

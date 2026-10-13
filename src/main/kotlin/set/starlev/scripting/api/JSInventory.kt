@@ -6,7 +6,7 @@ import net.minecraft.world.item.ItemStack
 import set.starlev.utils.detectors.ItemLoreDetector
 
 /**
- * JS API: Обёртка предмета. Аналог Item из ctjs.
+ * JS API: Обёртка предмета.
  */
 class JSItem(val mcValue: ItemStack) {
     /** Отображаемое имя (без кодов цвета). */
@@ -52,7 +52,7 @@ class JSItem(val mcValue: ItemStack) {
 
 /**
  * JS API: Объект `inventory` — доступ к инвентарю игрока и открытому контейнеру,
- * с возможностью кликов по слотам. Аналог Inventory API из ctjs.
+ * с возможностью кликов по слотам.
  */
 class JSInventory {
     private val client: Minecraft get() = Minecraft.getInstance()
@@ -155,7 +155,7 @@ class JSInventory {
     }
 
     /**
-     * Drag-распределение (зажать ЛКМ и растащить по слотам) — как inventory.drag из ctjs.
+     * Drag-распределение (зажать ЛКМ и растащить по слотам).
      * Эквивалент: клик по startSlot (взять стак) → клики по слотам (положить по одному) → клик по endSlot (оставить остаток).
      *
      * @param slots последовательность слотов; первый — откуда берём, остальные — куда раскладываем

@@ -10,12 +10,12 @@ import set.starlev.render.drawString
 import kotlin.math.min
 
 /**
- * Лог предметов по образцу SkyCubed PickUpLog (MIT):
- * - Трекинг изменений инвентаря через tick polling (как PickUpLog.onTick)
+ * Лог предметов:
+ * - Трекинг изменений инвентаря через tick polling
  * - Ключ — skyblockId (ExtraAttributes.id) или fallback к stripped displayName
- * - Мерж одинаковых предметов в течение lifetime (как в Skysoft linkedMap)
+ * - Мерж одинаковых предметов в течение lifetime
  * - Фейд-ин/аут через smoothStep, максимум линий, длительность
- * - Рендер: [иконка предмета] [полное имя] [+/-кол-во] — как компоненты PickUpLog (ITEM_STACK, NAME, DIFFERENCE)
+ * - Рендер: [иконка предмета] [полное имя] [+/-кол-во]
  */
 object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
     private val mc = Minecraft.getInstance()
@@ -28,7 +28,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
     private var lastWorldSwap = System.currentTimeMillis()
 
     fun init() {
-        // Сброс при смене мира — как в SkyCubed PickUpLog (5с защита от ложных срабатываний)
+        // Сброс при смене мира (5с защита от ложных срабатываний)
         try {
             net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
                 state.clear()
@@ -48,7 +48,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
     }
 
     private fun getUniqueId(stack: ItemStack): String {
-        // Как в SkyCubed PickUpLog: UUID > ENCHANTED_BOOK с зачарами > POTION > skyblockId
+        // Порядок определения: UUID > ENCHANTED_BOOK с зачарами > POTION > skyblockId
         try {
             val customData = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA)
             if (customData != null) {
@@ -123,7 +123,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
 
         if (entriesToShow.isEmpty() && !isEditing) return
 
-        // Компоненты строки как в SkyCubed PickUpLog: [иконка 16x16] [полное имя] [+/-кол-во]
+        // Компоненты строки: [иконка 16x16] [полное имя] [+/-кол-во]
         val rowHeight = 18
         val font = mc.font
         data class Row(val stack: ItemStack, val name: Component, val diff: Component, val opacity: Float)
@@ -197,7 +197,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
             return
         }
 
-        // Защита от ложных срабатываний при смене мира как в SkyCubed (5с)
+        // Защита от ложных срабатываний при смене мира (5с)
         val isSwappingWorlds = System.currentTimeMillis() - lastWorldSwap < 5000
         if (isSwappingWorlds) {
             lastInventory.clear()
@@ -216,7 +216,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
                 val diff = currentCount - lastCount
                 val stack = itemMap[key] ?: lastItemStacks[key] ?: continue
                 if (stack.isEmpty) continue
-                // Добавляем через state (как Skysoft ItemChangeLogState.add)
+                // Добавляем через state
                 state.add(key, diff, config.maxEntries.toInt(), stack)
             }
         }
@@ -241,7 +241,7 @@ object InventoryHistoryLog : HudElement("InventoryHistoryLog") {
 }
 
 /**
- * Состояние лога 1:1 с Skysoft ItemChangeLogState
+ * Состояние лога изменений инвентаря
  */
 internal class ItemChangeLogState(
     private val currentTimeMillis: () -> Long = System::currentTimeMillis,
@@ -290,7 +290,7 @@ internal class ItemChangeLogState(
     }
 
     private fun smoothStep(t: Float): Float {
-        // 3t^2 - 2t^3 как в Skysoft EasingUtilities
+        // 3t^2 - 2t^3 (smoothStep)
         return t * t * (3f - 2f * t)
     }
 

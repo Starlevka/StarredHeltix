@@ -14,7 +14,6 @@ import org.joml.Intersectiond
 
 /**
  * CreeperBeams - Сольвер для головоломки с лучами криперов в подземельях.
- * Исправленная версия с учетом оригинальной логики Skyblocker.
  */
 object CreeperBeams {
     private val MC = Minecraft.getInstance()
@@ -90,11 +89,9 @@ object CreeperBeams {
             val level = MC.level ?: return
             base = findCreeperBase(level)
             if (base != null) {
-                StarredHeltix.LOGGER.info("CreeperBeams: Found base at $base")
                 val creeperPos = Vec3(base!!.x + 0.5, BASE_Y + 1.75, base!!.z + 0.5)
                 val targets = findTargets(level, base!!)
                 if (targets.isNotEmpty()) {
-                    StarredHeltix.LOGGER.info("CreeperBeams: Found ${targets.size} targets")
                     solve(creeperPos, targets)
                 }
             }

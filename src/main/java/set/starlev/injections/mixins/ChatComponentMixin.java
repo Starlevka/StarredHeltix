@@ -27,11 +27,6 @@ public class ChatComponentMixin {
 
         Component finalComp = ChatFormatting.processComponent(processed);
 
-        // Отладочный вывод в консоль для проверки работы миксина
-        if (finalComp != processed) {
-            System.out.println("[StarredHeltix] Chat message formatted: " + finalComp.getString());
-        }
-
         return finalComp;
     }
 }

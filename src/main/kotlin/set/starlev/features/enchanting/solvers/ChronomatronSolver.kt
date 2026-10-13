@@ -20,6 +20,10 @@ import set.starlev.features.enchanting.ExperimentSolver
  *  - фаза «повторите» (CLOCK/«часы») — подсветка всех ячеек текущего шага-цвета, клик
  *    по любой из них переводит к следующему шагу.
  *
+ * Шаг запоминается по ФРОНТУ «ячейка загорелась», а не по смене цвета: сервер вполне
+ * может повторить один и тот же шаг два раза подряд (2-3-3), и сравнение с предыдущим
+ * цветом схлопывало такой повтор в один шаг.
+ *
  * Сканирование меню — каждый кадр в [tick] (как в эталоне), а не по событиям слотов:
  * Heltix шлёт вспышки быстро и событийно их легко пропустить.
  */
@@ -38,14 +42,22 @@ class ChronomatronSolver : ExperimentSolver(Regex("Ритмотрон|Rhythmatro
     @Volatile private var isGamePhase: Boolean = false
 
     private var lastRoundText: String = ""
-    private var lastFlashedColor: String = ""
+
+    /**
+     * Слоты, которые светились на прошлом кадре — фронт детекции вспышки.
+     *
+     * Раньше шаг запоминался только если цвет отличался от предыдущего, и повтор подряд
+     * (сервер: 2-3-3) схлопывался в один шаг. Теперь шаг — это ФРОНТ «ячейка загорелась»:
+     * между двумя одинаковыми вспышками ячейка успевает вернуться в стекло, и второй
+     * такой же цвет снова даёт фронт.
+     */
+    private val flashingSlots = HashSet<Int>()
 
     override fun isEnabled(): Boolean = StarredHeltix.feature.enchanting.tableSolvers.chronomatron
 
     override fun start(screen: ContainerScreen) {
         super.start(screen)
         hardReset()
-        StarredHeltix.LOGGER.info("[Rhythmatron] Started, title=${screen.title.string}")
     }
 
     private fun hardReset() {
@@ -53,8 +65,8 @@ class ChronomatronSolver : ExperimentSolver(Regex("Ритмотрон|Rhythmatro
         sequenceColors.clear()
         currentStep = 1
         isGamePhase = false
-        lastFlashedColor = ""
         lastRoundText = ""
+        flashingSlots.clear()
     }
 
     override fun tick(screen: ContainerScreen) {
@@ -79,14 +91,15 @@ class ChronomatronSolver : ExperimentSolver(Regex("Ритмотрон|Rhythmatro
                 sequenceColors.clear()
                 currentStep = 1
                 isGamePhase = false
-                lastFlashedColor = ""
+                flashingSlots.clear()
             }
             if (ExperimentUtil.isRememberFlag(stack)) foundGlowstone = true
             if (ExperimentUtil.isWaitFlag(stack)) foundClock = true
         }
 
         if (foundGlowstone) {
-            if (isGamePhase) { isGamePhase = false; currentStep = 1; sequenceColors.clear(); lastFlashedColor = "" }
+            if (isGamePhase) { isGamePhase = false; currentStep = 1; sequenceColors.clear() }
+            flashingSlots.clear()
         } else if (foundClock) {
             isGamePhase = true
         }
@@ -99,8 +112,10 @@ class ChronomatronSolver : ExperimentSolver(Regex("Ритмотрон|Rhythmatro
             ExperimentUtil.parseColor(stack)?.let { boardColors[i] = it }
         }
 
-        // 3. Фаза «запомните»: ловим вспышки (не-стеклянные цветные блоки) в порядке появления
+        // 3. Фаза «запомните»: ловим вспышки (не-стеклянные цветные блоки) по фронту «загорелась».
+        // Порядок обхода — по индексу слота, он же порядок вспышек на сервере.
         if (!isGamePhase) {
+            val lit = HashSet<Int>(containerSlots)
             for (i in 0 until containerSlots) {
                 val stack = slots[i].item
                 if (stack.isEmpty) continue
@@ -109,13 +124,18 @@ class ChronomatronSolver : ExperimentSolver(Regex("Ритмотрон|Rhythmatro
                     ExperimentUtil.isSystemItem(hover)
                 if (isGlassOrSystem) continue
                 if (!ExperimentUtil.isCeramic(stack)) continue
+                // Ячейка горит — с этого момента она «светится», даже если цвет не разобрали:
+                // иначе фронт мигнёт и шаг продублируется на следующем кадре.
+                lit.add(i)
                 val color = ExperimentUtil.parseColor(stack) ?: boardColors[i] ?: continue
-                if (color != lastFlashedColor) {
-                    sequenceColors.add(color)
-                    lastFlashedColor = color
-                    setState(State.REMEMBER)
-                }
+                // Вспышка = ячейка только что загорелась. Повтор того же цвета подряд
+                // (2-3-3) — новая вспышка, потому что между ними ячейка гасла.
+                if (flashingSlots.contains(i)) continue
+                sequenceColors.add(color)
+                flashingSlots.add(i)
+                setState(State.REMEMBER)
             }
+            flashingSlots.retainAll(lit)
         }
 
         // 4. Авто-продвижение: если ожидаемую ячейку уже «закрыли» (перестала быть стеклом)

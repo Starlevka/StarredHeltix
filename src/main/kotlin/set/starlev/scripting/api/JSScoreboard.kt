@@ -79,7 +79,7 @@ object JSScoreboard {
         try { val s = sb() ?: return; val t = s.getPlayerTeam(name) ?: return; s.removePlayerTeam(t) } catch (_: Exception) {}
     }
 
-    // ==================== Детальный Score API (CTJS Score) ====================
+    // ==================== Детальный Score API ====================
     fun getScores(): List<JSScore> {
         return try {
             val s = sb() ?: return emptyList()

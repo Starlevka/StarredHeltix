@@ -7,7 +7,7 @@ import set.starlev.injections.accessors.BossHealthOverlayAccessor
 import java.util.UUID
 
 /**
- * JS API: Кастомный боссбар. Аналог BossBar из ctjs.
+ * JS API: Кастомный боссбар.
  */
 class JSBossBar(val mcValue: LerpingBossEvent) {
     fun getUUID(): String = mcValue.id.toString()
@@ -30,7 +30,7 @@ class JSBossBar(val mcValue: LerpingBossEvent) {
 
 /**
  * JS API: Объект `bossbars` — чтение серверных боссбаров, создание и удаление
- * клиентских. Аналог BossBars из ctjs.
+ * клиентских.
  *
  * Клиентские бары, созданные модулем, отслеживаются по UUID ([ownedBars]) — чтобы
  * при выгрузке модуля удалить ТОЛЬКО свои бары и не трогать серверные.

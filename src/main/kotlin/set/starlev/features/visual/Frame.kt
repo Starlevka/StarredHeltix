@@ -11,7 +11,6 @@ import set.starlev.utils.detectors.ScoreboardDetector
 
 /**
     * Функция-прикол: отрисовывает картинку в мире на координатах 2 71 -92 в биоме Overworld.
-    * Аналог CatPicture из Skyblocker.
     */
 object GhostFrameFeature {
     private val mc = Minecraft.getInstance()

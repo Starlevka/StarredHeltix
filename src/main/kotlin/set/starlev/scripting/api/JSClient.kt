@@ -12,7 +12,7 @@ import net.minecraft.core.BlockPos
  * JS API: Объект `client` — состояние клиента, меню, сервер, FPS/пинг.
  *
  * Поддержка входа на сервер из модуля (главное меню → сетевая игра),
- * статистика соединения и окна. Аналог ctjs Client + Server.
+ * статистика соединения и окна.
  */
 class JSClient {
 
@@ -219,7 +219,7 @@ class JSClient {
         org.lwjgl.glfw.GLFW.glfwGetKey(mc.window.handle(), org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT) ==
             org.lwjgl.glfw.GLFW.GLFW_PRESS
 
-    // ==================== Пакеты (ctjs sendPacket, безопасно — по имени) ====================
+    // ==================== Пакеты (sendPacket, безопасно — по имени) ====================
 
     /**
      * Отправить пакет серверу по имени и параметрам. Возвращает true, если пакет отправлен.

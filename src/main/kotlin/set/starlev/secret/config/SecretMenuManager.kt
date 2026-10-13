@@ -84,14 +84,10 @@ object SecretMenuManager {
         }
 
         val editor = io.github.notenoughupdates.moulconfig.gui.MoulConfigEditor(visibleCategories, secretConfig)
-        
-        // Принудительно закрываем текущий экран и устанавливаем новый в следующем тике
-        val screen = io.github.notenoughupdates.moulconfig.platform.MoulConfigScreenComponent(
-            net.minecraft.network.chat.Component.empty(),
-            io.github.notenoughupdates.moulconfig.gui.GuiContext(io.github.notenoughupdates.moulconfig.gui.GuiElementComponent(editor)),
-            null
-        )
-        
-        StarredHeltix.screenToOpen = screen
+
+        // Принудительно закрываем текущий экран и устанавливаем новый в следующем тике.
+        // openEditor() оборачивает редактор в корневой компонент, который перенаправляет
+        // onAfterClose() → saveNow() → save(): без этого секретный конфиг не сохранялся.
+        set.starlev.utils.ConfigUtils.openEditor(editor)
     }
 }

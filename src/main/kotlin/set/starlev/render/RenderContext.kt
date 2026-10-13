@@ -61,7 +61,7 @@ class RenderContext(
         val box = aabb.move(-aabb.minX, -aabb.minY, -aabb.minZ)
 
         // Контур — настоящие линии (POSITION_COLOR_NORMAL_LINE_WIDTH + setLineWidth),
-        // как ванильный submitShapeOutline и LineBoxRenderer у Skysoft.
+        // как ванильный submitShapeOutline.
         // Раньше был lightning()-квады — тонко, тускло и с аддитивным блендом.
         if (fill) {
             drawFilledBoxQuads(box, r, g, b, a, seeThrough)

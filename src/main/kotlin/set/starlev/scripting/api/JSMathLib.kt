@@ -4,8 +4,7 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
- * JS API: Объект `math` — математические помощники.
- * Аналог MathLib из ctjs + полезные дополнения.
+ * JS API: Объект `math` — математические помощники (map/lerp/dist/...).
  */
 class JSMathLib {
     /** Перевод значения из одного диапазона в другой. */

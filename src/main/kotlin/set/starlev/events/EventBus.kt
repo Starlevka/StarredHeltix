@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong
  * ```kotlin
  * // Подписка
  * EventBus.subscribe<LocationChangedEvent> { event ->
- *     logger.info("Локация: ${event.location}")
  * }
  *
  * // Подписка с высоким приоритетом (сработает первой)

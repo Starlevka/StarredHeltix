@@ -4,8 +4,7 @@ import set.starlev.StarredHeltix
 
 /**
  * Аксессор для настроек анимации удара, используемых из Java-миксинов.
- * Основная настройка — через отдельное окно-редактор (SwingEditorScreen),
- * портированное 1-в-1 из Skysoft.
+ * Основная настройка — через отдельное окно-редактор (SwingEditorScreen).
  */
 object SwingAnimation {
     fun isNoEquipEnabled(): Boolean =

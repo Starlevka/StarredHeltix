@@ -13,7 +13,7 @@ import set.starlev.StarredHeltix
  * 3 режима:
  *  1) Простой квадрат (без текстуры) — заливка через fill
  *  2) Квадрат с обводкой — бекграунд цветом + квадратная рамка через fill
- *  3) Круг — спрайт кружка через blitSprite (как в Skyblocker, NativeImage-текстура)
+ *  3) Круг — спрайт кружка через blitSprite (NativeImage-текстура)
  */
 object SlotOverlayUtil {
 
@@ -83,7 +83,7 @@ object SlotOverlayUtil {
     }
 
     /**
-     * 3) Круг — спрайт кружка через blitSprite (как в Skyblocker по текстуре, загруженной через NativeImage).
+     * 3) Круг — спрайт кружка через blitSprite (текстура загружается через NativeImage).
      */
     fun drawSlotCircle(graphics: GuiGraphicsExtractor, x: Int, y: Int, size: Int, rgb: Int) {
         val alpha = getAlpha()

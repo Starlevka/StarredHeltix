@@ -3,7 +3,7 @@ package set.starlev.scripting.api
 import net.minecraft.client.Minecraft
 
 /**
- * JS API: Объект `cps` — клики в секунду (CPS), как в ctjs.
+ * JS API: Объект `cps` — клики в секунду (CPS).
  * Отслеживает нажатия кнопок мыши за последнюю секунду.
  */
 class JSCps {

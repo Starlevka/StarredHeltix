@@ -129,12 +129,12 @@ class JSEntity(val mcValue: Entity) {
         return if (color.isPresent) color.get().name.lowercase() else ""
     }
 
-    // ==================== ctjs Entity-паритет доп. ====================
+    // ==================== Сущности: доп. ====================
 
     /** Имя Java-класса сущности, например "Zombie". */
     fun getClassName(): String = mcValue.javaClass.simpleName
 
-    /** Горит ли сущность (alias isOnFire для CTJS). */
+    /** Горит ли сущность (alias isOnFire). */
     fun isBurning(): Boolean = mcValue.isOnFire
 
     /** Сталкивается ли хитбокс с другой коллизией. */
@@ -176,7 +176,7 @@ class JSEntity(val mcValue: Entity) {
     /** Квадрат дистанции до другой сущности. */
     fun distanceToSqrEntity(other: JSEntity): Double = mcValue.distanceToSqr(other.mcValue)
 
-    // ==================== ctjs Entity-паритет ====================
+    // ==================== Сущности: состояния ====================
 
     /** Мёртва ли сущность (обратно isAlive). */
     fun isDead(): Boolean = !mcValue.isAlive
@@ -257,7 +257,6 @@ class JSEntity(val mcValue: Entity) {
 
 /**
  * JS API: Объект `world` — доступ к миру, сущностям, блокам, скорборду, таб-листу.
- * Аналог World + Scoreboard + TabList API из ctjs.
  */
 class JSWorld {
     private val client: Minecraft get() = Minecraft.getInstance()
@@ -371,7 +370,7 @@ class JSWorld {
     fun getBlockLightLevel(x: Int, y: Int, z: Int): Int =
         client.level?.getBrightness(LightLayer.BLOCK, BlockPos(x, y, z)) ?: 0
 
-    // ==================== Редактирование скорборда (ctjs Scoreboard) ====================
+    // ==================== Редактирование скорборда ====================
     // Клиентские правки: видны только вам, сбрасываются серверным пакетом.
 
     private fun sidebarObjective() = client.level?.scoreboard?.getDisplayObjective(DisplaySlot.SIDEBAR)
@@ -430,7 +429,7 @@ class JSWorld {
             }
     }
 
-    // ==================== Редактирование таб-листа (ctjs TabList) ====================
+    // ==================== Редактирование таб-листа ====================
 
     /** Установить шапку таб-листа (клиентски). */
     fun setTabListHeader(header: String) {
@@ -464,7 +463,7 @@ class JSWorld {
             ?: info.profile.name
     }
 
-    // ==================== Блок-энтити (ctjs BlockEntity) ====================
+    // ==================== Блок-энтити ====================
 
     /** Тип блок-энтити на позиции: "minecraft:chest" или null (не энтити/вне мира). */
     fun getBlockEntityType(x: Int, y: Int, z: Int): String? {
@@ -528,7 +527,7 @@ class JSWorld {
         return out
     }
 
-    /** Все сущности заданного класса Java (например "net.minecraft.world.entity.monster.Zombie") — аналог CTJS getAllEntitiesOfType(Class). */
+    /** Все сущности заданного класса Java (например "net.minecraft.world.entity.monster.Zombie"). */
     fun getAllEntitiesOfType(clazzName: String): List<JSEntity> {
         return try {
             val clazz = Class.forName(clazzName)

@@ -79,7 +79,6 @@ object CustomHudTextures {
             e.searchedAt = now
         }
         val file = e.file ?: run {
-            StarredHeltix.LOGGER.debug("[CustomHudTextures] '$name' не найден")
             return null
         }
         val mtime = file.lastModified()
@@ -105,7 +104,6 @@ object CustomHudTextures {
                 e.mtime = mtime
                 e.failedMtime = -1L
                 e.handle = Handle(id, image.width, image.height)
-                StarredHeltix.LOGGER.info("[CustomHudTextures] ${file.name} ${image.width}x${image.height} -> $id")
             } catch (ex: Exception) {
                 e.failedMtime = mtime // не повторяем попытку каждый кадр
                 StarredHeltix.LOGGER.error("[CustomHudTextures] не загрузить ${file.absolutePath}: ${ex.message}")

@@ -136,7 +136,7 @@ object Waypoints {
             }
 
             if (!config.chatCreatesTemporary) return@registerIncoming
-            // Авто-создание временной метки (как в SkyHanni «chat waypoints»), длительность из конфига;
+            // Авто-создание временной метки по координатам из чата, длительность из конфига;
             // имя — отправитель сообщения, если удалось определить.
             val sender = extractSender(cleaned) ?: coords.name
             val durationMs = (config.defaultTemporarySeconds.coerceAtLeast(1f) * 1000f).toLong()

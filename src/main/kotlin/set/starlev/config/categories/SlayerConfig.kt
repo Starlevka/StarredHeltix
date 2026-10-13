@@ -63,7 +63,7 @@ class SlayerConfig {
         @Expose
         @ConfigOption(name = "Цвет", desc = "Выберите цвет обводки")
         @ConfigEditorColour
-        var colorV2 = "0:255:255:0:255"
+        var colorV2 = "255:0:255:255:0"
 
         @Expose
         @ConfigOption(name = "Прозрачность", desc = "Установите уровень прозрачности подсветки")

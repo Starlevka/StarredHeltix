@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import set.starlev.features.visual.SkyColor;
 
 /**
- * Цвет горизонта/тумана — порт из Skysoft (FogRendererMixin).
+ * Цвет горизонта/тумана для SkyColor.
  * Сигнатура computeFogColor сверена с `scripts/SOURCES/26.2.X SOURCE CODE`.
  */
 @Mixin(FogRenderer.class)

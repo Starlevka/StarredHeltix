@@ -47,7 +47,7 @@ object KeyBindHandler {
             CustomBindManager.tick()
 
             // See Through Farming: клавиша прозрачности окна
-            set.starlev.features.visual.SeeThroughWindow.tick()
+            set.starlev.features.farming.SeeThroughWindow.tick()
         }
     }
 }

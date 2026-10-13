@@ -42,7 +42,7 @@ object GlowingMushroomHighlight {
                 val entry = it.next()
                 val pos = entry.key
                 val lastSeen = entry.value
-                // Устаревшие (5 сек как в Skyblocker)
+                // Устаревшие (5 сек)
                 if (now - lastSeen > 5000) {
                     it.remove()
                     continue

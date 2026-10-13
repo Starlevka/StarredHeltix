@@ -11,8 +11,42 @@ import set.starlev.render.HudEditorScreen
 
 object ConfigUtils {
 
+    /**
+     * Корневой компонент, который перенаправляет onAfterClose() в редактор.
+     *
+     * Без него конфиг не сохраняется: `MoulConfigEditor` объявляет `onAfterClose()` (там
+     * вызывается `config.saveNow()`), но `GuiElementComponent` — это final-обёртка (@Value),
+     * которая НЕ имплементирует `CloseEventListener`. `GuiContext.onAfterClose()` идёт
+     * `foldRecursive` по дереву и находит слушателя только если он есть в корне, поэтому
+     * saveNow() молча не вызывался ни в основном меню, ни в секретном.
+     */
+    private class CloseForwardingRoot(private val editor: MoulConfigEditor<*>) :
+        io.github.notenoughupdates.moulconfig.gui.GuiComponent(),
+        io.github.notenoughupdates.moulconfig.gui.CloseEventListener {
+
+        private val delegate = GuiElementComponent(editor)
+
+        override fun getWidth(): Int = delegate.width
+        override fun getHeight(): Int = delegate.height
+        override fun render(context: io.github.notenoughupdates.moulconfig.gui.GuiImmediateContext) =
+            delegate.render(context)
+
+        override fun mouseEvent(
+            mouseEvent: io.github.notenoughupdates.moulconfig.gui.MouseEvent,
+            context: io.github.notenoughupdates.moulconfig.gui.GuiImmediateContext
+        ): Boolean = delegate.mouseEvent(mouseEvent, context)
+
+        override fun keyboardEvent(
+            event: io.github.notenoughupdates.moulconfig.gui.KeyboardEvent,
+            context: io.github.notenoughupdates.moulconfig.gui.GuiImmediateContext
+        ): Boolean = delegate.keyboardEvent(event, context)
+
+        override fun onAfterClose() = editor.onAfterClose()
+    }
+
     fun openEditor(editor: MoulConfigEditor<*>) {
-        StarredHeltix.screenToOpen = MoulConfigScreenComponent(Component.empty(), GuiContext(GuiElementComponent(editor)), null)
+        StarredHeltix.screenToOpen =
+            MoulConfigScreenComponent(Component.empty(), GuiContext(CloseForwardingRoot(editor)), null)
     }
 
     /**

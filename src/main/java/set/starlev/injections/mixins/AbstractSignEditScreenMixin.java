@@ -13,8 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import set.starlev.utils.InputMath;
 
 /**
- * Ввод чисел с суффиксами (1k / 2m / 3b / 10к) — порт из Skysoft
- * (`AbstractSignEditScreenMixin`). Считает сам {@link InputMath}, здесь только
+ * Ввод чисел с суффиксами (1k / 2m / 3b / 10к). Считает сам {@link InputMath}, здесь только
  * подмена строки перед отправкой пакета с табличкой.
  *
  * 26.2: {@code ServerboundSignUpdatePacket} уходит из {@code removed()}, поэтому
@@ -27,7 +26,7 @@ public abstract class AbstractSignEditScreenMixin {
 
     @Shadow public abstract void onClose();
 
-    /** Enter в поле ввода: считаем выражение и закрываем экран (поведение Skysoft). */
+    /** Enter в поле ввода: считаем выражение и закрываем экран. */
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void starlevSubmitInputMath(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
         if (!event.isConfirmation() || !starlevCompileInputMath()) return;
